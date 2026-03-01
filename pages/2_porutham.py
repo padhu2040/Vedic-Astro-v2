@@ -42,42 +42,64 @@ def get_utc_offset(tz_str, date_obj):
         return dt_aware.utcoffset().total_seconds() / 3600
     except: return 5.5 
 
-# MASTER UPGRADE: South Indian Chart with strict symmetry (forced 125px cells) and dynamic Lagna line
+# UPGRADE: Smaller footprint, thinner lagna line, House labels with core meanings
 def get_south_indian_chart_html(p_pos, lagna_rasi, title, person_name):
     v_names = {"Sun": "Suriyan", "Moon": "Chandran", "Mars": "Sevvai", "Mercury": "Budhan", "Jupiter": "Guru", "Venus": "Sukran", "Saturn": "Sani", "Rahu": "Rahu", "Ketu": "Ketu"}
     
+    # Map the 12 houses to their core themes
+    h_meanings = {
+        1: "Self", 2: "Wealth", 3: "Courage", 4: "Home",
+        5: "Intellect", 6: "Health", 7: "Partner", 8: "Secrets",
+        9: "Fortune", 10: "Career", 11: "Gains", 12: "Losses"
+    }
+    
     g = {i: [] for i in range(1, 13)}
     
-    # Lagna label and planet lists per Rasi
-    g[lagna_rasi].append("<span style='color:#e74c3c; font-size:13px; display:block; font-weight:bold; margin-bottom:3px;'>Lagna</span>")
+    houses = {}
+    house_labels = {}
+    for i in range(1, 13):
+        h_num = (i - lagna_rasi + 1) if (i >= lagna_rasi) else (i + 12 - lagna_rasi + 1)
+        houses[i] = f"H{h_num}"
+        house_labels[i] = h_meanings[h_num]
+
+    g[lagna_rasi].append("<span style='color:#e74c3c; font-size:11px; display:block; font-weight:bold; margin-bottom:1px;'>Lagna</span>")
     for p, r in p_pos.items():
         if p != "Lagna":
-            g[r].append(f"<span style='font-size:12px; font-weight:bold; color:#2c3e50; display:block;'>{v_names.get(p, p)}</span>")
+            g[r].append(f"<span style='font-size:11px; font-weight:bold; color:#2c3e50; display:block;'>{v_names.get(p, p)}</span>")
             
     for i in g: g[i] = "".join(g[i])
     z = ["", "Mesha", "Rishabha", "Mithuna", "Kataka", "Simha", "Kanya", "Thula", "Vrischika", "Dhanu", "Makara", "Kumbha", "Meena"]
-    center_html = f"<div style='font-weight: bold; font-size: 15px; color:#2c3e50; margin-bottom: 4px;'>{title}</div><div style='font-size: 17px; color:#e67e22; font-weight: 600;'>{person_name}</div>"
+    center_html = f"<div style='font-weight: bold; font-size: 13px; color:#2c3e50; margin-bottom: 2px;'>{title}</div><div style='font-size: 15px; color:#e67e22; font-weight: 600;'>{person_name}</div>"
     
-    # CSS variable for perfectly symmetrical cells (125px)
-    cell_dim = "125px"
+    # Smaller, tighter cells
+    cell_dim = "95px"
 
-    # CRITICAL CHANGE: Forced symmetry with box-sizing, min-height, and dynamic Lagna gradient line
     def cell(idx):
         is_lagna = (idx == lagna_rasi)
-        # Background: Standard gray or the traditional diagonal red Lagna line
-        lagna_gradient = "background: linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 48%, rgba(231,76,60,0.5) 49%, rgba(231,76,60,0.5) 51%, rgba(255,255,255,0) 52%, rgba(255,255,255,0) 100%), #fdfdfa;"
+        # Thinner, more elegant diagonal line
+        lagna_gradient = "background: linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 49.2%, rgba(231,76,60,0.3) 49.5%, rgba(231,76,60,0.3) 50.5%, rgba(255,255,255,0) 50.8%, rgba(255,255,255,0) 100%), #fdfdfa;"
         standard_bg = "background-color: #fafafa;"
         
-        style = f"width: {cell_dim}; height: {cell_dim}; min-height: {cell_dim}; max-height: {cell_dim}; box-sizing: border-box; border: 1px solid #dcdde1; vertical-align: top; padding: 6px; position: relative;"
+        style = f"width: {cell_dim}; height: {cell_dim}; min-height: {cell_dim}; max-height: {cell_dim}; box-sizing: border-box; border: 1px solid #dcdde1; vertical-align: top; padding: 4px; position: relative;"
         if is_lagna: style += lagna_gradient
         else: style += standard_bg
 
-        return f"<td style='{style}'><div style='font-size:11px; color:#7f8c8d; text-align:left; margin-bottom:8px; pointer-events:none;'>{z[idx]}</div><div style='position:relative; z-index:1;'>{g[idx]}</div></td>"
+        # Top Bar: Zodiac Name (Left) | House Number & Meaning (Right)
+        top_bar = f"""
+        <div style='display:flex; justify-content:space-between; font-size:9px; margin-bottom:4px; line-height: 1;'>
+            <span style='color:#95a5a6;'>{z[idx]}</span>
+            <div style='text-align:right;'>
+                <span style='color:#bdc3c7; font-weight:bold;'>{houses[idx]}</span><br>
+                <span style='color:#aeb6bf; font-size:8px;'>{house_labels[idx]}</span>
+            </div>
+        </div>
+        """
 
-    # Constructing the table with a fixed layout to force squareness
+        return f"<td style='{style}'>{top_bar}<div style='position:relative; z-index:1; line-height:1.2;'>{g[idx]}</div></td>"
+
     return f"""
-    <div style='max-width: 500px; margin: auto; font-family: sans-serif;'>
-        <table style='width: 100%; table-layout: fixed; border-collapse: collapse; text-align: center; background-color: #ffffff; border: 2px solid #2c3e50; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>
+    <div style='max-width: 380px; margin: auto; font-family: sans-serif;'>
+        <table style='width: 100%; table-layout: fixed; border-collapse: collapse; text-align: center; background-color: #ffffff; border: 1px solid #bdc3c7; box-shadow: 0 2px 4px rgba(0,0,0,0.05);'>
             <tr>{cell(12)}{cell(1)}{cell(2)}{cell(3)}</tr>
             <tr>{cell(11)}<td colspan='2' rowspan='2' style='border: 1px solid #dcdde1; vertical-align: middle; background-color: #ffffff;'>{center_html}</td>{cell(4)}</tr>
             <tr>{cell(10)}{cell(5)}</tr>
@@ -177,7 +199,6 @@ st.title(":material/favorite: 10-Porutham Matchmaking Engine")
 st.markdown("Professional Vedic compatibility using precision Swiss Ephemeris math and AI analysis.")
 st.divider()
 
-# UPGRADE: Added clear Persona Toggle to personalize tone and language
 rel_status = st.radio("Relationship Context:", ["Exploring a Match", "Already Married / Committed"], horizontal=True)
 st.write("")
 
@@ -239,7 +260,6 @@ if calc_btn:
                 st.warning(f":material/warning: **Transition Zone:** The Moon is on the exact edge of {g_data['Nakshatra']}. Verify birth time.")
         
         st.markdown("<br>", unsafe_allow_html=True)
-        # Displaying the Upgraded Symmetrical Charts with the traditional slanting Lagna Line
         chart_c1, chart_c2 = st.columns(2)
         with chart_c1:
             st.markdown(get_south_indian_chart_html(b_data['P_Pos'], b_data['Lagna_Idx'], "Rasi Chart", b_name), unsafe_allow_html=True)
@@ -282,7 +302,6 @@ if calc_btn:
         
         st.markdown(f"<h2 style='text-align: center; margin-bottom: 0;'>Traditional Score: {score} / 10</h2>", unsafe_allow_html=True)
         
-        # UPGRADE: Persona-dependent conclusion wording
         if score >= 7 and m_match:
             outcome_text = "Excellent Alignment"
             outcome_color = "#27ae60"
@@ -326,7 +345,7 @@ if calc_btn:
 
         st.divider()
         
-        # 4. THE AI RELATIONSHIP ORACLE (Personalized & Format-balanced)
+        # 4. THE AI RELATIONSHIP ORACLE 
         if not GEMINI_API_KEY:
             st.error("API Key missing! Add it to Streamlit Secrets to generate AI insights.")
         else:
@@ -337,7 +356,6 @@ if calc_btn:
                     match_list = ", ".join(list(matched_items.keys()))
                     unmatch_list = ", ".join(list(unmatched_items.keys()))
                     
-                    # UPGRADE Prompt: Strictly personalized (using names) and balanced formatting (intro + 2-3 deep bullets)
                     prompt = f"""
                     You are an elite, modern Vedic Astrologer. Analyze the relationship compatibility between:
                     Partner 1: {b_name} ({b_data['Lagna']} Ascendant, {b_data['Rasi']} Moon Sign, {b_data['Nakshatra']} Star).
