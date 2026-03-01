@@ -63,28 +63,24 @@ def calculate_full_chart(dob, tob, lat, lon, tz_str):
     mars_lon = swe.calc_ut(jd_ut, swe.MARS, swe.FLG_SIDEREAL)[0][0]
     mars_rasi_idx = int(mars_lon / 30) + 1
     
-    # Check Moon Cusp (within 0.5 degrees of star boundary)
+    # Check Moon Cusp
     nak_length = 13.333333
     remainder = moon_lon % nak_length
     is_cusp = True if (remainder < 0.5 or remainder > (nak_length - 0.5)) else False
     
-    # Check Manglik (Mars in 2, 4, 7, 8, 12 from Lagna or Moon)
+    # Check Manglik
     mars_from_lagna = (mars_rasi_idx - lagna_rasi_idx + 1) if (mars_rasi_idx >= lagna_rasi_idx) else (mars_rasi_idx + 12 - lagna_rasi_idx + 1)
     mars_from_moon = (mars_rasi_idx - moon_rasi_idx + 1) if (mars_rasi_idx >= moon_rasi_idx) else (mars_rasi_idx + 12 - moon_rasi_idx + 1)
     
     is_manglik = False
-    manglik_severity = "None"
-    if mars_from_lagna in [2, 4, 7, 8, 12]:
+    if mars_from_lagna in [2, 4, 7, 8, 12] or mars_from_moon in [2, 4, 7, 8, 12]:
         is_manglik = True
-        manglik_severity = "High (from Lagna)"
-    elif mars_from_moon in [2, 4, 7, 8, 12]:
-        is_manglik = True
-        manglik_severity = "Mild (from Moon)"
         
     return {
+        "Lagna": ZODIAC[lagna_rasi_idx],
         "Rasi": ZODIAC[moon_rasi_idx], "Rasi_Idx": moon_rasi_idx,
         "Nakshatra": NAKSHATRAS[nak_idx], "Nak_Idx": nak_idx, "Pada": pada,
-        "Is_Cusp": is_cusp, "Is_Manglik": is_manglik, "Manglik_Type": manglik_severity
+        "Is_Cusp": is_cusp, "Is_Manglik": is_manglik
     }
 
 def calculate_10_porutham(b_nak, g_nak, b_rasi, g_rasi):
@@ -152,7 +148,7 @@ with col_g:
     g_loc = st.text_input("City", "Nagercoil", key="g_loc")
 
 st.divider()
-calc_btn = st.button("Calculate Compatibility & Run AI", type="primary", use_container_width=True)
+calc_btn = st.button("Calculate Compatibility with AI", type="primary", use_container_width=True)
 
 # --- EXECUTION ---
 if calc_btn:
@@ -163,72 +159,109 @@ if calc_btn:
         b_data = calculate_full_chart(b_dob, b_tob, b_lat, b_lon, b_tz)
         g_data = calculate_full_chart(g_dob, g_tob, g_lat, g_lon, g_tz)
         
-        # 1. ASTRONOMICAL PROFILE & CUSP WARNINGS
+        # 1. ASTRONOMICAL PROFILE (Identical Boxes, 3 lines, minimal location)
         st.markdown("### :material/travel_explore: Astronomical Profile")
         r_c1, r_c2 = st.columns(2)
+        
         with r_c1:
-            st.info(f"**{b_name}**\n\n**Rasi:** {b_data['Rasi']} | **Star:** {b_data['Nakshatra']} (Pada {b_data['Pada']})\n\n📍 Resolved: {b_addr}")
+            st.markdown(f"""
+            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; height: 100%; border: 1px solid #e0e0e0;">
+                <h4 style="margin-top: 0; color: #2c3e50;">{b_name}</h4>
+                <p style="margin: 5px 0; font-size: 15px;"><b>Lagna (Ascendant):</b> {b_data['Lagna']}</p>
+                <p style="margin: 5px 0; font-size: 15px;"><b>Rasi (Moon Sign):</b> {b_data['Rasi']}</p>
+                <p style="margin: 5px 0; font-size: 15px;"><b>Nakshatra (Star):</b> {b_data['Nakshatra']} (Pada {b_data['Pada']})</p>
+                <p style="margin: 15px 0 0 0; font-size: 12px; color: #7f8c8d;">Location: {b_addr}</p>
+            </div>
+            """, unsafe_allow_html=True)
             if b_data['Is_Cusp']:
-                st.warning(f":material/warning: **Transition Zone:** The Moon is on the exact edge of {b_data['Nakshatra']}. A 15-minute difference in birth time will change the Star.")
-        with r_c2:
-            st.success(f"**{g_name}**\n\n**Rasi:** {g_data['Rasi']} | **Star:** {g_data['Nakshatra']} (Pada {g_data['Pada']})\n\n📍 Resolved: {g_addr}")
-            if g_data['Is_Cusp']:
-                st.warning(f":material/warning: **Transition Zone:** The Moon is on the exact edge of {g_data['Nakshatra']}. A 15-minute difference in birth time will change the Star.")
+                st.warning(f":material/warning: **Transition Zone:** The Moon is on the exact edge of {b_data['Nakshatra']}. Verify birth time.")
                 
-        # 2. CHEVVAI DOSHAM (MANGLIK) CHECK
-        st.markdown("### :material/shield: Chevvai Dosham (Mars Compatibility)")
+        with r_c2:
+            st.markdown(f"""
+            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; height: 100%; border: 1px solid #e0e0e0;">
+                <h4 style="margin-top: 0; color: #2c3e50;">{g_name}</h4>
+                <p style="margin: 5px 0; font-size: 15px;"><b>Lagna (Ascendant):</b> {g_data['Lagna']}</p>
+                <p style="margin: 5px 0; font-size: 15px;"><b>Rasi (Moon Sign):</b> {g_data['Rasi']}</p>
+                <p style="margin: 5px 0; font-size: 15px;"><b>Nakshatra (Star):</b> {g_data['Nakshatra']} (Pada {g_data['Pada']})</p>
+                <p style="margin: 15px 0 0 0; font-size: 12px; color: #7f8c8d;">Location: {g_addr}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            if g_data['Is_Cusp']:
+                st.warning(f":material/warning: **Transition Zone:** The Moon is on the exact edge of {g_data['Nakshatra']}. Verify birth time.")
+                
+        st.write("") # Spacing
+                
+        # 2. CHEVVAI DOSHAM (Natural Language)
+        st.markdown("### :material/shield: Mars Compatibility")
         m_match = (b_data['Is_Manglik'] == g_data['Is_Manglik'])
-        m_color = "#d4edda" if m_match else "#f8d7da"
-        m_text = "#155724" if m_match else "#721c24"
-        m_icon = ":material/check_circle:" if m_match else ":material/cancel:"
         
         b_m_str = "Present" if b_data['Is_Manglik'] else "Not Present"
         g_m_str = "Present" if g_data['Is_Manglik'] else "Not Present"
         
+        if m_match:
+            m_title = "Mars energy is harmoniously balanced."
+            m_color = "#f0fdf4"
+            m_border = "#27ae60"
+            m_text = "#155724"
+            m_desc = f"Both individuals share a compatible level of Martian energy (Boy: {b_m_str} | Girl: {g_m_str}). In traditional astrology, this creates a natural balance in drive and passion, effectively canceling out potential friction."
+        else:
+            m_title = "Mars energy imbalance detected."
+            m_color = "#fef2f2"
+            m_border = "#e74c3c"
+            m_text = "#991b1b"
+            m_desc = f"There is a difference in Martian influence (Boy: {b_m_str} | Girl: {g_m_str}). One partner may be naturally more aggressive or driven than the other, requiring conscious patience to maintain marital harmony."
+
         st.markdown(f"""
-            <div style="background-color: {m_color}; color: {m_text}; padding: 15px; border-radius: 8px; border: 1px solid {m_text};">
-                <h4 style="margin: 0;">{m_icon} Mars Alignment: {'Dosha Samyam (Matched)' if m_match else 'Mismatch Detected'}</h4>
-                <p style="margin: 5px 0 0 0; font-size: 14px;">Boy: {b_m_str} | Girl: {g_m_str}. 
-                <br><em>Note: If both have it, it cancels out (Samyam). If neither has it, it matches perfectly.</em></p>
+            <div style="background-color: {m_color}; color: {m_text}; padding: 18px; border-radius: 8px; border-left: 5px solid {m_border};">
+                <h4 style="margin: 0 0 8px 0; font-size: 16px;">{m_title}</h4>
+                <p style="margin: 0; font-size: 14px;">{m_desc}</p>
             </div>
             """, unsafe_allow_html=True)
 
         st.divider()
 
-        # 3. THE 10-PORUTHAM SCORECARD
+        # 3. THE 10-PORUTHAM SCORECARD (Two Columns, Minimalist)
         score, porutham_results = calculate_10_porutham(b_data['Nak_Idx'], g_data['Nak_Idx'], b_data['Rasi_Idx'], g_data['Rasi_Idx'])
         
-        st.markdown(f"<h2 style='text-align: center;'>Traditional Score: {score} / 10</h2>", unsafe_allow_html=True)
+        st.markdown(f"<h2 style='text-align: center; margin-bottom: 0;'>Traditional Score: {score} / 10</h2>", unsafe_allow_html=True)
         if score >= 7 and m_match:
-            st.markdown(f"<h3 style='text-align: center; color: #27ae60;'>உத்தமம் (Excellent Match)</h3>", unsafe_allow_html=True)
+            st.markdown(f"<h4 style='text-align: center; color: #27ae60; margin-top: 5px;'>Excellent Match</h4>", unsafe_allow_html=True)
         elif score >= 5:
-            st.markdown(f"<h3 style='text-align: center; color: #f39c12;'>மத்திமம் (Average Match)</h3>", unsafe_allow_html=True)
+            st.markdown(f"<h4 style='text-align: center; color: #f39c12; margin-top: 5px;'>Average Match</h4>", unsafe_allow_html=True)
         else:
-            st.markdown(f"<h3 style='text-align: center; color: #e74c3c;'>பொருத்தம் இல்லை (Not Recommended)</h3>", unsafe_allow_html=True)
+            st.markdown(f"<h4 style='text-align: center; color: #e74c3c; margin-top: 5px;'>Not Recommended</h4>", unsafe_allow_html=True)
             
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # Grid Layout for Scorecard
-        p_keys = list(porutham_results.keys())
-        for i in range(0, 10, 2):
-            c1, c2 = st.columns(2)
-            for j, col in enumerate([c1, c2]):
-                if i+j < 10:
-                    p_name = p_keys[i+j]
-                    data = porutham_results[p_name]
-                    icon = "✅" if data["match"] else "❌"
-                    color = "#d4edda" if data["match"] else "#f8d7da"
-                    t_col = "#155724" if data["match"] else "#721c24"
-                    col.markdown(f"""
-                        <div style="background-color: {color}; color: {t_col}; padding: 12px; border-radius: 6px; margin-bottom: 10px; border: 1px solid {t_col};">
-                            <h4 style="margin: 0; font-size: 15px;">{icon} {p_name}</h4>
-                            <p style="margin: 3px 0 0 0; font-size: 13px;">{data['desc']}</p>
-                        </div>
-                    """, unsafe_allow_html=True)
+        # Split into Matched and Unmatched
+        matched_items = {k: v for k, v in porutham_results.items() if v["match"]}
+        unmatched_items = {k: v for k, v in porutham_results.items() if not v["match"]}
+        
+        col_matched, col_unmatched = st.columns(2)
+        
+        with col_matched:
+            st.markdown("<h4 style='color: #27ae60; border-bottom: 1px solid #eee; padding-bottom: 10px;'>Aligned Dimensions</h4>", unsafe_allow_html=True)
+            for k, v in matched_items.items():
+                st.markdown(f"""
+                <div style="background-color: #f8fdf9; padding: 12px; border-radius: 6px; margin-bottom: 10px; border-left: 3px solid #27ae60;">
+                    <strong style="color: #155724; font-size: 14px;">{k}</strong>
+                    <div style="font-size: 13px; color: #2c3e50; margin-top: 4px;">{v['desc']}</div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+        with col_unmatched:
+            st.markdown("<h4 style='color: #e74c3c; border-bottom: 1px solid #eee; padding-bottom: 10px;'>Areas for Growth</h4>", unsafe_allow_html=True)
+            for k, v in unmatched_items.items():
+                st.markdown(f"""
+                <div style="background-color: #fff9f9; padding: 12px; border-radius: 6px; margin-bottom: 10px; border-left: 3px solid #e74c3c;">
+                    <strong style="color: #991b1b; font-size: 14px;">{k}</strong>
+                    <div style="font-size: 13px; color: #2c3e50; margin-top: 4px;">{v['desc']}</div>
+                </div>
+                """, unsafe_allow_html=True)
 
         st.divider()
         
-        # 4. THE AI RELATIONSHIP ORACLE (Now runs automatically)
+        # 4. THE AI RELATIONSHIP ORACLE (Fixed Model Name)
         if not GEMINI_API_KEY:
             st.error("API Key missing! Add it to Streamlit Secrets to generate AI insights.")
         else:
@@ -238,8 +271,8 @@ if calc_btn:
                     genai.configure(api_key=GEMINI_API_KEY)
                     prompt = f"""
                     You are an elite, modern Vedic Astrologer. Analyze the relationship compatibility between:
-                    Boy: {b_data['Rasi']} Moon Sign, {b_data['Nakshatra']} Star.
-                    Girl: {g_data['Rasi']} Moon Sign, {g_data['Nakshatra']} Star.
+                    Boy: {b_data['Lagna']} Ascendant, {b_data['Rasi']} Moon Sign, {b_data['Nakshatra']} Star.
+                    Girl: {g_data['Lagna']} Ascendant, {g_data['Rasi']} Moon Sign, {g_data['Nakshatra']} Star.
                     Their traditional Porutham score is {score}/10. 
                     
                     Write exactly 3 short, profound paragraphs explaining their psychological and practical dynamic. 
@@ -252,8 +285,9 @@ if calc_btn:
                     :material/balance: **Karmic Challenge:** (Explain the one main thing they must actively work on to avoid friction)
                     """
                     
-                    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+                    # Hardcoded to the stable gemini-1.5-flash model to prevent 404 errors
+                    model = genai.GenerativeModel('gemini-1.5-flash') 
                     response = model.generate_content(prompt)
                     st.markdown(response.text)
                 except Exception as e:
-                    st.error(f"AI Generation Failed: {e}")
+                    st.error(f"AI Generation Failed. Please ensure your API key is valid. Error: {e}")
