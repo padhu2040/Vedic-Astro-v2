@@ -42,13 +42,11 @@ def get_utc_offset(tz_str, date_obj):
         return dt_aware.utcoffset().total_seconds() / 3600
     except: return 5.5 
 
-# UPGRADE: Added House Numbers, Fixed Box Sizes, English Vedic Names
 def get_south_indian_chart_html(p_pos, lagna_rasi, title, person_name):
     v_names = {"Sun": "Suriyan", "Moon": "Chandran", "Mars": "Sevvai", "Mercury": "Budhan", "Jupiter": "Guru", "Venus": "Sukran", "Saturn": "Sani", "Rahu": "Rahu", "Ketu": "Ketu"}
     
     g = {i: [] for i in range(1, 13)}
     
-    # Calculate relative House Numbers based on Lagna
     houses = {}
     for i in range(1, 13):
         h_num = (i - lagna_rasi + 1) if (i >= lagna_rasi) else (i + 12 - lagna_rasi + 1)
@@ -66,9 +64,9 @@ def get_south_indian_chart_html(p_pos, lagna_rasi, title, person_name):
     
     center_html = f"<div style='font-weight: bold; font-size: 15px; color:#2c3e50; margin-bottom: 4px;'>{title}</div><div style='font-size: 17px; color:#e67e22; font-weight: 600;'>{person_name}</div>"
     
-    # Helper to generate identical cells with Rasi and House labels
+    # UPGRADE: Fixed height to exactly 115px with hidden overflow to maintain symmetrical squares
     def cell(idx):
-        return f"<td style='border: 1px solid #dcdde1; width: 25%; height: 100px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='display:flex; justify-content:space-between; font-size:10px; margin-bottom:6px;'><span style='color:#7f8c8d;'>{z[idx]}</span><span style='color:#bdc3c7; font-weight:bold;'>{houses[idx]}</span></div>{g[idx]}</td>"
+        return f"<td style='border: 1px solid #dcdde1; width: 25%; height: 115px; max-height: 115px; overflow: hidden; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='display:flex; justify-content:space-between; font-size:10px; margin-bottom:6px;'><span style='color:#7f8c8d;'>{z[idx]}</span><span style='color:#bdc3c7; font-weight:bold;'>{houses[idx]}</span></div>{g[idx]}</td>"
 
     return f"""
     <div style='max-width: 380px; margin: auto; font-family: sans-serif;'>
@@ -123,7 +121,7 @@ def calculate_full_chart(dob, tob, lat, lon, tz_str):
         "P_Pos": p_pos
     }
 
-def calculate_10_porutham(b_nak, g_nak, b_rasi, g_rasi):
+def calculate_10_porutham(b_nak, g_nak, b_rasi, g_rasi, b_name, g_name):
     score = 0
     results = {}
     dist = (b_nak - g_nak) if (b_nak >= g_nak) else (b_nak + 27 - g_nak)
@@ -135,7 +133,7 @@ def calculate_10_porutham(b_nak, g_nak, b_rasi, g_rasi):
         
     b_gana, g_gana = GANA[b_nak], GANA[g_nak]
     gana_match = (b_gana == g_gana) or (g_gana == "Deva" and b_gana == "Manushya") or (g_gana == "Manushya" and b_gana == "Deva")
-    results["Gana (Temperament)"] = {"match": gana_match, "desc": f"Boy: {b_gana}, Girl: {g_gana}. Highly compatible inherent natures." if gana_match else f"Boy: {b_gana}, Girl: {g_gana}. Core natures may clash."}
+    results["Gana (Temperament)"] = {"match": gana_match, "desc": f"{b_name}: {b_gana} | {g_name}: {g_gana}. Highly compatible inherent natures." if gana_match else f"{b_name}: {b_gana} | {g_name}: {g_gana}. Core natures may clash."}
     if gana_match: score += 1
 
     mahendra_match = dist in [4, 7, 10, 13, 16, 19, 22, 25]
@@ -143,7 +141,7 @@ def calculate_10_porutham(b_nak, g_nak, b_rasi, g_rasi):
     if mahendra_match: score += 1
         
     stree_match = dist >= 13
-    results["Stree Deergha (Prosperity)"] = {"match": stree_match, "desc": "Boy's star is far enough to ensure long-term prosperity." if stree_match else "Boy's star is too close; shared prosperity requires effort."}
+    results["Stree Deergha (Prosperity)"] = {"match": stree_match, "desc": f"{b_name}'s star is far enough to ensure long-term prosperity." if stree_match else f"{b_name}'s star is too close; shared prosperity requires effort."}
     if stree_match: score += 1
         
     b_rajju, g_rajju = RAJJU[b_nak], RAJJU[g_nak]
@@ -172,16 +170,20 @@ st.title(":material/favorite: 10-Porutham Matchmaking Engine")
 st.markdown("Professional Vedic compatibility using precision Swiss Ephemeris math and AI analysis.")
 st.divider()
 
+# Context Toggle
+rel_status = st.radio("Relationship Context:", ["Exploring a Match", "Already Married / Committed"], horizontal=True)
+st.write("")
+
 col_b, col_g = st.columns(2)
 with col_b:
-    st.markdown("### :material/face: Boy's Details")
+    st.markdown("### :material/face: Partner 1 Details")
     b_name = st.text_input("Name", "Adithya", key="b_name")
     b_dob = st.date_input("Date of Birth", datetime(2000, 6, 15), key="b_dob")
     b_tob = st.time_input("Time of Birth", datetime.strptime("09:50", "%H:%M").time(), key="b_tob")
     b_loc = st.text_input("City", "Sembanarkovil", key="b_loc")
 
 with col_g:
-    st.markdown("### :material/face_3: Girl's Details")
+    st.markdown("### :material/face_3: Partner 2 Details")
     g_name = st.text_input("Name", "Kaavya JS", key="g_name")
     g_dob = st.date_input("Date of Birth", datetime(2000, 6, 4), key="g_dob")
     g_tob = st.time_input("Time of Birth", datetime.strptime("05:30", "%H:%M").time(), key="g_tob")
@@ -246,17 +248,17 @@ if calc_btn:
         g_m_str = "Present" if g_data['Is_Manglik'] else "Not Present"
         
         if m_match:
-            m_title = "Chevvai (Mars) energy is harmoniously balanced."
+            m_title = "Chevvai energy is harmoniously balanced."
             m_color = "#f0fdf4"
             m_border = "#27ae60"
             m_text = "#155724"
-            m_desc = f"Both individuals share a compatible level of Chevvai energy (Boy: {b_m_str} | Girl: {g_m_str}). In traditional astrology, this creates a natural equilibrium in drive and passion, effectively protecting the bond."
+            m_desc = f"Both {b_name} and {g_name} share a compatible level of Chevvai (Martian) energy ({b_name}: {b_m_str} | {g_name}: {g_m_str}). This creates a natural equilibrium in drive and passion, effectively protecting the bond."
         else:
-            m_title = "Chevvai (Mars) energy imbalance detected."
+            m_title = "Chevvai energy imbalance detected."
             m_color = "#fef2f2"
             m_border = "#e74c3c"
             m_text = "#991b1b"
-            m_desc = f"There is a distinct difference in Chevvai influence (Boy: {b_m_str} | Girl: {g_m_str}). One partner possesses a naturally more protective or aggressive temperament, requiring conscious patience and understanding to maintain harmony."
+            m_desc = f"There is a difference in Chevvai influence ({b_name}: {b_m_str} | {g_name}: {g_m_str}). One partner possesses a naturally more protective or aggressive temperament, requiring conscious patience to maintain harmony."
 
         st.markdown(f"""
             <div style="background-color: {m_color}; color: {m_text}; padding: 18px; border-radius: 8px; border-left: 5px solid {m_border};">
@@ -268,17 +270,23 @@ if calc_btn:
         st.divider()
 
         # 3. THE 10-PORUTHAM SCORECARD
-        score, porutham_results = calculate_10_porutham(b_data['Nak_Idx'], g_data['Nak_Idx'], b_data['Rasi_Idx'], g_data['Rasi_Idx'])
+        score, porutham_results = calculate_10_porutham(b_data['Nak_Idx'], g_data['Nak_Idx'], b_data['Rasi_Idx'], g_data['Rasi_Idx'], b_name, g_name)
         
         st.markdown(f"<h2 style='text-align: center; margin-bottom: 0;'>Traditional Score: {score} / 10</h2>", unsafe_allow_html=True)
-        if score >= 7 and m_match:
-            st.markdown(f"<h4 style='text-align: center; color: #27ae60; margin-top: 5px;'>Excellent Match</h4>", unsafe_allow_html=True)
-        elif score >= 5:
-            st.markdown(f"<h4 style='text-align: center; color: #f39c12; margin-top: 5px;'>Average Match</h4>", unsafe_allow_html=True)
-        else:
-            st.markdown(f"<h4 style='text-align: center; color: #e74c3c; margin-top: 5px;'>Not Recommended</h4>", unsafe_allow_html=True)
         
-        # Add Value: Key Pillars Summary
+        # Adjust outcome text based on Relationship Context
+        if score >= 7 and m_match:
+            outcome_text = "Excellent Alignment"
+            outcome_color = "#27ae60"
+        elif score >= 5:
+            outcome_text = "Average Alignment"
+            outcome_color = "#f39c12"
+        else:
+            outcome_text = "Requires Conscious Effort" if rel_status == "Already Married / Committed" else "Not Recommended"
+            outcome_color = "#e74c3c"
+
+        st.markdown(f"<h4 style='text-align: center; color: {outcome_color}; margin-top: 5px;'>{outcome_text}</h4>", unsafe_allow_html=True)
+        
         r_txt = "Excellent structural longevity." if porutham_results['Rajju (Longevity - CRITICAL)']['match'] else "Critical warning regarding longevity."
         d_txt = "Great day-to-day emotional flow." if porutham_results['Dina (Daily Harmony)']['match'] else "Requires patience in daily routines."
         st.markdown(f"<p style='text-align: center; font-size: 15px; color: #7f8c8d; max-width: 600px; margin: auto;'><b>Key Pillars:</b> {r_txt} {d_txt}</p><br>", unsafe_allow_html=True)
@@ -310,12 +318,12 @@ if calc_btn:
 
         st.divider()
         
-        # 4. THE AI RELATIONSHIP ORACLE (Highly Structured Formatting)
+        # 4. THE AI RELATIONSHIP ORACLE (Personalized & Format-balanced)
         if not GEMINI_API_KEY:
             st.error("API Key missing! Add it to Streamlit Secrets to generate AI insights.")
         else:
             st.markdown("### :material/auto_awesome: Deep AI Relationship Oracle")
-            with st.spinner("The AI Astrologer is compiling a structured consultation..."):
+            with st.spinner("The AI Astrologer is compiling a personalized, structured consultation..."):
                 try:
                     genai.configure(api_key=GEMINI_API_KEY)
                     match_list = ", ".join(list(matched_items.keys()))
@@ -323,36 +331,38 @@ if calc_btn:
                     
                     prompt = f"""
                     You are an elite, modern Vedic Astrologer. Analyze the relationship compatibility between:
-                    Boy: {b_data['Lagna']} Ascendant, {b_data['Rasi']} Moon Sign, {b_data['Nakshatra']} Star.
-                    Girl: {g_data['Lagna']} Ascendant, {g_data['Rasi']} Moon Sign, {g_data['Nakshatra']} Star.
+                    Partner 1: {b_name} ({b_data['Lagna']} Ascendant, {b_data['Rasi']} Moon Sign, {b_data['Nakshatra']} Star).
+                    Partner 2: {g_name} ({g_data['Lagna']} Ascendant, {g_data['Rasi']} Moon Sign, {g_data['Nakshatra']} Star).
                     
+                    Context: They are {rel_status}. Adjust your tone accordingly (if married, focus on strengthening the bond; if exploring, focus on potential dynamics).
                     Traditional Porutham score is {score}/10. 
                     Aligned Dimensions: {match_list}.
                     Areas for Growth: {unmatch_list}.
                     
-                    Write a highly structured, scannable analysis.
+                    Write a highly structured, emotionally intelligent analysis.
                     
                     CRITICAL FORMATTING RULES:
-                    - Do NOT write long paragraphs. 
-                    - Use short, punchy sentences.
-                    - Use bullet points extensively.
-                    - Bold key concepts.
-                    - Format EXACTLY using these three headers:
+                    - Always refer to them directly by their names ({b_name} and {g_name}). Never use "the boy" or "the girl".
+                    - Under each header, write a short, profound 2-sentence introductory paragraph.
+                    - Follow the introduction with exactly 2 to 3 bullet points. 
+                    - Each bullet point MUST be 2 to 3 sentences long to provide rich, nuanced detail (do not use short 4-word fragments).
+                    
+                    Format EXACTLY using these three headers:
                     
                     ### :material/psychology: Psychological Dynamic
-                    (Brief 1-sentence overview of their mental connection)
-                    * **Strengths:** (Explain briefly)
-                    * **Friction Points:** (Explain briefly)
+                    (2-sentence intro about their mental/emotional connection)
+                    * **Deep Strengths:** (2-3 sentences explaining)
+                    * **Potential Friction:** (2-3 sentences explaining)
                     
                     ### :material/home_work: Life & Wealth
-                    (Brief 1-sentence overview of their worldly alignment)
-                    * **Financial Approach:** (Explain briefly)
-                    * **Domestic Life:** (Explain briefly)
+                    (2-sentence intro about their worldly alignment)
+                    * **Financial Approach:** (2-3 sentences explaining)
+                    * **Domestic Harmony:** (2-3 sentences explaining)
                     
                     ### :material/balance: Harnessing & Balancing
-                    (Actionable, practical advice)
-                    * **How to Harness Strengths:** (Explain how to use their aligned dimensions)
-                    * **How to Balance Weaknesses:** (Explain exactly how to mitigate their specific areas for growth)
+                    (2-sentence intro with actionable, practical advice based on their relationship status)
+                    * **Harnessing {b_name} & {g_name}'s Strengths:** (2-3 sentences explaining)
+                    * **Navigating Growth Areas:** (2-3 sentences explaining how to mitigate their specific mismatches)
                     """
                     
                     available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
@@ -373,4 +383,4 @@ if calc_btn:
                         response = model.generate_content(prompt)
                         st.markdown(response.text)
                     except Exception as fallback_error:
-                        st.error(f"AI Generation Failed. Please ensure your API key has text generation enabled. Error: {fallback_error}")
+                        st.error(f"AI Generation Failed: {fallback_error}")
