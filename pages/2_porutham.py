@@ -5,7 +5,6 @@ from geopy.geocoders import Nominatim
 from timezonefinder import TimezoneFinder
 import pytz
 import google.generativeai as genai
-import os
 
 # Secure API Key
 try:
@@ -153,15 +152,7 @@ with col_g:
     g_loc = st.text_input("City", "Nagercoil", key="g_loc")
 
 st.divider()
-
-# The AI Toggle
-col_btn, col_chk = st.columns([1, 1])
-with col_chk:
-    st.markdown("<br>", unsafe_allow_html=True) # Spacing alignment
-    run_ai = st.checkbox(":material/psychology: Include Deep AI Relationship Oracle Analysis", value=True)
-with col_btn:
-    calc_btn = st.button("Calculate Compatibility", type="primary", use_container_width=True)
-
+calc_btn = st.button("Calculate Compatibility & Run AI", type="primary", use_container_width=True)
 
 # --- EXECUTION ---
 if calc_btn:
@@ -176,11 +167,11 @@ if calc_btn:
         st.markdown("### :material/travel_explore: Astronomical Profile")
         r_c1, r_c2 = st.columns(2)
         with r_c1:
-            st.info(f"**{b_name}**\n\n**Rasi:** {b_data['Rasi']} | **Star:** {b_data['Nakshatra']} (Pada {b_data['Pada']})\n\n<span style='font-size:12px; color:gray;'>📍 Resolved: {b_addr}</span>", unsafe_allow_html=True)
+            st.info(f"**{b_name}**\n\n**Rasi:** {b_data['Rasi']} | **Star:** {b_data['Nakshatra']} (Pada {b_data['Pada']})\n\n📍 Resolved: {b_addr}")
             if b_data['Is_Cusp']:
                 st.warning(f":material/warning: **Transition Zone:** The Moon is on the exact edge of {b_data['Nakshatra']}. A 15-minute difference in birth time will change the Star.")
         with r_c2:
-            st.info(f"**{g_name}**\n\n**Rasi:** {g_data['Rasi']} | **Star:** {g_data['Nakshatra']} (Pada {g_data['Pada']})\n\n<span style='font-size:12px; color:gray;'>📍 Resolved: {g_addr}</span>", unsafe_allow_html=True)
+            st.success(f"**{g_name}**\n\n**Rasi:** {g_data['Rasi']} | **Star:** {g_data['Nakshatra']} (Pada {g_data['Pada']})\n\n📍 Resolved: {g_addr}")
             if g_data['Is_Cusp']:
                 st.warning(f":material/warning: **Transition Zone:** The Moon is on the exact edge of {g_data['Nakshatra']}. A 15-minute difference in birth time will change the Star.")
                 
@@ -237,33 +228,32 @@ if calc_btn:
 
         st.divider()
         
-        # 4. THE AI RELATIONSHIP ORACLE
-        if run_ai:
-            if not GEMINI_API_KEY:
-                st.error("API Key missing! Add it to Streamlit Secrets to generate AI insights.")
-            else:
-                st.markdown("### :material/auto_awesome: Deep AI Relationship Oracle")
-                with st.spinner("The AI Astrologer is analyzing psychological compatibility..."):
-                    try:
-                        genai.configure(api_key=GEMINI_API_KEY)
-                        prompt = f"""
-                        You are an elite, modern Vedic Astrologer. Analyze the relationship compatibility between:
-                        Boy: {b_data['Rasi']} Moon Sign, {b_data['Nakshatra']} Star.
-                        Girl: {g_data['Rasi']} Moon Sign, {g_data['Nakshatra']} Star.
-                        Their traditional Porutham score is {score}/10. 
-                        
-                        Write exactly 3 short, profound paragraphs explaining their psychological and practical dynamic. 
-                        Do NOT use hashtags for headers. Instead, format EXACTLY like this using these specific icons:
-                        
-                        :material/psychology: **Psychological Dynamic:** (Explain how their minds interact)
-                        
-                        :material/home_work: **Life & Wealth:** (Explain how they build a home and manage finances together)
-                        
-                        :material/balance: **Karmic Challenge:** (Explain the one main thing they must actively work on to avoid friction)
-                        """
-                        
-                        model = genai.GenerativeModel('gemini-1.5-flash-latest')
-                        response = model.generate_content(prompt)
-                        st.markdown(response.text)
-                    except Exception as e:
-                        st.error(f"AI Generation Failed: {e}")
+        # 4. THE AI RELATIONSHIP ORACLE (Now runs automatically)
+        if not GEMINI_API_KEY:
+            st.error("API Key missing! Add it to Streamlit Secrets to generate AI insights.")
+        else:
+            st.markdown("### :material/auto_awesome: Deep AI Relationship Oracle")
+            with st.spinner("The AI Astrologer is analyzing psychological compatibility..."):
+                try:
+                    genai.configure(api_key=GEMINI_API_KEY)
+                    prompt = f"""
+                    You are an elite, modern Vedic Astrologer. Analyze the relationship compatibility between:
+                    Boy: {b_data['Rasi']} Moon Sign, {b_data['Nakshatra']} Star.
+                    Girl: {g_data['Rasi']} Moon Sign, {g_data['Nakshatra']} Star.
+                    Their traditional Porutham score is {score}/10. 
+                    
+                    Write exactly 3 short, profound paragraphs explaining their psychological and practical dynamic. 
+                    Do NOT use hashtags for headers. Instead, format EXACTLY like this using these specific icons:
+                    
+                    :material/psychology: **Psychological Dynamic:** (Explain how their minds interact)
+                    
+                    :material/home_work: **Life & Wealth:** (Explain how they build a home and manage finances together)
+                    
+                    :material/balance: **Karmic Challenge:** (Explain the one main thing they must actively work on to avoid friction)
+                    """
+                    
+                    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+                    response = model.generate_content(prompt)
+                    st.markdown(response.text)
+                except Exception as e:
+                    st.error(f"AI Generation Failed: {e}")
