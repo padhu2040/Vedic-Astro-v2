@@ -87,18 +87,19 @@ def get_daily_panchangam(calc_date):
     tithi_val = (moon_lon - sun_lon) % 360 / 12.0
     tithi_num = int(tithi_val) + 1 
     
-    # UPGRADE: Flat minimalist material icons replacing emojis
+    # FIX: Reverted to universal unicode emojis for HTML block compatibility
     events = []
-    if tithi_num in [11, 26]: events.append(":material/stars: Ekadhasi (Ideal for fasting & spiritual focus)")
-    if tithi_num in [13, 28]: events.append(":material/self_improvement: Pradosham (Auspicious for Lord Shiva worship)")
-    if tithi_num in [4, 19]: events.append(":material/festival: Chaturthi (Auspicious for Lord Ganesha worship)")
-    if tithi_num in [6, 21]: events.append(":material/spa: Sashti (Auspicious for Lord Murugan worship)")
-    if tithi_num in [8, 23]: events.append(":material/warning: Ashtami (Avoid initiating new material ventures)")
-    if tithi_num in [9, 24]: events.append(":material/warning: Navami (Avoid initiating new material ventures)")
-    if tithi_num == 15: events.append(":material/light_mode: Pournami (Full Moon - Peak manifestation energy)")
-    if tithi_num == 30: events.append(":material/dark_mode: Amavasai (New Moon - Ancestral worship)")
+    if tithi_num in [11, 26]: events.append("✨ Ekadhasi (Ideal for fasting)")
+    if tithi_num in [13, 28]: events.append("🔱 Pradosham (Lord Shiva worship)")
+    if tithi_num in [4, 19]: events.append("🐘 Chaturthi (Lord Ganesha worship)")
+    if tithi_num in [6, 21]: events.append("🦚 Sashti (Lord Murugan worship)")
+    if tithi_num in [8, 23]: events.append("⚠️ Ashtami (Avoid new ventures)")
+    if tithi_num in [9, 24]: events.append("⚠️ Navami (Avoid new ventures)")
+    if tithi_num == 15: events.append("🌕 Pournami (Full Moon)")
+    if tithi_num == 30: events.append("🌑 Amavasai (New Moon)")
     
     nak_idx = int(moon_lon / 13.333333333)
+    moon_rasi_idx = int(moon_lon / 30) + 1
     
     weekday = calc_date.weekday() 
     timings = {
@@ -113,7 +114,8 @@ def get_daily_panchangam(calc_date):
     
     return {
         "Star": NAKSHATRAS[nak_idx],
-        "Moon_Sign": ZODIAC[int(moon_lon / 30) + 1],
+        "Moon_Sign": ZODIAC[moon_rasi_idx],
+        "Transit_Rasi_Idx": moon_rasi_idx,
         "Events": events,
         "Timings": timings[weekday],
         "Weekday": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][weekday]
@@ -163,7 +165,6 @@ with col_p3:
 st.divider()
 
 # --- TABS ---
-# UPGRADE: Flat icons for tabs
 tab1, tab2 = st.tabs([":material/bolt: Quick Free Forecast", ":material/insights: Deep Personalized Forecast"])
 
 with tab1:
@@ -177,6 +178,15 @@ with tab1:
         sel_nak = st.selectbox("Select Nakshatra (Star)", RASI_STAR_MAP[sel_rasi])
         
     if st.button("Generate Quick Forecast", type="primary"):
+        # FIX: Mathematical Chandrashtama Check for the Quick Tab
+        user_rasi_idx = ZODIAC.index(sel_rasi)
+        transit_rasi_idx = panch['Transit_Rasi_Idx']
+        quick_moon_dist = (transit_rasi_idx - user_rasi_idx + 1) if (transit_rasi_idx >= user_rasi_idx) else (transit_rasi_idx + 12 - user_rasi_idx + 1)
+        quick_is_chandrashtama = (quick_moon_dist == 8)
+        
+        if quick_is_chandrashtama:
+            st.error("**Alert: Chandrashtama Day**\n\nThe Moon is transiting the 8th house from your selected Rasi. Proceed with caution today. Avoid major new beginnings and focus on routine tasks.", icon=":material/warning:")
+            
         if not GEMINI_API_KEY:
             st.error("API Key missing! Add it to Streamlit Secrets.")
         else:
@@ -186,6 +196,7 @@ with tab1:
                     q_prompt = f"""
                     Provide a fast, highly structured daily astrological forecast for a person born with the Moon in {sel_rasi} Rasi and {sel_nak} Nakshatra.
                     Today, the Moon is transiting {panch['Moon_Sign']} Rasi ({panch['Star']} star).
+                    Chandrashtama Status: {quick_is_chandrashtama}. (If True, advise high caution).
                     
                     Format exactly like this with short, punchy sentences:
                     **Today's Cosmic Alignment:** (1 sentence summary)
@@ -194,7 +205,6 @@ with tab1:
                     * **Quick Tip:** (1 sentence action for success today)
                     """
                     
-                    # UPGRADE: Dynamic model routing to fix the 404 error
                     available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
                     target_model = None
                     if 'models/gemini-1.5-flash' in available_models: target_model = 'models/gemini-1.5-flash'
@@ -204,7 +214,7 @@ with tab1:
                     if target_model:
                         model = genai.GenerativeModel(target_model)
                         response = model.generate_content(q_prompt)
-                        st.success(response.text)
+                        st.success(response.text, icon=":material/bolt:")
                     else:
                         st.error("Your Google API key does not have access to text-generation models.")
 
@@ -243,13 +253,9 @@ with tab2:
             </div><br>
             """, unsafe_allow_html=True)
 
+            # FIX: Used native Streamlit error box so the Material Warning icon renders perfectly
             if is_chandrashtama:
-                st.markdown("""
-                <div style="background-color: #fef2f2; color: #991b1b; padding: 15px; border-radius: 8px; border: 1px solid #e74c3c; margin-bottom: 20px;">
-                    <h4 style="margin: 0 0 5px 0;">:material/warning: Alert: Chandrashtama Day</h4>
-                    <p style="margin: 0; font-size: 14px;">The Moon is currently transiting the 8th house from your birth Moon. This is a highly sensitive 2.5 day period. Avoid starting major new ventures, signing critical contracts, or engaging in heated arguments today. Focus purely on routine work and spiritual grounding.</p>
-                </div>
-                """, unsafe_allow_html=True)
+                st.error("**Alert: Chandrashtama Day**\n\nThe Moon is currently transiting the 8th house from your birth Moon. This is a highly sensitive 2.5 day period. Avoid starting major new ventures, signing critical contracts, or engaging in heated arguments today. Focus purely on routine work and spiritual grounding.", icon=":material/warning:")
 
             if not GEMINI_API_KEY:
                 st.error("API Key missing! Add it to Streamlit Secrets to generate AI insights.")
