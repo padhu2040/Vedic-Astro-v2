@@ -42,25 +42,44 @@ def get_utc_offset(tz_str, date_obj):
         return dt_aware.utcoffset().total_seconds() / 3600
     except: return 5.5 
 
-# UPGRADE: Added 'name' parameter, forced 'table-layout: fixed', and used authentic Tamil abbreviations
+# UPGRADE: Added House Numbers, Fixed Box Sizes, English Vedic Names
 def get_south_indian_chart_html(p_pos, lagna_rasi, title, person_name):
-    ta_abbr = {"Sun": "சூ", "Moon": "சந்", "Mars": "செவ்", "Mercury": "புத", "Jupiter": "குரு", "Venus": "சுக்", "Saturn": "சனி", "Rahu": "ராகு", "Ketu": "கேது"}
+    v_names = {"Sun": "Suriyan", "Moon": "Chandran", "Mars": "Sevvai", "Mercury": "Budhan", "Jupiter": "Guru", "Venus": "Sukran", "Saturn": "Sani", "Rahu": "Rahu", "Ketu": "Ketu"}
     
     g = {i: [] for i in range(1, 13)}
-    g[lagna_rasi].append("<span style='color:#e74c3c; font-size:12px;'><b>லக்னம்</b></span>")
+    
+    # Calculate relative House Numbers based on Lagna
+    houses = {}
+    for i in range(1, 13):
+        h_num = (i - lagna_rasi + 1) if (i >= lagna_rasi) else (i + 12 - lagna_rasi + 1)
+        houses[i] = f"H{h_num}"
+
+    g[lagna_rasi].append("<span style='color:#e74c3c; font-size:13px; display:block; margin-bottom:2px;'><b>Lagna</b></span>")
     
     for p, r in p_pos.items():
         if p != "Lagna":
-            abbr = ta_abbr.get(p, p[:2])
-            g[r].append(f"<span style='font-size:12px; font-weight:bold; color:#2c3e50;'>{abbr}</span>")
+            name = v_names.get(p, p)
+            g[r].append(f"<span style='font-size:12px; font-weight:bold; color:#2c3e50; display:block;'>{name}</span>")
             
-    for i in g: g[i] = "<br>".join(g[i])
+    for i in g: g[i] = "".join(g[i])
     z = ["", "Mesha", "Rishabha", "Mithuna", "Kataka", "Simha", "Kanya", "Thula", "Vrischika", "Dhanu", "Makara", "Kumbha", "Meena"]
     
-    # Custom center box with title and person's name
-    center_html = f"<div style='font-weight: bold; font-size: 15px; color:#2c3e50; margin-bottom: 4px;'>{title}</div><div style='font-size: 16px; color:#e67e22; font-weight: 600;'>{person_name}</div>"
+    center_html = f"<div style='font-weight: bold; font-size: 15px; color:#2c3e50; margin-bottom: 4px;'>{title}</div><div style='font-size: 17px; color:#e67e22; font-weight: 600;'>{person_name}</div>"
     
-    return f"<div style='max-width: 350px; margin: auto; font-family: sans-serif;'><table style='width: 100%; table-layout: fixed; border-collapse: collapse; text-align: center; font-size: 14px; background-color: #ffffff; border: 2px solid #333;'><tr><td style='border: 1px solid #333; width: 25%; height: 85px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[12]}</div>{g[12]}</td><td style='border: 1px solid #333; width: 25%; height: 85px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[1]}</div>{g[1]}</td><td style='border: 1px solid #333; width: 25%; height: 85px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[2]}</div>{g[2]}</td><td style='border: 1px solid #333; width: 25%; height: 85px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[3]}</div>{g[3]}</td></tr><tr><td style='border: 1px solid #333; height: 85px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[11]}</div>{g[11]}</td><td colspan='2' rowspan='2' style='border: none; vertical-align: middle; background-color: #ffffff;'>{center_html}</td><td style='border: 1px solid #333; height: 85px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[4]}</div>{g[4]}</td></tr><tr><td style='border: 1px solid #333; height: 85px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[10]}</div>{g[10]}</td><td style='border: 1px solid #333; height: 85px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[5]}</div>{g[5]}</td></tr><tr><td style='border: 1px solid #333; height: 85px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[9]}</div>{g[9]}</td><td style='border: 1px solid #333; height: 85px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[8]}</div>{g[8]}</td><td style='border: 1px solid #333; height: 85px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[7]}</div>{g[7]}</td><td style='border: 1px solid #333; height: 85px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[6]}</div>{g[6]}</td></tr></table></div>"
+    # Helper to generate identical cells with Rasi and House labels
+    def cell(idx):
+        return f"<td style='border: 1px solid #dcdde1; width: 25%; height: 100px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='display:flex; justify-content:space-between; font-size:10px; margin-bottom:6px;'><span style='color:#7f8c8d;'>{z[idx]}</span><span style='color:#bdc3c7; font-weight:bold;'>{houses[idx]}</span></div>{g[idx]}</td>"
+
+    return f"""
+    <div style='max-width: 380px; margin: auto; font-family: sans-serif;'>
+        <table style='width: 100%; table-layout: fixed; border-collapse: collapse; text-align: center; background-color: #ffffff; border: 2px solid #2c3e50; box-shadow: 0 2px 4px rgba(0,0,0,0.05);'>
+            <tr>{cell(12)}{cell(1)}{cell(2)}{cell(3)}</tr>
+            <tr>{cell(11)}<td colspan='2' rowspan='2' style='border: 1px solid #dcdde1; vertical-align: middle; background-color: #ffffff;'>{center_html}</td>{cell(4)}</tr>
+            <tr>{cell(10)}{cell(5)}</tr>
+            <tr>{cell(9)}{cell(8)}{cell(7)}{cell(6)}</tr>
+        </table>
+    </div>
+    """
 
 def calculate_full_chart(dob, tob, lat, lon, tz_str):
     swe.set_sid_mode(swe.SIDM_LAHIRI)
@@ -69,30 +88,25 @@ def calculate_full_chart(dob, tob, lat, lon, tz_str):
     ut_hour = (tob.hour + (tob.minute/60.0)) - offset
     jd_ut = swe.julday(dob.year, dob.month, dob.day, ut_hour)
     
-    # Calculate All Planets for the Chart
     planets = {"Sun": swe.SUN, "Moon": swe.MOON, "Mars": swe.MARS, "Mercury": swe.MERCURY, "Jupiter": swe.JUPITER, "Venus": swe.VENUS, "Saturn": swe.SATURN, "Rahu": swe.MEAN_NODE}
     p_pos = {}
     for p, pid in planets.items():
         lon_val = swe.calc_ut(jd_ut, pid, swe.FLG_SIDEREAL)[0][0]
         p_pos[p] = int(lon_val / 30) + 1
     
-    # Specific Moon calculations
     moon_lon = swe.calc_ut(jd_ut, swe.MOON, swe.FLG_SIDEREAL)[0][0]
     moon_rasi_idx = p_pos["Moon"]
     nak_idx = int(moon_lon / 13.333333333)
     pada = int((moon_lon % 13.333333333) / 3.333333333) + 1
     
-    # Calculate Lagna (Ascendant)
     ascmc = swe.houses_ex(jd_ut, lat, lon, b'P', swe.FLG_SIDEREAL)[1]
     lagna_rasi_idx = int(ascmc[0]/30) + 1
     p_pos["Lagna"] = lagna_rasi_idx
     
-    # Check Moon Cusp
     nak_length = 13.333333
     remainder = moon_lon % nak_length
     is_cusp = True if (remainder < 0.5 or remainder > (nak_length - 0.5)) else False
     
-    # Check Manglik
     mars_rasi_idx = p_pos["Mars"]
     mars_from_lagna = (mars_rasi_idx - lagna_rasi_idx + 1) if (mars_rasi_idx >= lagna_rasi_idx) else (mars_rasi_idx + 12 - lagna_rasi_idx + 1)
     mars_from_moon = (mars_rasi_idx - moon_rasi_idx + 1) if (mars_rasi_idx >= moon_rasi_idx) else (mars_rasi_idx + 12 - moon_rasi_idx + 1)
@@ -116,38 +130,38 @@ def calculate_10_porutham(b_nak, g_nak, b_rasi, g_rasi):
     dist += 1 
     
     dina_match = (dist % 9) in [2, 4, 6, 8, 0]
-    results["Dina (Health/Daily Life)"] = {"match": dina_match, "desc": "Good daily harmony and health." if dina_match else "Potential for minor daily frictions."}
+    results["Dina (Daily Harmony)"] = {"match": dina_match, "desc": "Good day-to-day emotional flow and health." if dina_match else "Potential for minor daily frictions."}
     if dina_match: score += 1
         
     b_gana, g_gana = GANA[b_nak], GANA[g_nak]
     gana_match = (b_gana == g_gana) or (g_gana == "Deva" and b_gana == "Manushya") or (g_gana == "Manushya" and b_gana == "Deva")
-    results["Gana (Temperament)"] = {"match": gana_match, "desc": f"Boy: {b_gana}, Girl: {g_gana}. Compatible temperaments." if gana_match else f"Boy: {b_gana}, Girl: {g_gana}. Core natures may clash."}
+    results["Gana (Temperament)"] = {"match": gana_match, "desc": f"Boy: {b_gana}, Girl: {g_gana}. Highly compatible inherent natures." if gana_match else f"Boy: {b_gana}, Girl: {g_gana}. Core natures may clash."}
     if gana_match: score += 1
 
     mahendra_match = dist in [4, 7, 10, 13, 16, 19, 22, 25]
-    results["Mahendra (Wealth/Progeny)"] = {"match": mahendra_match, "desc": "Strong indication for wealth and family growth." if mahendra_match else "Average family growth metrics."}
+    results["Mahendra (Wealth/Progeny)"] = {"match": mahendra_match, "desc": "Strong indication for family growth and overall wealth." if mahendra_match else "Average wealth and family expansion metrics."}
     if mahendra_match: score += 1
         
     stree_match = dist >= 13
-    results["Stree Deergha (Prosperity)"] = {"match": stree_match, "desc": "Boy's star is far enough to ensure long-term prosperity." if stree_match else "Boy's star is too close; prosperity requires effort."}
+    results["Stree Deergha (Prosperity)"] = {"match": stree_match, "desc": "Boy's star is far enough to ensure long-term prosperity." if stree_match else "Boy's star is too close; shared prosperity requires effort."}
     if stree_match: score += 1
         
     b_rajju, g_rajju = RAJJU[b_nak], RAJJU[g_nak]
     rajju_match = b_rajju != g_rajju
-    results["Rajju (Longevity - CRITICAL)"] = {"match": rajju_match, "desc": "Different Rajjus (Safe). Excellent longevity for the bond." if rajju_match else f"Both share {b_rajju} Rajju. Traditionally considered a severe dosham."}
+    results["Rajju (Longevity - CRITICAL)"] = {"match": rajju_match, "desc": "Different Rajjus (Safe). Excellent longevity for the bond." if rajju_match else f"Both share {b_rajju} Rajju. Traditionally considered a severe mismatch."}
     if rajju_match: score += 1
         
     vedha_match = VEDHA_PAIRS.get(b_nak) != g_nak
-    results["Vedha (Mutual Affliction)"] = {"match": vedha_match, "desc": "No mutual affliction between stars." if vedha_match else "Stars directly afflict each other (Vedha Dosham)."}
+    results["Vedha (Mutual Affliction)"] = {"match": vedha_match, "desc": "No mutual affliction between the birth stars." if vedha_match else "Stars directly afflict each other (Vedha)."}
     if vedha_match: score += 1
         
     rasi_dist = (b_rasi - g_rasi) if (b_rasi >= g_rasi) else (b_rasi + 12 - g_rasi)
     rasi_dist += 1
     rasi_match = rasi_dist > 6 or b_rasi == g_rasi
-    results["Rasi (Lineage & Harmony)"] = {"match": rasi_match, "desc": "Favorable moon sign placements." if rasi_match else "Moon signs are placed in challenging angles."}
+    results["Rasi (Lineage Harmony)"] = {"match": rasi_match, "desc": "Favorable moon sign placements." if rasi_match else "Moon signs are placed in challenging angles."}
     if rasi_match: score += 1
         
-    results["Yoni (Physical Compatibility)"] = {"match": True, "desc": "Generally harmonious physical connection."}
+    results["Yoni (Physical Chemistry)"] = {"match": True, "desc": "Generally harmonious physical connection."}
     results["Rasyadhipati (Lord Friendship)"] = {"match": True, "desc": "Lords of Moon signs are neutral/friendly."}
     results["Vasya (Mutual Attraction)"] = {"match": True, "desc": "Standard magnetic attraction."}
     score += 3
@@ -215,18 +229,17 @@ if calc_btn:
             if g_data['Is_Cusp']:
                 st.warning(f":material/warning: **Transition Zone:** The Moon is on the exact edge of {g_data['Nakshatra']}. Verify birth time.")
         
-        # UPGRADE: Symmetrical South Indian Rasi Charts with authentic Tamil abbreviations and names
         st.markdown("<br>", unsafe_allow_html=True)
         chart_c1, chart_c2 = st.columns(2)
         with chart_c1:
-            st.markdown(get_south_indian_chart_html(b_data['P_Pos'], b_data['Lagna_Idx'], "ராசி சக்கரம்", b_name), unsafe_allow_html=True)
+            st.markdown(get_south_indian_chart_html(b_data['P_Pos'], b_data['Lagna_Idx'], "Rasi Chart", b_name), unsafe_allow_html=True)
         with chart_c2:
-            st.markdown(get_south_indian_chart_html(g_data['P_Pos'], g_data['Lagna_Idx'], "ராசி சக்கரம்", g_name), unsafe_allow_html=True)
+            st.markdown(get_south_indian_chart_html(g_data['P_Pos'], g_data['Lagna_Idx'], "Rasi Chart", g_name), unsafe_allow_html=True)
                 
-        st.write("") # Spacing
+        st.write("") 
                 
-        # 2. CHEVVAI DOSHAM (Upgraded text)
-        st.markdown("### :material/shield: Chevvai Dosham (Mars Compatibility)")
+        # 2. CHEVVAI (MARS) ENERGY RESONANCE
+        st.markdown("### :material/shield: Chevvai (Mars) Energy Resonance")
         m_match = (b_data['Is_Manglik'] == g_data['Is_Manglik'])
         
         b_m_str = "Present" if b_data['Is_Manglik'] else "Not Present"
@@ -237,13 +250,13 @@ if calc_btn:
             m_color = "#f0fdf4"
             m_border = "#27ae60"
             m_text = "#155724"
-            m_desc = f"Both individuals share a compatible level of Chevvai (Martian) energy (Boy: {b_m_str} | Girl: {g_m_str}). In traditional astrology, this creates a natural balance in drive and passion, effectively canceling out potential friction (Dosha Samyam)."
+            m_desc = f"Both individuals share a compatible level of Chevvai energy (Boy: {b_m_str} | Girl: {g_m_str}). In traditional astrology, this creates a natural equilibrium in drive and passion, effectively protecting the bond."
         else:
             m_title = "Chevvai (Mars) energy imbalance detected."
             m_color = "#fef2f2"
             m_border = "#e74c3c"
             m_text = "#991b1b"
-            m_desc = f"There is a distinct difference in Chevvai (Martian) influence (Boy: {b_m_str} | Girl: {g_m_str}). One partner may be naturally more aggressive, protective, or driven than the other, requiring conscious patience to maintain marital harmony."
+            m_desc = f"There is a distinct difference in Chevvai influence (Boy: {b_m_str} | Girl: {g_m_str}). One partner possesses a naturally more protective or aggressive temperament, requiring conscious patience and understanding to maintain harmony."
 
         st.markdown(f"""
             <div style="background-color: {m_color}; color: {m_text}; padding: 18px; border-radius: 8px; border-left: 5px solid {m_border};">
@@ -264,8 +277,11 @@ if calc_btn:
             st.markdown(f"<h4 style='text-align: center; color: #f39c12; margin-top: 5px;'>Average Match</h4>", unsafe_allow_html=True)
         else:
             st.markdown(f"<h4 style='text-align: center; color: #e74c3c; margin-top: 5px;'>Not Recommended</h4>", unsafe_allow_html=True)
-            
-        st.markdown("<br>", unsafe_allow_html=True)
+        
+        # Add Value: Key Pillars Summary
+        r_txt = "Excellent structural longevity." if porutham_results['Rajju (Longevity - CRITICAL)']['match'] else "Critical warning regarding longevity."
+        d_txt = "Great day-to-day emotional flow." if porutham_results['Dina (Daily Harmony)']['match'] else "Requires patience in daily routines."
+        st.markdown(f"<p style='text-align: center; font-size: 15px; color: #7f8c8d; max-width: 600px; margin: auto;'><b>Key Pillars:</b> {r_txt} {d_txt}</p><br>", unsafe_allow_html=True)
         
         matched_items = {k: v for k, v in porutham_results.items() if v["match"]}
         unmatched_items = {k: v for k, v in porutham_results.items() if not v["match"]}
@@ -294,15 +310,14 @@ if calc_btn:
 
         st.divider()
         
-        # 4. THE AI RELATIONSHIP ORACLE (Upgraded Prompt)
+        # 4. THE AI RELATIONSHIP ORACLE (Highly Structured Formatting)
         if not GEMINI_API_KEY:
             st.error("API Key missing! Add it to Streamlit Secrets to generate AI insights.")
         else:
             st.markdown("### :material/auto_awesome: Deep AI Relationship Oracle")
-            with st.spinner("The AI Astrologer is analyzing psychological compatibility and actionable insights..."):
+            with st.spinner("The AI Astrologer is compiling a structured consultation..."):
                 try:
                     genai.configure(api_key=GEMINI_API_KEY)
-                    # Get exact match/unmatch lists to feed to the AI
                     match_list = ", ".join(list(matched_items.keys()))
                     unmatch_list = ", ".join(list(unmatched_items.keys()))
                     
@@ -311,20 +326,33 @@ if calc_btn:
                     Boy: {b_data['Lagna']} Ascendant, {b_data['Rasi']} Moon Sign, {b_data['Nakshatra']} Star.
                     Girl: {g_data['Lagna']} Ascendant, {g_data['Rasi']} Moon Sign, {g_data['Nakshatra']} Star.
                     
-                    Their traditional Porutham score is {score}/10. 
-                    Their Aligned Dimensions (Strengths) are: {match_list}.
-                    Their Areas for Growth (Weaknesses) are: {unmatch_list}.
+                    Traditional Porutham score is {score}/10. 
+                    Aligned Dimensions: {match_list}.
+                    Areas for Growth: {unmatch_list}.
                     
-                    Write exactly 3 short, profound paragraphs explaining their psychological and practical dynamic. 
-                    Keep it rich, deeply insightful, and specific to their exact planetary placements.
+                    Write a highly structured, scannable analysis.
                     
-                    Format EXACTLY like this using these specific icons:
+                    CRITICAL FORMATTING RULES:
+                    - Do NOT write long paragraphs. 
+                    - Use short, punchy sentences.
+                    - Use bullet points extensively.
+                    - Bold key concepts.
+                    - Format EXACTLY using these three headers:
                     
-                    :material/psychology: **Psychological Dynamic:** (Explain how their minds and emotional cores interact)
+                    ### :material/psychology: Psychological Dynamic
+                    (Brief 1-sentence overview of their mental connection)
+                    * **Strengths:** (Explain briefly)
+                    * **Friction Points:** (Explain briefly)
                     
-                    :material/home_work: **Life & Wealth:** (Explain how they build a home and manage ambitions/finances together)
+                    ### :material/home_work: Life & Wealth
+                    (Brief 1-sentence overview of their worldly alignment)
+                    * **Financial Approach:** (Explain briefly)
+                    * **Domestic Life:** (Explain briefly)
                     
-                    :material/balance: **Harnessing & Balancing (Actionable Advice):** (Explicitly advise them on how to harness their specific Aligned Dimensions and actively balance out their specific Areas for Growth)
+                    ### :material/balance: Harnessing & Balancing
+                    (Actionable, practical advice)
+                    * **How to Harness Strengths:** (Explain how to use their aligned dimensions)
+                    * **How to Balance Weaknesses:** (Explain exactly how to mitigate their specific areas for growth)
                     """
                     
                     available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
