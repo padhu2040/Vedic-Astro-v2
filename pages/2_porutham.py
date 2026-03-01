@@ -206,14 +206,14 @@ col_b, col_g = st.columns(2)
 with col_b:
     st.markdown("### :material/face: Partner 1 Details")
     b_name = st.text_input("Name", "Adithya", key="b_name")
-    b_dob = st.date_input("Date of Birth", datetime(2000, 6, 15), key="b_dob")
+    b_dob = st.date_input("Date of Birth", datetime(2000, 6, 15), min_value=datetime(1950, 1, 1).date(), key="b_dob")
     b_tob = st.time_input("Time of Birth", datetime.strptime("09:50", "%H:%M").time(), key="b_tob")
     b_loc = st.text_input("City", "Sembanarkovil", key="b_loc")
 
 with col_g:
     st.markdown("### :material/face_3: Partner 2 Details")
     g_name = st.text_input("Name", "Kaavya JS", key="g_name")
-    g_dob = st.date_input("Date of Birth", datetime(2000, 6, 4), key="g_dob")
+    g_dob = st.date_input("Date of Birth", datetime(2000, 6, 4), min_value=datetime(1950, 1, 1).date(), key="g_dob")
     g_tob = st.time_input("Time of Birth", datetime.strptime("05:30", "%H:%M").time(), key="g_tob")
     g_loc = st.text_input("City", "Nagercoil", key="g_loc")
 
