@@ -16,7 +16,6 @@ except:
 ZODIAC = ["", "Mesha", "Rishabha", "Mithuna", "Kataka", "Simha", "Kanya", "Thula", "Vrischika", "Dhanu", "Makara", "Kumbha", "Meena"]
 NAKSHATRAS = ["Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra", "Punarvasu", "Pushya", "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", "Hasta", "Chitra", "Swati", "Vishakha", "Anuradha", "Jyeshtha", "Mula", "Purva Ashadha", "Uttara Ashadha", "Shravana", "Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"]
 
-# UPGRADE 1: Mapping Rasi to corresponding Nakshatras for the dependent dropdown
 RASI_STAR_MAP = {
     "Mesha": ["Ashwini", "Bharani", "Krittika"],
     "Rishabha": ["Krittika", "Rohini", "Mrigashira"],
@@ -78,32 +77,30 @@ def calculate_planetary_positions(calc_date, calc_time, lat, lon, tz_str):
     pos["Lagna"] = {"rasi_idx": int(ascmc[0]/30) + 1, "rasi": ZODIAC[int(ascmc[0]/30) + 1]}
     return pos
 
-# UPGRADE 2: Mathematical Panchangam & Daily Event Detector
 def get_daily_panchangam(calc_date):
     swe.set_sid_mode(swe.SIDM_LAHIRI)
-    # Calculate for Noon local time
-    jd_ut = swe.julday(calc_date.year, calc_date.month, calc_date.day, 6.5) # Approx 12 PM IST in UT
+    jd_ut = swe.julday(calc_date.year, calc_date.month, calc_date.day, 6.5) 
     
     sun_lon = swe.calc_ut(jd_ut, swe.SUN, swe.FLG_SIDEREAL)[0][0]
     moon_lon = swe.calc_ut(jd_ut, swe.MOON, swe.FLG_SIDEREAL)[0][0]
     
-    # Calculate Tithi (Lunar Day)
     tithi_val = (moon_lon - sun_lon) % 360 / 12.0
-    tithi_num = int(tithi_val) + 1 # 1 to 30
+    tithi_num = int(tithi_val) + 1 
     
+    # UPGRADE: Flat minimalist material icons replacing emojis
     events = []
-    if tithi_num in [11, 26]: events.append("✨ Ekadhasi (Ideal for fasting & spiritual focus)")
-    if tithi_num in [13, 28]: events.append("🔱 Pradosham (Auspicious for Lord Shiva worship)")
-    if tithi_num in [4, 19]: events.append("🐘 Chaturthi (Auspicious for Lord Ganesha worship)")
-    if tithi_num in [6, 21]: events.append("🦚 Sashti (Auspicious for Lord Murugan worship)")
-    if tithi_num in [8, 23]: events.append("⚠️ Ashtami (Avoid initiating new material ventures)")
-    if tithi_num in [9, 24]: events.append("⚠️ Navami (Avoid initiating new material ventures)")
-    if tithi_num == 15: events.append("🌕 Pournami (Full Moon - Peak manifestation energy)")
-    if tithi_num == 30: events.append("🌑 Amavasai (New Moon - Ancestral worship)")
+    if tithi_num in [11, 26]: events.append(":material/stars: Ekadhasi (Ideal for fasting & spiritual focus)")
+    if tithi_num in [13, 28]: events.append(":material/self_improvement: Pradosham (Auspicious for Lord Shiva worship)")
+    if tithi_num in [4, 19]: events.append(":material/festival: Chaturthi (Auspicious for Lord Ganesha worship)")
+    if tithi_num in [6, 21]: events.append(":material/spa: Sashti (Auspicious for Lord Murugan worship)")
+    if tithi_num in [8, 23]: events.append(":material/warning: Ashtami (Avoid initiating new material ventures)")
+    if tithi_num in [9, 24]: events.append(":material/warning: Navami (Avoid initiating new material ventures)")
+    if tithi_num == 15: events.append(":material/light_mode: Pournami (Full Moon - Peak manifestation energy)")
+    if tithi_num == 30: events.append(":material/dark_mode: Amavasai (New Moon - Ancestral worship)")
     
     nak_idx = int(moon_lon / 13.333333333)
     
-    weekday = calc_date.weekday() # 0 = Mon, 6 = Sun
+    weekday = calc_date.weekday() 
     timings = {
         0: {"Rahu": "07:30 AM - 09:00 AM", "Yama": "10:30 AM - 12:00 PM"}, 
         1: {"Rahu": "03:00 PM - 04:30 PM", "Yama": "09:00 AM - 10:30 AM"}, 
@@ -126,7 +123,6 @@ def get_daily_panchangam(calc_date):
 st.title(":material/calendar_today: Daily Planetary Insights")
 st.markdown("Navigate your day with cosmic awareness. Check today's calendar, get a quick free overview, or unlock your deep personalized forecast.")
 
-# --- THE DAILY ALMANAC (PANCHANGAM) ---
 st.divider()
 col_target, col_empty = st.columns([1, 2])
 with col_target:
@@ -134,7 +130,7 @@ with col_target:
 
 panch = get_daily_panchangam(today_date)
 
-st.markdown(f"### 🗓️ Daily Almanac ({panch['Weekday']})")
+st.markdown(f"### :material/calendar_month: Daily Almanac ({panch['Weekday']})")
 col_p1, col_p2, col_p3 = st.columns(3)
 
 with col_p1:
@@ -167,7 +163,8 @@ with col_p3:
 st.divider()
 
 # --- TABS ---
-tab1, tab2 = st.tabs(["🚀 Quick Free Forecast", "💎 Deep Personalized Forecast"])
+# UPGRADE: Flat icons for tabs
+tab1, tab2 = st.tabs([":material/bolt: Quick Free Forecast", ":material/insights: Deep Personalized Forecast"])
 
 with tab1:
     st.markdown("### Quick General Forecast")
@@ -175,10 +172,8 @@ with tab1:
     
     col_q1, col_q2 = st.columns(2)
     with col_q1:
-        # Dynamic Rasi Selection
         sel_rasi = st.selectbox("Select Rasi (Moon Sign)", list(RASI_STAR_MAP.keys()))
     with col_q2:
-        # Dynamic Star selection based on Rasi!
         sel_nak = st.selectbox("Select Nakshatra (Star)", RASI_STAR_MAP[sel_rasi])
         
     if st.button("Generate Quick Forecast", type="primary"):
@@ -199,15 +194,20 @@ with tab1:
                     * **Quick Tip:** (1 sentence action for success today)
                     """
                     
-                    # Safe Model Fallback
-                    try:
-                        model = genai.GenerativeModel('gemini-1.5-flash')
+                    # UPGRADE: Dynamic model routing to fix the 404 error
+                    available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+                    target_model = None
+                    if 'models/gemini-1.5-flash' in available_models: target_model = 'models/gemini-1.5-flash'
+                    elif 'models/gemini-1.0-pro' in available_models: target_model = 'models/gemini-1.0-pro'
+                    elif len(available_models) > 0: target_model = available_models[0]
+                    
+                    if target_model:
+                        model = genai.GenerativeModel(target_model)
                         response = model.generate_content(q_prompt)
-                    except:
-                        model = genai.GenerativeModel('gemini-pro')
-                        response = model.generate_content(q_prompt)
-                        
-                    st.success(response.text)
+                        st.success(response.text)
+                    else:
+                        st.error("Your Google API key does not have access to text-generation models.")
+
                 except Exception as e:
                     st.error(f"AI Generation Failed: {e}")
 
@@ -280,13 +280,17 @@ with tab2:
                         (Provide a genuine, translated line of profound spiritual poetry or wisdom from an ancient Tamil Siddhar—such as Agathiyar, Thirumoolar, Bogar, or Pattinathar—that perfectly aligns with the astrological energy of today. Provide the quote, attribute it to the specific Siddhar, and add a 1-sentence explanation of how it applies to {st.session_state.u_name}'s day.)
                         """
                         
-                        try:
-                            model = genai.GenerativeModel('gemini-1.5-flash')
+                        available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+                        target_model = None
+                        if 'models/gemini-1.5-flash' in available_models: target_model = 'models/gemini-1.5-flash'
+                        elif 'models/gemini-1.0-pro' in available_models: target_model = 'models/gemini-1.0-pro'
+                        elif len(available_models) > 0: target_model = available_models[0]
+                        
+                        if target_model:
+                            model = genai.GenerativeModel(target_model)
                             response = model.generate_content(prompt)
-                        except:
-                            model = genai.GenerativeModel('gemini-pro')
-                            response = model.generate_content(prompt)
-                            
-                        st.markdown(response.text)
+                            st.markdown(response.text)
+                        else:
+                            st.error("Your Google API key does not have access to text-generation models.")
                     except Exception as e:
                         st.error(f"AI Generation Failed: {e}")
