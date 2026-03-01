@@ -17,10 +17,18 @@ porutham_page = st.Page(
     icon=":material/favorite_border:" 
 )
 
+# NEW: Link the Daily Insights page
+daily_page = st.Page(
+    page="pages/3_daily_insights.py",
+    title="Daily Insights",
+    icon=":material/calendar_today:" 
+)
+
 # Build the custom navigation menu
 pg = st.navigation(
     {
-        "Core Engines": [horoscope_page, porutham_page]
+        "Core Engines": [horoscope_page, porutham_page],
+        "Daily Routine": [daily_page]  # This adds the new section to the sidebar!
     }
 )
 
