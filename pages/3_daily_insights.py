@@ -5,6 +5,8 @@ from geopy.geocoders import Nominatim
 from timezonefinder import TimezoneFinder
 import pytz
 import google.generativeai as genai
+import sqlite3
+import os
 
 # Secure API Key
 try:
@@ -33,7 +35,7 @@ RASI_STAR_MAP = {
 
 # --- GLOBAL SESSION STATE ---
 if 'u_name' not in st.session_state: st.session_state.u_name = "Padmanabhan"
-if 'u_dob' not in st.session_state: st.session_state.u_dob = datetime(1977, 11, 14)
+if 'u_dob' not in st.session_state: st.session_state.u_dob = datetime(1977, 11, 14).date()
 if 'u_tob' not in st.session_state: st.session_state.u_tob = time(1, 45)
 if 'u_loc' not in st.session_state: st.session_state.u_loc = "Saidapet, Chennai"
 
@@ -87,7 +89,6 @@ def get_daily_panchangam(calc_date):
     tithi_val = (moon_lon - sun_lon) % 360 / 12.0
     tithi_num = int(tithi_val) + 1 
     
-    # FIX: Reverted to universal unicode emojis for HTML block compatibility
     events = []
     if tithi_num in [11, 26]: events.append("✨ Ekadhasi (Ideal for fasting)")
     if tithi_num in [13, 28]: events.append("🔱 Pradosham (Lord Shiva worship)")
@@ -120,6 +121,25 @@ def get_daily_panchangam(calc_date):
         "Timings": timings[weekday],
         "Weekday": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][weekday]
     }
+
+# --- DATABASE FETCHER HELPER ---
+def load_profiles_from_db():
+    profiles = {}
+    if os.path.exists('astro_profiles.db'):
+        try:
+            conn = sqlite3.connect('astro_profiles.db')
+            c = conn.cursor()
+            c.execute("SELECT * FROM profiles")
+            for row in c.fetchall():
+                profiles[row[0]] = {
+                    "dob": datetime.strptime(row[1], "%Y-%m-%d").date(),
+                    "tob": datetime.strptime(row[2], "%H:%M:%S").time(),
+                    "city": row[3]
+                }
+            conn.close()
+        except Exception as e:
+            pass
+    return profiles
 
 # --- UI LAYOUT ---
 st.title(":material/calendar_today: Daily Planetary Insights")
@@ -178,7 +198,6 @@ with tab1:
         sel_nak = st.selectbox("Select Nakshatra (Star)", RASI_STAR_MAP[sel_rasi])
         
     if st.button("Generate Quick Forecast", type="primary"):
-        # FIX: Mathematical Chandrashtama Check for the Quick Tab
         user_rasi_idx = ZODIAC.index(sel_rasi)
         transit_rasi_idx = panch['Transit_Rasi_Idx']
         quick_moon_dist = (transit_rasi_idx - user_rasi_idx + 1) if (transit_rasi_idx >= user_rasi_idx) else (transit_rasi_idx + 12 - user_rasi_idx + 1)
@@ -222,13 +241,29 @@ with tab1:
                     st.error(f"AI Generation Failed: {e}")
 
 with tab2:
-    col_input, _ = st.columns([1, 1])
+    # --- MAGIC DATABASE HOOKUP ---
+    saved_profiles = load_profiles_from_db()
+    profile_options = ["Custom Entry"] + list(saved_profiles.keys())
+    
+    st.markdown("### :material/account_circle: Your Exact Details")
+    
+    col_sel, _ = st.columns([1, 1])
+    with col_sel:
+        # The magic dropdown box!
+        selected_profile = st.selectbox("Load Saved Profile", profile_options)
+        
+    # Auto-populate logic based on selection
+    if selected_profile != "Custom Entry":
+        st.session_state.u_name = selected_profile
+        st.session_state.u_dob = saved_profiles[selected_profile]["dob"]
+        st.session_state.u_tob = saved_profiles[selected_profile]["tob"]
+        st.session_state.u_loc = saved_profiles[selected_profile]["city"]
 
+    col_input, _ = st.columns([1, 1])
     with col_input:
-        st.markdown("### :material/account_circle: Your Exact Details")
         st.text_input("Name", key="u_name")
-        st.date_input("Date of Birth", key="u_dob")
-        st.time_input("Time of Birth", key="u_tob")
+        st.date_input("Date of Birth", min_value=datetime(1950, 1, 1).date(), key="u_dob")
+        st.time_input("Time of Birth", step=60, key="u_tob") # step=60 is here!
         st.text_input("City", key="u_loc")
 
     calc_btn = st.button("Generate Deep AI Forecast", type="primary", use_container_width=True)
@@ -253,7 +288,6 @@ with tab2:
             </div><br>
             """, unsafe_allow_html=True)
 
-            # FIX: Used native Streamlit error box so the Material Warning icon renders perfectly
             if is_chandrashtama:
                 st.error("**Alert: Chandrashtama Day**\n\nThe Moon is currently transiting the 8th house from your birth Moon. This is a highly sensitive 2.5 day period. Avoid starting major new ventures, signing critical contracts, or engaging in heated arguments today. Focus purely on routine work and spiritual grounding.", icon=":material/warning:")
 
