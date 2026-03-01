@@ -42,6 +42,18 @@ def get_utc_offset(tz_str, date_obj):
         return dt_aware.utcoffset().total_seconds() / 3600
     except: return 5.5 
 
+def get_south_indian_chart_html(p_pos, lagna_rasi, title):
+    g = {i: [] for i in range(1, 13)}
+    g[lagna_rasi].append("<span style='color:#e74c3c; font-size:12px;'><b>Asc</b></span>")
+    for p, r in p_pos.items():
+        if p != "Lagna":
+            abbr = p[:2] if p != "Sun" else "Su"
+            abbr = "Mo" if p == "Moon" else abbr
+            g[r].append(f"<span style='font-size:12px; font-weight:bold; color:#2c3e50;'>{abbr}</span>")
+    for i in g: g[i] = "<br>".join(g[i])
+    z = ["", "Mesha", "Rishabha", "Mithuna", "Kataka", "Simha", "Kanya", "Thula", "Vrischika", "Dhanu", "Makara", "Kumbha", "Meena"]
+    return f"<div style='max-width: 350px; margin: auto; font-family: sans-serif;'><table style='width: 100%; border-collapse: collapse; text-align: center; font-size: 14px; background-color: #ffffff; border: 2px solid #333;'><tr><td style='border: 1px solid #333; width: 25%; height: 80px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[12]}</div>{g[12]}</td><td style='border: 1px solid #333; width: 25%; height: 80px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[1]}</div>{g[1]}</td><td style='border: 1px solid #333; width: 25%; height: 80px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[2]}</div>{g[2]}</td><td style='border: 1px solid #333; width: 25%; height: 80px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[3]}</div>{g[3]}</td></tr><tr><td style='border: 1px solid #333; height: 80px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[11]}</div>{g[11]}</td><td colspan='2' rowspan='2' style='border: none; vertical-align: middle; font-weight: bold; font-size: 14px; color:#2c3e50; background-color: #ffffff;'>{title}</td><td style='border: 1px solid #333; height: 80px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[4]}</div>{g[4]}</td></tr><tr><td style='border: 1px solid #333; height: 80px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[10]}</div>{g[10]}</td><td style='border: 1px solid #333; height: 80px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[5]}</div>{g[5]}</td></tr><tr><td style='border: 1px solid #333; height: 80px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[9]}</div>{g[9]}</td><td style='border: 1px solid #333; height: 80px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[8]}</div>{g[8]}</td><td style='border: 1px solid #333; height: 80px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[7]}</div>{g[7]}</td><td style='border: 1px solid #333; height: 80px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[6]}</div>{g[6]}</td></tr></table></div>"
+
 def calculate_full_chart(dob, tob, lat, lon, tz_str):
     swe.set_sid_mode(swe.SIDM_LAHIRI)
     birth_dt = datetime.combine(dob, tob)
@@ -49,19 +61,23 @@ def calculate_full_chart(dob, tob, lat, lon, tz_str):
     ut_hour = (tob.hour + (tob.minute/60.0)) - offset
     jd_ut = swe.julday(dob.year, dob.month, dob.day, ut_hour)
     
-    # Calculate Moon
+    # Calculate All Planets for the Chart
+    planets = {"Sun": swe.SUN, "Moon": swe.MOON, "Mars": swe.MARS, "Mercury": swe.MERCURY, "Jupiter": swe.JUPITER, "Venus": swe.VENUS, "Saturn": swe.SATURN, "Rahu": swe.MEAN_NODE}
+    p_pos = {}
+    for p, pid in planets.items():
+        lon_val = swe.calc_ut(jd_ut, pid, swe.FLG_SIDEREAL)[0][0]
+        p_pos[p] = int(lon_val / 30) + 1
+    
+    # Specific Moon calculations
     moon_lon = swe.calc_ut(jd_ut, swe.MOON, swe.FLG_SIDEREAL)[0][0]
-    moon_rasi_idx = int(moon_lon / 30) + 1
+    moon_rasi_idx = p_pos["Moon"]
     nak_idx = int(moon_lon / 13.333333333)
     pada = int((moon_lon % 13.333333333) / 3.333333333) + 1
     
     # Calculate Lagna (Ascendant)
     ascmc = swe.houses_ex(jd_ut, lat, lon, b'P', swe.FLG_SIDEREAL)[1]
     lagna_rasi_idx = int(ascmc[0]/30) + 1
-    
-    # Calculate Mars
-    mars_lon = swe.calc_ut(jd_ut, swe.MARS, swe.FLG_SIDEREAL)[0][0]
-    mars_rasi_idx = int(mars_lon / 30) + 1
+    p_pos["Lagna"] = lagna_rasi_idx
     
     # Check Moon Cusp
     nak_length = 13.333333
@@ -69,6 +85,7 @@ def calculate_full_chart(dob, tob, lat, lon, tz_str):
     is_cusp = True if (remainder < 0.5 or remainder > (nak_length - 0.5)) else False
     
     # Check Manglik
+    mars_rasi_idx = p_pos["Mars"]
     mars_from_lagna = (mars_rasi_idx - lagna_rasi_idx + 1) if (mars_rasi_idx >= lagna_rasi_idx) else (mars_rasi_idx + 12 - lagna_rasi_idx + 1)
     mars_from_moon = (mars_rasi_idx - moon_rasi_idx + 1) if (mars_rasi_idx >= moon_rasi_idx) else (mars_rasi_idx + 12 - moon_rasi_idx + 1)
     
@@ -77,10 +94,11 @@ def calculate_full_chart(dob, tob, lat, lon, tz_str):
         is_manglik = True
         
     return {
-        "Lagna": ZODIAC[lagna_rasi_idx],
+        "Lagna": ZODIAC[lagna_rasi_idx], "Lagna_Idx": lagna_rasi_idx,
         "Rasi": ZODIAC[moon_rasi_idx], "Rasi_Idx": moon_rasi_idx,
         "Nakshatra": NAKSHATRAS[nak_idx], "Nak_Idx": nak_idx, "Pada": pada,
-        "Is_Cusp": is_cusp, "Is_Manglik": is_manglik
+        "Is_Cusp": is_cusp, "Is_Manglik": is_manglik,
+        "P_Pos": p_pos
     }
 
 def calculate_10_porutham(b_nak, g_nak, b_rasi, g_rasi):
@@ -148,7 +166,7 @@ with col_g:
     g_loc = st.text_input("City", "Nagercoil", key="g_loc")
 
 st.divider()
-calc_btn = st.button("Calculate Compatibility with AI", type="primary", use_container_width=True)
+calc_btn = st.button("Calculate Compatibility with AI Oracle", type="primary", use_container_width=True)
 
 # --- EXECUTION ---
 if calc_btn:
@@ -159,7 +177,7 @@ if calc_btn:
         b_data = calculate_full_chart(b_dob, b_tob, b_lat, b_lon, b_tz)
         g_data = calculate_full_chart(g_dob, g_tob, g_lat, g_lon, g_tz)
         
-        # 1. ASTRONOMICAL PROFILE (Identical Boxes, 3 lines, minimal location)
+        # 1. ASTRONOMICAL PROFILE 
         st.markdown("### :material/travel_explore: Astronomical Profile")
         r_c1, r_c2 = st.columns(2)
         
@@ -170,7 +188,7 @@ if calc_btn:
                 <p style="margin: 5px 0; font-size: 15px;"><b>Lagna (Ascendant):</b> {b_data['Lagna']}</p>
                 <p style="margin: 5px 0; font-size: 15px;"><b>Rasi (Moon Sign):</b> {b_data['Rasi']}</p>
                 <p style="margin: 5px 0; font-size: 15px;"><b>Nakshatra (Star):</b> {b_data['Nakshatra']} (Pada {b_data['Pada']})</p>
-                <p style="margin: 15px 0 0 0; font-size: 12px; color: #7f8c8d;">Location: {b_addr}</p>
+                <p style="margin: 15px 0 0 0; font-size: 12px; color: #7f8c8d;">{b_addr}</p>
             </div>
             """, unsafe_allow_html=True)
             if b_data['Is_Cusp']:
@@ -183,15 +201,23 @@ if calc_btn:
                 <p style="margin: 5px 0; font-size: 15px;"><b>Lagna (Ascendant):</b> {g_data['Lagna']}</p>
                 <p style="margin: 5px 0; font-size: 15px;"><b>Rasi (Moon Sign):</b> {g_data['Rasi']}</p>
                 <p style="margin: 5px 0; font-size: 15px;"><b>Nakshatra (Star):</b> {g_data['Nakshatra']} (Pada {g_data['Pada']})</p>
-                <p style="margin: 15px 0 0 0; font-size: 12px; color: #7f8c8d;">Location: {g_addr}</p>
+                <p style="margin: 15px 0 0 0; font-size: 12px; color: #7f8c8d;">{g_addr}</p>
             </div>
             """, unsafe_allow_html=True)
             if g_data['Is_Cusp']:
                 st.warning(f":material/warning: **Transition Zone:** The Moon is on the exact edge of {g_data['Nakshatra']}. Verify birth time.")
+        
+        # Draw the South Indian Rasi Charts side-by-side
+        st.markdown("<br>", unsafe_allow_html=True)
+        chart_c1, chart_c2 = st.columns(2)
+        with chart_c1:
+            st.markdown(get_south_indian_chart_html(b_data['P_Pos'], b_data['Lagna_Idx'], "Rasi Chart"), unsafe_allow_html=True)
+        with chart_c2:
+            st.markdown(get_south_indian_chart_html(g_data['P_Pos'], g_data['Lagna_Idx'], "Rasi Chart"), unsafe_allow_html=True)
                 
         st.write("") # Spacing
                 
-        # 2. CHEVVAI DOSHAM (Natural Language)
+        # 2. CHEVVAI DOSHAM
         st.markdown("### :material/shield: Mars Compatibility")
         m_match = (b_data['Is_Manglik'] == g_data['Is_Manglik'])
         
@@ -220,7 +246,7 @@ if calc_btn:
 
         st.divider()
 
-        # 3. THE 10-PORUTHAM SCORECARD (Two Columns, Minimalist)
+        # 3. THE 10-PORUTHAM SCORECARD
         score, porutham_results = calculate_10_porutham(b_data['Nak_Idx'], g_data['Nak_Idx'], b_data['Rasi_Idx'], g_data['Rasi_Idx'])
         
         st.markdown(f"<h2 style='text-align: center; margin-bottom: 0;'>Traditional Score: {score} / 10</h2>", unsafe_allow_html=True)
@@ -233,7 +259,6 @@ if calc_btn:
             
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # Split into Matched and Unmatched
         matched_items = {k: v for k, v in porutham_results.items() if v["match"]}
         unmatched_items = {k: v for k, v in porutham_results.items() if not v["match"]}
         
@@ -261,33 +286,47 @@ if calc_btn:
 
         st.divider()
         
-        # 4. THE AI RELATIONSHIP ORACLE (Fixed Model Name)
+        # 4. THE AI RELATIONSHIP ORACLE (With robust model fallback to fix 404)
         if not GEMINI_API_KEY:
             st.error("API Key missing! Add it to Streamlit Secrets to generate AI insights.")
         else:
             st.markdown("### :material/auto_awesome: Deep AI Relationship Oracle")
             with st.spinner("The AI Astrologer is analyzing psychological compatibility..."):
+                prompt = f"""
+                You are an elite, modern Vedic Astrologer. Analyze the relationship compatibility between:
+                Boy: {b_data['Lagna']} Ascendant, {b_data['Rasi']} Moon Sign, {b_data['Nakshatra']} Star.
+                Girl: {g_data['Lagna']} Ascendant, {g_data['Rasi']} Moon Sign, {g_data['Nakshatra']} Star.
+                Their traditional Porutham score is {score}/10. 
+                
+                Write exactly 3 short, profound paragraphs explaining their psychological and practical dynamic. 
+                Do NOT use hashtags for headers. Instead, format EXACTLY like this using these specific icons:
+                
+                :material/psychology: **Psychological Dynamic:** (Explain how their minds interact)
+                
+                :material/home_work: **Life & Wealth:** (Explain how they build a home and manage finances together)
+                
+                :material/balance: **Karmic Challenge:** (Explain the one main thing they must actively work on to avoid friction)
+                """
                 try:
                     genai.configure(api_key=GEMINI_API_KEY)
-                    prompt = f"""
-                    You are an elite, modern Vedic Astrologer. Analyze the relationship compatibility between:
-                    Boy: {b_data['Lagna']} Ascendant, {b_data['Rasi']} Moon Sign, {b_data['Nakshatra']} Star.
-                    Girl: {g_data['Lagna']} Ascendant, {g_data['Rasi']} Moon Sign, {g_data['Nakshatra']} Star.
-                    Their traditional Porutham score is {score}/10. 
+                    # Dynamically check for available models to avoid 404 errors
+                    available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+                    target_model = None
+                    if 'models/gemini-1.5-flash' in available_models: target_model = 'models/gemini-1.5-flash'
+                    elif 'models/gemini-1.0-pro' in available_models: target_model = 'models/gemini-1.0-pro'
+                    elif len(available_models) > 0: target_model = available_models[0]
                     
-                    Write exactly 3 short, profound paragraphs explaining their psychological and practical dynamic. 
-                    Do NOT use hashtags for headers. Instead, format EXACTLY like this using these specific icons:
-                    
-                    :material/psychology: **Psychological Dynamic:** (Explain how their minds interact)
-                    
-                    :material/home_work: **Life & Wealth:** (Explain how they build a home and manage finances together)
-                    
-                    :material/balance: **Karmic Challenge:** (Explain the one main thing they must actively work on to avoid friction)
-                    """
-                    
-                    # Hardcoded to the stable gemini-1.5-flash model to prevent 404 errors
-                    model = genai.GenerativeModel('gemini-1.5-flash') 
-                    response = model.generate_content(prompt)
-                    st.markdown(response.text)
+                    if target_model:
+                        model = genai.GenerativeModel(target_model)
+                        response = model.generate_content(prompt)
+                        st.markdown(response.text)
+                    else:
+                        st.error("Your Google API key does not have access to text-generation models.")
                 except Exception as e:
-                    st.error(f"AI Generation Failed. Please ensure your API key is valid. Error: {e}")
+                    # Absolute fallback to an older string format if list_models fails
+                    try:
+                        model = genai.GenerativeModel('gemini-pro')
+                        response = model.generate_content(prompt)
+                        st.markdown(response.text)
+                    except Exception as fallback_error:
+                        st.error(f"AI Generation Failed. Please ensure your API key has text generation enabled. Error: {fallback_error}")
