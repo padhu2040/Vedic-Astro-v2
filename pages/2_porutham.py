@@ -42,17 +42,25 @@ def get_utc_offset(tz_str, date_obj):
         return dt_aware.utcoffset().total_seconds() / 3600
     except: return 5.5 
 
-def get_south_indian_chart_html(p_pos, lagna_rasi, title):
+# UPGRADE: Added 'name' parameter, forced 'table-layout: fixed', and used authentic Tamil abbreviations
+def get_south_indian_chart_html(p_pos, lagna_rasi, title, person_name):
+    ta_abbr = {"Sun": "சூ", "Moon": "சந்", "Mars": "செவ்", "Mercury": "புத", "Jupiter": "குரு", "Venus": "சுக்", "Saturn": "சனி", "Rahu": "ராகு", "Ketu": "கேது"}
+    
     g = {i: [] for i in range(1, 13)}
-    g[lagna_rasi].append("<span style='color:#e74c3c; font-size:12px;'><b>Asc</b></span>")
+    g[lagna_rasi].append("<span style='color:#e74c3c; font-size:12px;'><b>லக்னம்</b></span>")
+    
     for p, r in p_pos.items():
         if p != "Lagna":
-            abbr = p[:2] if p != "Sun" else "Su"
-            abbr = "Mo" if p == "Moon" else abbr
+            abbr = ta_abbr.get(p, p[:2])
             g[r].append(f"<span style='font-size:12px; font-weight:bold; color:#2c3e50;'>{abbr}</span>")
+            
     for i in g: g[i] = "<br>".join(g[i])
     z = ["", "Mesha", "Rishabha", "Mithuna", "Kataka", "Simha", "Kanya", "Thula", "Vrischika", "Dhanu", "Makara", "Kumbha", "Meena"]
-    return f"<div style='max-width: 350px; margin: auto; font-family: sans-serif;'><table style='width: 100%; border-collapse: collapse; text-align: center; font-size: 14px; background-color: #ffffff; border: 2px solid #333;'><tr><td style='border: 1px solid #333; width: 25%; height: 80px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[12]}</div>{g[12]}</td><td style='border: 1px solid #333; width: 25%; height: 80px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[1]}</div>{g[1]}</td><td style='border: 1px solid #333; width: 25%; height: 80px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[2]}</div>{g[2]}</td><td style='border: 1px solid #333; width: 25%; height: 80px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[3]}</div>{g[3]}</td></tr><tr><td style='border: 1px solid #333; height: 80px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[11]}</div>{g[11]}</td><td colspan='2' rowspan='2' style='border: none; vertical-align: middle; font-weight: bold; font-size: 14px; color:#2c3e50; background-color: #ffffff;'>{title}</td><td style='border: 1px solid #333; height: 80px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[4]}</div>{g[4]}</td></tr><tr><td style='border: 1px solid #333; height: 80px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[10]}</div>{g[10]}</td><td style='border: 1px solid #333; height: 80px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[5]}</div>{g[5]}</td></tr><tr><td style='border: 1px solid #333; height: 80px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[9]}</div>{g[9]}</td><td style='border: 1px solid #333; height: 80px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[8]}</div>{g[8]}</td><td style='border: 1px solid #333; height: 80px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[7]}</div>{g[7]}</td><td style='border: 1px solid #333; height: 80px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[6]}</div>{g[6]}</td></tr></table></div>"
+    
+    # Custom center box with title and person's name
+    center_html = f"<div style='font-weight: bold; font-size: 15px; color:#2c3e50; margin-bottom: 4px;'>{title}</div><div style='font-size: 16px; color:#e67e22; font-weight: 600;'>{person_name}</div>"
+    
+    return f"<div style='max-width: 350px; margin: auto; font-family: sans-serif;'><table style='width: 100%; table-layout: fixed; border-collapse: collapse; text-align: center; font-size: 14px; background-color: #ffffff; border: 2px solid #333;'><tr><td style='border: 1px solid #333; width: 25%; height: 85px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[12]}</div>{g[12]}</td><td style='border: 1px solid #333; width: 25%; height: 85px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[1]}</div>{g[1]}</td><td style='border: 1px solid #333; width: 25%; height: 85px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[2]}</div>{g[2]}</td><td style='border: 1px solid #333; width: 25%; height: 85px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[3]}</div>{g[3]}</td></tr><tr><td style='border: 1px solid #333; height: 85px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[11]}</div>{g[11]}</td><td colspan='2' rowspan='2' style='border: none; vertical-align: middle; background-color: #ffffff;'>{center_html}</td><td style='border: 1px solid #333; height: 85px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[4]}</div>{g[4]}</td></tr><tr><td style='border: 1px solid #333; height: 85px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[10]}</div>{g[10]}</td><td style='border: 1px solid #333; height: 85px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[5]}</div>{g[5]}</td></tr><tr><td style='border: 1px solid #333; height: 85px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[9]}</div>{g[9]}</td><td style='border: 1px solid #333; height: 85px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[8]}</div>{g[8]}</td><td style='border: 1px solid #333; height: 85px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[7]}</div>{g[7]}</td><td style='border: 1px solid #333; height: 85px; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='font-size:10px; color:#bdc3c7; text-align:left;'>{z[6]}</div>{g[6]}</td></tr></table></div>"
 
 def calculate_full_chart(dob, tob, lat, lon, tz_str):
     swe.set_sid_mode(swe.SIDM_LAHIRI)
@@ -207,35 +215,35 @@ if calc_btn:
             if g_data['Is_Cusp']:
                 st.warning(f":material/warning: **Transition Zone:** The Moon is on the exact edge of {g_data['Nakshatra']}. Verify birth time.")
         
-        # Draw the South Indian Rasi Charts side-by-side
+        # UPGRADE: Symmetrical South Indian Rasi Charts with authentic Tamil abbreviations and names
         st.markdown("<br>", unsafe_allow_html=True)
         chart_c1, chart_c2 = st.columns(2)
         with chart_c1:
-            st.markdown(get_south_indian_chart_html(b_data['P_Pos'], b_data['Lagna_Idx'], "Rasi Chart"), unsafe_allow_html=True)
+            st.markdown(get_south_indian_chart_html(b_data['P_Pos'], b_data['Lagna_Idx'], "ராசி சக்கரம்", b_name), unsafe_allow_html=True)
         with chart_c2:
-            st.markdown(get_south_indian_chart_html(g_data['P_Pos'], g_data['Lagna_Idx'], "Rasi Chart"), unsafe_allow_html=True)
+            st.markdown(get_south_indian_chart_html(g_data['P_Pos'], g_data['Lagna_Idx'], "ராசி சக்கரம்", g_name), unsafe_allow_html=True)
                 
         st.write("") # Spacing
                 
-        # 2. CHEVVAI DOSHAM
-        st.markdown("### :material/shield: Mars Compatibility")
+        # 2. CHEVVAI DOSHAM (Upgraded text)
+        st.markdown("### :material/shield: Chevvai Dosham (Mars Compatibility)")
         m_match = (b_data['Is_Manglik'] == g_data['Is_Manglik'])
         
         b_m_str = "Present" if b_data['Is_Manglik'] else "Not Present"
         g_m_str = "Present" if g_data['Is_Manglik'] else "Not Present"
         
         if m_match:
-            m_title = "Mars energy is harmoniously balanced."
+            m_title = "Chevvai (Mars) energy is harmoniously balanced."
             m_color = "#f0fdf4"
             m_border = "#27ae60"
             m_text = "#155724"
-            m_desc = f"Both individuals share a compatible level of Martian energy (Boy: {b_m_str} | Girl: {g_m_str}). In traditional astrology, this creates a natural balance in drive and passion, effectively canceling out potential friction."
+            m_desc = f"Both individuals share a compatible level of Chevvai (Martian) energy (Boy: {b_m_str} | Girl: {g_m_str}). In traditional astrology, this creates a natural balance in drive and passion, effectively canceling out potential friction (Dosha Samyam)."
         else:
-            m_title = "Mars energy imbalance detected."
+            m_title = "Chevvai (Mars) energy imbalance detected."
             m_color = "#fef2f2"
             m_border = "#e74c3c"
             m_text = "#991b1b"
-            m_desc = f"There is a difference in Martian influence (Boy: {b_m_str} | Girl: {g_m_str}). One partner may be naturally more aggressive or driven than the other, requiring conscious patience to maintain marital harmony."
+            m_desc = f"There is a distinct difference in Chevvai (Martian) influence (Boy: {b_m_str} | Girl: {g_m_str}). One partner may be naturally more aggressive, protective, or driven than the other, requiring conscious patience to maintain marital harmony."
 
         st.markdown(f"""
             <div style="background-color: {m_color}; color: {m_text}; padding: 18px; border-radius: 8px; border-left: 5px solid {m_border};">
@@ -286,30 +294,39 @@ if calc_btn:
 
         st.divider()
         
-        # 4. THE AI RELATIONSHIP ORACLE (With robust model fallback to fix 404)
+        # 4. THE AI RELATIONSHIP ORACLE (Upgraded Prompt)
         if not GEMINI_API_KEY:
             st.error("API Key missing! Add it to Streamlit Secrets to generate AI insights.")
         else:
             st.markdown("### :material/auto_awesome: Deep AI Relationship Oracle")
-            with st.spinner("The AI Astrologer is analyzing psychological compatibility..."):
-                prompt = f"""
-                You are an elite, modern Vedic Astrologer. Analyze the relationship compatibility between:
-                Boy: {b_data['Lagna']} Ascendant, {b_data['Rasi']} Moon Sign, {b_data['Nakshatra']} Star.
-                Girl: {g_data['Lagna']} Ascendant, {g_data['Rasi']} Moon Sign, {g_data['Nakshatra']} Star.
-                Their traditional Porutham score is {score}/10. 
-                
-                Write exactly 3 short, profound paragraphs explaining their psychological and practical dynamic. 
-                Do NOT use hashtags for headers. Instead, format EXACTLY like this using these specific icons:
-                
-                :material/psychology: **Psychological Dynamic:** (Explain how their minds interact)
-                
-                :material/home_work: **Life & Wealth:** (Explain how they build a home and manage finances together)
-                
-                :material/balance: **Karmic Challenge:** (Explain the one main thing they must actively work on to avoid friction)
-                """
+            with st.spinner("The AI Astrologer is analyzing psychological compatibility and actionable insights..."):
                 try:
                     genai.configure(api_key=GEMINI_API_KEY)
-                    # Dynamically check for available models to avoid 404 errors
+                    # Get exact match/unmatch lists to feed to the AI
+                    match_list = ", ".join(list(matched_items.keys()))
+                    unmatch_list = ", ".join(list(unmatched_items.keys()))
+                    
+                    prompt = f"""
+                    You are an elite, modern Vedic Astrologer. Analyze the relationship compatibility between:
+                    Boy: {b_data['Lagna']} Ascendant, {b_data['Rasi']} Moon Sign, {b_data['Nakshatra']} Star.
+                    Girl: {g_data['Lagna']} Ascendant, {g_data['Rasi']} Moon Sign, {g_data['Nakshatra']} Star.
+                    
+                    Their traditional Porutham score is {score}/10. 
+                    Their Aligned Dimensions (Strengths) are: {match_list}.
+                    Their Areas for Growth (Weaknesses) are: {unmatch_list}.
+                    
+                    Write exactly 3 short, profound paragraphs explaining their psychological and practical dynamic. 
+                    Keep it rich, deeply insightful, and specific to their exact planetary placements.
+                    
+                    Format EXACTLY like this using these specific icons:
+                    
+                    :material/psychology: **Psychological Dynamic:** (Explain how their minds and emotional cores interact)
+                    
+                    :material/home_work: **Life & Wealth:** (Explain how they build a home and manage ambitions/finances together)
+                    
+                    :material/balance: **Harnessing & Balancing (Actionable Advice):** (Explicitly advise them on how to harness their specific Aligned Dimensions and actively balance out their specific Areas for Growth)
+                    """
+                    
                     available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
                     target_model = None
                     if 'models/gemini-1.5-flash' in available_models: target_model = 'models/gemini-1.5-flash'
@@ -323,7 +340,6 @@ if calc_btn:
                     else:
                         st.error("Your Google API key does not have access to text-generation models.")
                 except Exception as e:
-                    # Absolute fallback to an older string format if list_models fails
                     try:
                         model = genai.GenerativeModel('gemini-pro')
                         response = model.generate_content(prompt)
