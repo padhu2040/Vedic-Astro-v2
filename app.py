@@ -7,27 +7,20 @@ st.set_page_config(page_title="Vedic Astro Engine", layout="wide")
 horoscope_page = st.Page(
     page="pages/1_horoscope.py",
     title="Deep Horoscope",
-    icon=":material/account_circle:", # Minimalist user icon
+    icon=":material/account_circle:", 
     default=True
 )
 
 porutham_page = st.Page(
     page="pages/2_porutham.py",
     title="Matchmaking (Porutham)",
-    icon=":material/favorite_border:" # Minimalist heart outline
-)
-
-daily_page = st.Page(
-    page="pages/2_porutham.py", # Temporarily pointing to placeholder
-    title="Daily Transits",
-    icon=":material/calendar_today:" # Minimalist calendar
+    icon=":material/favorite_border:" 
 )
 
 # Build the custom navigation menu
 pg = st.navigation(
     {
-        "Core Engines": [horoscope_page, porutham_page],
-        "Daily Insights": [daily_page]
+        "Core Engines": [horoscope_page, porutham_page]
     }
 )
 
