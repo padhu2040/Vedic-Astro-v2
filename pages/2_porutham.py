@@ -42,35 +42,42 @@ def get_utc_offset(tz_str, date_obj):
         return dt_aware.utcoffset().total_seconds() / 3600
     except: return 5.5 
 
+# MASTER UPGRADE: South Indian Chart with strict symmetry (forced 125px cells) and dynamic Lagna line
 def get_south_indian_chart_html(p_pos, lagna_rasi, title, person_name):
     v_names = {"Sun": "Suriyan", "Moon": "Chandran", "Mars": "Sevvai", "Mercury": "Budhan", "Jupiter": "Guru", "Venus": "Sukran", "Saturn": "Sani", "Rahu": "Rahu", "Ketu": "Ketu"}
     
     g = {i: [] for i in range(1, 13)}
     
-    houses = {}
-    for i in range(1, 13):
-        h_num = (i - lagna_rasi + 1) if (i >= lagna_rasi) else (i + 12 - lagna_rasi + 1)
-        houses[i] = f"H{h_num}"
-
-    g[lagna_rasi].append("<span style='color:#e74c3c; font-size:13px; display:block; margin-bottom:2px;'><b>Lagna</b></span>")
-    
+    # Lagna label and planet lists per Rasi
+    g[lagna_rasi].append("<span style='color:#e74c3c; font-size:13px; display:block; font-weight:bold; margin-bottom:3px;'>Lagna</span>")
     for p, r in p_pos.items():
         if p != "Lagna":
-            name = v_names.get(p, p)
-            g[r].append(f"<span style='font-size:12px; font-weight:bold; color:#2c3e50; display:block;'>{name}</span>")
+            g[r].append(f"<span style='font-size:12px; font-weight:bold; color:#2c3e50; display:block;'>{v_names.get(p, p)}</span>")
             
     for i in g: g[i] = "".join(g[i])
     z = ["", "Mesha", "Rishabha", "Mithuna", "Kataka", "Simha", "Kanya", "Thula", "Vrischika", "Dhanu", "Makara", "Kumbha", "Meena"]
-    
     center_html = f"<div style='font-weight: bold; font-size: 15px; color:#2c3e50; margin-bottom: 4px;'>{title}</div><div style='font-size: 17px; color:#e67e22; font-weight: 600;'>{person_name}</div>"
     
-    # UPGRADE: Fixed height to exactly 115px with hidden overflow to maintain symmetrical squares
-    def cell(idx):
-        return f"<td style='border: 1px solid #dcdde1; width: 25%; height: 115px; max-height: 115px; overflow: hidden; vertical-align: top; padding: 5px; background-color:#fafafa;'><div style='display:flex; justify-content:space-between; font-size:10px; margin-bottom:6px;'><span style='color:#7f8c8d;'>{z[idx]}</span><span style='color:#bdc3c7; font-weight:bold;'>{houses[idx]}</span></div>{g[idx]}</td>"
+    # CSS variable for perfectly symmetrical cells (125px)
+    cell_dim = "125px"
 
+    # CRITICAL CHANGE: Forced symmetry with box-sizing, min-height, and dynamic Lagna gradient line
+    def cell(idx):
+        is_lagna = (idx == lagna_rasi)
+        # Background: Standard gray or the traditional diagonal red Lagna line
+        lagna_gradient = "background: linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 48%, rgba(231,76,60,0.5) 49%, rgba(231,76,60,0.5) 51%, rgba(255,255,255,0) 52%, rgba(255,255,255,0) 100%), #fdfdfa;"
+        standard_bg = "background-color: #fafafa;"
+        
+        style = f"width: {cell_dim}; height: {cell_dim}; min-height: {cell_dim}; max-height: {cell_dim}; box-sizing: border-box; border: 1px solid #dcdde1; vertical-align: top; padding: 6px; position: relative;"
+        if is_lagna: style += lagna_gradient
+        else: style += standard_bg
+
+        return f"<td style='{style}'><div style='font-size:11px; color:#7f8c8d; text-align:left; margin-bottom:8px; pointer-events:none;'>{z[idx]}</div><div style='position:relative; z-index:1;'>{g[idx]}</div></td>"
+
+    # Constructing the table with a fixed layout to force squareness
     return f"""
-    <div style='max-width: 380px; margin: auto; font-family: sans-serif;'>
-        <table style='width: 100%; table-layout: fixed; border-collapse: collapse; text-align: center; background-color: #ffffff; border: 2px solid #2c3e50; box-shadow: 0 2px 4px rgba(0,0,0,0.05);'>
+    <div style='max-width: 500px; margin: auto; font-family: sans-serif;'>
+        <table style='width: 100%; table-layout: fixed; border-collapse: collapse; text-align: center; background-color: #ffffff; border: 2px solid #2c3e50; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>
             <tr>{cell(12)}{cell(1)}{cell(2)}{cell(3)}</tr>
             <tr>{cell(11)}<td colspan='2' rowspan='2' style='border: 1px solid #dcdde1; vertical-align: middle; background-color: #ffffff;'>{center_html}</td>{cell(4)}</tr>
             <tr>{cell(10)}{cell(5)}</tr>
@@ -170,7 +177,7 @@ st.title(":material/favorite: 10-Porutham Matchmaking Engine")
 st.markdown("Professional Vedic compatibility using precision Swiss Ephemeris math and AI analysis.")
 st.divider()
 
-# Context Toggle
+# UPGRADE: Added clear Persona Toggle to personalize tone and language
 rel_status = st.radio("Relationship Context:", ["Exploring a Match", "Already Married / Committed"], horizontal=True)
 st.write("")
 
@@ -232,6 +239,7 @@ if calc_btn:
                 st.warning(f":material/warning: **Transition Zone:** The Moon is on the exact edge of {g_data['Nakshatra']}. Verify birth time.")
         
         st.markdown("<br>", unsafe_allow_html=True)
+        # Displaying the Upgraded Symmetrical Charts with the traditional slanting Lagna Line
         chart_c1, chart_c2 = st.columns(2)
         with chart_c1:
             st.markdown(get_south_indian_chart_html(b_data['P_Pos'], b_data['Lagna_Idx'], "Rasi Chart", b_name), unsafe_allow_html=True)
@@ -274,7 +282,7 @@ if calc_btn:
         
         st.markdown(f"<h2 style='text-align: center; margin-bottom: 0;'>Traditional Score: {score} / 10</h2>", unsafe_allow_html=True)
         
-        # Adjust outcome text based on Relationship Context
+        # UPGRADE: Persona-dependent conclusion wording
         if score >= 7 and m_match:
             outcome_text = "Excellent Alignment"
             outcome_color = "#27ae60"
@@ -323,46 +331,48 @@ if calc_btn:
             st.error("API Key missing! Add it to Streamlit Secrets to generate AI insights.")
         else:
             st.markdown("### :material/auto_awesome: Deep AI Relationship Oracle")
-            with st.spinner("The AI Astrologer is compiling a personalized, structured consultation..."):
+            with st.spinner("The AI Astrologer is compiling a personalized, balanced consultation..."):
                 try:
                     genai.configure(api_key=GEMINI_API_KEY)
                     match_list = ", ".join(list(matched_items.keys()))
                     unmatch_list = ", ".join(list(unmatched_items.keys()))
                     
+                    # UPGRADE Prompt: Strictly personalized (using names) and balanced formatting (intro + 2-3 deep bullets)
                     prompt = f"""
                     You are an elite, modern Vedic Astrologer. Analyze the relationship compatibility between:
                     Partner 1: {b_name} ({b_data['Lagna']} Ascendant, {b_data['Rasi']} Moon Sign, {b_data['Nakshatra']} Star).
                     Partner 2: {g_name} ({g_data['Lagna']} Ascendant, {g_data['Rasi']} Moon Sign, {g_data['Nakshatra']} Star).
                     
-                    Context: They are {rel_status}. Adjust your tone accordingly (if married, focus on strengthening the bond; if exploring, focus on potential dynamics).
+                    Context: They are {rel_status}. Adjust your tone accordingly (if married, focus on strengthening the bond and practical advice; if exploring, focus on potential dynamics and red flags).
+                    
                     Traditional Porutham score is {score}/10. 
                     Aligned Dimensions: {match_list}.
                     Areas for Growth: {unmatch_list}.
                     
-                    Write a highly structured, emotionally intelligent analysis.
+                    Write a highly structured, emotionally intelligent, profound analysis.
                     
                     CRITICAL FORMATTING RULES:
-                    - Always refer to them directly by their names ({b_name} and {g_name}). Never use "the boy" or "the girl".
-                    - Under each header, write a short, profound 2-sentence introductory paragraph.
-                    - Follow the introduction with exactly 2 to 3 bullet points. 
-                    - Each bullet point MUST be 2 to 3 sentences long to provide rich, nuanced detail (do not use short 4-word fragments).
+                    - **Strictly use their names ({b_name} and {g_name})**. Never use "the boy", "the girl", "Partner 1", or "Partner 2".
+                    - For each of the three headers, write a profound, 2-sentence introductory paragraph.
+                    - Follow that intro with exactly **two to three bullet points**. 
+                    - Each bullet point MUST be rich, detailed, and nuanced, lasting exactly **two to three sentences long** (do not use short fragments).
                     
                     Format EXACTLY using these three headers:
                     
                     ### :material/psychology: Psychological Dynamic
-                    (2-sentence intro about their mental/emotional connection)
-                    * **Deep Strengths:** (2-3 sentences explaining)
-                    * **Potential Friction:** (2-3 sentences explaining)
+                    (2-sentence intro about {b_name} and {g_name}'s mental/emotional connection)
+                    * **Strengths of Connection:** (2-3 sentences explaining)
+                    * **Navigating Friction:** (2-3 sentences explaining)
                     
                     ### :material/home_work: Life & Wealth
-                    (2-sentence intro about their worldly alignment)
-                    * **Financial Approach:** (2-3 sentences explaining)
-                    * **Domestic Harmony:** (2-3 sentences explaining)
+                    (2-sentence intro about {b_name} and {g_name}'s worldly alignment)
+                    * **Financial Compatibility:** (2-3 sentences explaining)
+                    * **Domestic Alignment:** (2-3 sentences explaining)
                     
                     ### :material/balance: Harnessing & Balancing
-                    (2-sentence intro with actionable, practical advice based on their relationship status)
-                    * **Harnessing {b_name} & {g_name}'s Strengths:** (2-3 sentences explaining)
-                    * **Navigating Growth Areas:** (2-3 sentences explaining how to mitigate their specific mismatches)
+                    (2-sentence intro about how {b_name} and {g_name} can use this data, tailored to their status as {rel_status})
+                    * **Harnessing Core Strengths:** (2-3 sentences explaining how to activate {match_list})
+                    * **Mitigating Growth Areas:** (2-3 sentences explaining how to proactively balance {unmatch_list})
                     """
                     
                     available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
