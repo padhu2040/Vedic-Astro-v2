@@ -1,7 +1,6 @@
 import streamlit as st
 import swisseph as swe
-from datetime import datetime, timedelta
-import plotly.graph_objects as go
+from datetime import datetime, time
 from geopy.geocoders import Nominatim
 from timezonefinder import TimezoneFinder
 import pytz
