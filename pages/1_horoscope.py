@@ -5,20 +5,20 @@ import google.generativeai as genai
 from supabase import create_client
 import plotly.graph_objects as go
 
-# --- IMPORTS FROM RESTORED ENGINE ---
+# --- IMPORTS FROM OUR CUSTOM ENGINES ---
 from astro_engine import (
     get_location_coordinates, get_utc_offset, get_bhava_chalit, get_navamsa_chart, get_dasamsa_chart,
     determine_house, get_dignity, calculate_sav_score, get_nakshatra_details, scan_yogas,
     analyze_career_professional, analyze_education, analyze_health, analyze_love_marriage,
     generate_annual_forecast, get_transit_data_advanced, analyze_karmic_axis, get_house_strength_analysis,
-    generate_mahadasha_table, generate_current_next_bhukti, 
+    generate_mahadasha_table, generate_current_next_bhukti, get_micro_transits,
     t_p, t_p_eng, ZODIAC_TA, ZODIAC
 )
-from report_generator import get_south_indian_chart_html
-from database import TAMIL_NAMES, identity_db, RASI_RULERS
-from tamil_lang import TAMIL_IDENTITY_DB
+from report_generator import get_south_indian_chart_html, generate_pdf_report
+from database import identity_db, RASI_RULERS, lifestyle_guidance
+from tamil_lang import TAMIL_IDENTITY_DB, TAMIL_LIFESTYLE
 
-# SECURE API SETUP
+# --- SECURE API SETUP ---
 API_KEY = st.secrets.get("GEMINI_API_KEY", "")
 if not API_KEY:
     try:
@@ -54,10 +54,12 @@ def load_profiles_from_db():
         except: pass
     return profiles
 
+# --- UI HEADER ---
 st.title(":material/account_circle: Deep Horoscope Engine")
 st.markdown("Generate a complete, personalized Vedic astrological profile.")
 st.divider()
 
+# --- SIDEBAR ---
 with st.sidebar:
     st.markdown("### ⚙️ Engine Settings")
     LANG = st.radio("Language / மொழி", ["English", "Tamil"], horizontal=True)
@@ -93,7 +95,7 @@ with st.sidebar:
         if not name_in or not city: st.error("Please enter a Name and City!")
         else: st.session_state.report_generated = True
 
-# --- EXECUTION ---
+# --- MAIN EXECUTION ---
 if st.session_state.report_generated:
     with st.spinner("Calculating exact astronomical data..." if LANG=="English" else "ஜாதகம் கணிக்கப்படுகிறது..."):
         swe.set_sid_mode(swe.SIDM_LAHIRI)
@@ -129,11 +131,10 @@ if st.session_state.report_generated:
             dig = get_dignity(p, r1)
             status = "VARGOTTAMA" if r1 == p_d9[p] else "ROYAL" if dig == "Exalted" else "WEAK" if dig == "Neecha" else "Avg"
             
-            # Use strict t_p_eng for English, t_p for Tamil
             p_name = t_p.get(p, p) if LANG == "Tamil" else t_p_eng.get(p, p)
             master_table.append({"Planet": p_name, "Rasi": ZODIAC_TA.get(r1, "") if LANG=="Tamil" else ZODIAC[r1], "House": h, "Bhava": bhava_h, "Dignity": dig, "Status": status})
 
-        # KETU INTEGRATION
+        # EXPLICIT KETU INTEGRATION
         ketu_lon = (p_lon_absolute["Rahu"] + 180) % 360
         p_lon_absolute["Ketu"] = ketu_lon
         p_pos["Ketu"] = int(ketu_lon/30) + 1
@@ -142,13 +143,15 @@ if st.session_state.report_generated:
         k_h = (p_pos["Ketu"] - lagna_rasi + 1) if (p_pos["Ketu"] - lagna_rasi + 1) > 0 else (p_pos["Ketu"] - lagna_rasi + 1) + 12
         k_dig = get_dignity("Ketu", p_pos["Ketu"])
         k_status = "VARGOTTAMA" if p_pos["Ketu"] == p_d9["Ketu"] else "ROYAL" if k_dig == "Exalted" else "WEAK" if k_dig == "Neecha" else "Avg"
-        master_table.append({"Planet": "கேது" if LANG=="Tamil" else "Ketu", "Rasi": ZODIAC_TA.get(p_pos["Ketu"], "") if LANG=="Tamil" else ZODIAC[p_pos["Ketu"]], "House": k_h, "Bhava": bhava_placements["Ketu"], "Dignity": k_dig, "Status": k_status})
+        k_name = t_p.get("Ketu", "Ketu") if LANG == "Tamil" else t_p_eng.get("Ketu", "Ketu")
+        master_table.append({"Planet": k_name, "Rasi": ZODIAC_TA.get(p_pos["Ketu"], "") if LANG=="Tamil" else ZODIAC[p_pos["Ketu"]], "House": k_h, "Bhava": bhava_placements["Ketu"], "Dignity": k_dig, "Status": k_status})
 
         p_pos["Lagna"] = lagna_rasi
         p_d9["Lagna"] = d9_lagna
         sav_scores = calculate_sav_score(p_pos, lagna_rasi)
         nak, lord = get_nakshatra_details(moon_res[0])
         
+        # --- DEEP TEXT ANALYSIS ---
         karmic_txt = analyze_karmic_axis(p_pos, lagna_rasi, lang=LANG)
         yogas = scan_yogas(p_pos, lagna_rasi, lang=LANG)
         career_txt = analyze_career_professional(p_pos, d10_lagna, lagna_rasi, sav_scores, bhava_placements, lang=LANG)
@@ -157,17 +160,38 @@ if st.session_state.report_generated:
         love_txt = analyze_love_marriage(lagna_rasi, d9_lagna, p_d9, p_pos, lang=LANG)
         fc = generate_annual_forecast(moon_rasi, sav_scores, f_year, current_age, lang=LANG)
         t_data = get_transit_data_advanced(f_year)
+        micro_transits = get_micro_transits(f_year, p_lon_absolute, lang=LANG)
         
         db_id = TAMIL_IDENTITY_DB if LANG == "Tamil" else identity_db
         report_id_data = db_id.get(ZODIAC[lagna_rasi], list(db_id.values())[0])
 
+        db_life = TAMIL_LIFESTYLE if LANG == "Tamil" else lifestyle_guidance
+        guide = db_life.get(RASI_RULERS.get(moon_rasi, "Moon"), {})
+
+        # --- TOP INFO SECTION ---
         c_left, c_right = st.columns([3, 1])
+        l_name = ZODIAC_TA.get(lagna_rasi, "") if LANG == "Tamil" else ZODIAC[lagna_rasi]
+        m_name = ZODIAC_TA.get(moon_rasi, "") if LANG == "Tamil" else ZODIAC[moon_rasi]
+        
         with c_left:
             st.subheader(f"Analysis for {name_in}" if LANG=="English" else f"ஜோதிட அறிக்கை: {name_in}")
-            l_name = ZODIAC_TA.get(lagna_rasi, "") if LANG == "Tamil" else ZODIAC[lagna_rasi]
-            m_name = ZODIAC_TA.get(moon_rasi, "") if LANG == "Tamil" else ZODIAC[moon_rasi]
             st.markdown(f"> **{'லக்னம்' if LANG=='Tamil' else 'Lagna'}:** {l_name} | **{'ராசி' if LANG=='Tamil' else 'Moon'}:** {m_name} | **{'நட்சத்திரம்' if LANG=='Tamil' else 'Star'}:** {nak}")
         
+        with c_right:
+            # --- THE PLATINUM PDF GENERATOR BUTTON ---
+            pdf_bytes = generate_pdf_report(name_in, p_pos, p_d9, lagna_rasi, sav_scores, career_txt, edu_txt, health_txt, love_txt, report_id_data, l_name, m_name, nak, yogas, fc, micro_transits, [], [], {}, guide, [], lang=LANG)
+            if isinstance(pdf_bytes, bytes):
+                st.download_button(
+                    label="📄 Download PDF Report" if LANG=="English" else "📄 ஜாதகத்தை பதிவிறக்க", 
+                    data=pdf_bytes, 
+                    file_name=f"{name_in}_Astro_Report.pdf", 
+                    mime="application/pdf",
+                    type="primary"
+                )
+            else:
+                st.error("PDF Engine not yet installed. Generating HTML backup instead...")
+
+        # --- UI TABS ---
         tb_lbls = ["Profile", "Scorecard", "Work & Intellect", "Love & Health", "Yogas", "Forecast", "Roadmap", "💬 Oracle"] if LANG == "English" else ["சுயவிவரம்", "அஷ்டகவர்க்கம்", "தொழில்", "திருமணம் & ஆரோக்கியம்", "யோகங்கள்", "ஆண்டு பலன்கள்", "தசா புக்தி", "💬 ஜோதிடர்"]
         t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs(tb_lbls)
 
@@ -203,12 +227,10 @@ if st.session_state.report_generated:
             sorted_houses = sorted([(sav_scores[(lagna_rasi-1+i)%12], i+1) for i in range(12)], key=lambda x: x[0], reverse=True)
             with c1:
                 st.markdown(f"<h4 style='color: #27ae60; margin-bottom: 10px;'>{'அதிக பலம் பெற்ற பாவங்கள்' if LANG=='Tamil' else 'Top Power Zones'}</h4>", unsafe_allow_html=True)
-                for s, h in sorted_houses[:3]:
-                    st.markdown(get_house_strength_analysis(h, s, LANG))
+                for s, h in sorted_houses[:3]: st.markdown(get_house_strength_analysis(h, s, LANG))
             with c2:
                 st.markdown(f"<h4 style='color: #e74c3c; margin-bottom: 10px;'>{'கவனம் தேவைப்படும் பாவங்கள்' if LANG=='Tamil' else 'Top Challenge Zones'}</h4>", unsafe_allow_html=True)
-                for s, h in sorted_houses[-3:]:
-                    st.markdown(get_house_strength_analysis(h, s, LANG))
+                for s, h in sorted_houses[-3:]: st.markdown(get_house_strength_analysis(h, s, LANG))
 
         with t3:
             st.subheader("Education & Intellect" if LANG == "English" else "கல்வி மற்றும் அறிவு")
@@ -265,7 +287,6 @@ if st.session_state.report_generated:
                 st.markdown(f"**{p['Type']}: {p['Phase']}**\n> {p['Dates']}\n\n{p['Text']}")
                 st.divider()
 
-            # TIMELINE ALIGNMENT FIX & RESTORED COLORS
             planet_colors = {"Suriyan": "#d35400", "Chandran": "#95a5a6", "Sevvai": "#c0392b", "Budhan": "#27ae60", "Guru": "#f39c12", "Sukran": "#8e44ad", "Sani": "#2c3e50", "Rahu": "#34495e", "Ketu": "#7f8c8d", "சூரியன்": "#d35400", "சந்திரன்": "#95a5a6", "செவ்வாய்": "#c0392b", "புதன்": "#27ae60", "குரு": "#f39c12", "சுக்கிரன்": "#8e44ad", "சனி": "#2c3e50", "ராகு": "#34495e", "கேது": "#7f8c8d"}
             
             dasha_names, start_years, durations = [], [], []
@@ -279,9 +300,8 @@ if st.session_state.report_generated:
             fig_timeline.add_trace(go.Bar(
                 y=['Life Path']*len(dasha_names), x=durations, base=start_years, name="Mahadashas", orientation='h',
                 text=dasha_names, textposition='inside', textangle=0, insidetextfont=dict(color='white', size=14),
-                marker=dict(color=[planet_colors.get(d, '#333') for d in dasha_names]) # COLORS RESTORED
+                marker=dict(color=[planet_colors.get(d, '#333') for d in dasha_names])
             ))
-            # Forces Timeline to anchor exactly on the Birth Year on the left
             fig_timeline.update_layout(
                 barmode='stack', height=150, margin=dict(l=0, r=0, t=10, b=20), 
                 xaxis=dict(range=[start_years[0], start_years[0]+120], tickformat="d"), 
@@ -289,7 +309,6 @@ if st.session_state.report_generated:
             )
             st.plotly_chart(fig_timeline, use_container_width=True)
             
-            # RESTORED RICH HTML TABLE
             h_age = "வயது" if LANG == "Tamil" else "Age"
             h_yrs = "ஆண்டுகள்" if LANG == "Tamil" else "Years"
             h_md = "மகா தசை" if LANG == "Tamil" else "Mahadasha"
@@ -322,7 +341,6 @@ if st.session_state.report_generated:
                                     genai.configure(api_key=API_KEY)
                                     chart_context = f"Ascendant {ZODIAC[lagna_rasi]}, Moon {ZODIAC[moon_rasi]}. Planets: {p_pos}."
                                     
-                                    # BULLETPROOF AI FIX
                                     available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
                                     target_model = available_models[0] if available_models else 'gemini-1.5-flash'
                                     for m in available_models:
