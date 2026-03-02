@@ -870,6 +870,36 @@ def load_profiles_from_db():
         except: pass
     return profiles
 
+# --- HELPER FUNCTIONS ---
+@st.cache_data
+def get_location_coordinates(query):
+    try:
+        geolocator = Nominatim(user_agent="vedic_astro_horoscope")
+        location = geolocator.geocode(query)
+        if location:
+            tf = TimezoneFinder()
+            tz_str = tf.timezone_at(lng=location.longitude, lat=location.latitude)
+            return location.latitude, location.longitude, tz_str
+    except: pass
+    return 13.0827, 80.2707, "Asia/Kolkata" 
+
+def get_utc_offset(tz_str, date_obj):
+    try:
+        tz = pytz.timezone(tz_str)
+        dt_aware = tz.localize(date_obj)
+        return dt_aware.utcoffset().total_seconds() / 3600
+    except: return 5.5 
+
+# --- SIDEBAR CONFIGURATION ---
+with st.sidebar:
+    # (Leave your existing sidebar code exactly as it is here!)
+
+
+
+
+
+
+
 # --- SIDEBAR CONFIGURATION ---
 with st.sidebar:
     st.markdown("### Birth Details")
