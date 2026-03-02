@@ -890,6 +890,11 @@ def get_utc_offset(tz_str, date_obj):
         return dt_aware.utcoffset().total_seconds() / 3600
     except: return 5.5 
 
+# --- UI CONFIGURATION ---
+st.title(":material/account_circle: Deep Horoscope Engine")
+st.markdown("Generate a complete, personalized Vedic astrological profile.")
+st.divider()
+
 # --- SIDEBAR CONFIGURATION ---
 with st.sidebar:
     st.markdown("### Birth Details")
