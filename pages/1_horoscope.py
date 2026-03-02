@@ -934,7 +934,7 @@ def generate_html_report(name_in, p_pos, p_d9, lagna_rasi, moon_rasi, sav_scores
     score_html = "<table class='bar-chart'>"
     for i in range(12):
         house_num = i + 1
-        score = sav_scores[(lagna_rasi - 1 + i) ]
+        score = sav_scores[(lagna_rasi - 1 + i) % 12]
         bar_w = int((score / 45) * 100)
         color_class = "high" if score >= 30 else "low" if score < 25 else ""
         lbl = "பாவம்" if lang == "Tamil" else "H"
