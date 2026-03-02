@@ -40,13 +40,21 @@ def get_south_indian_chart_html(p_pos, lagna_rasi, title, lang="English"):
     </div>
     """
 
-def generate_pdf_report(name_in, p_pos, p_d9, lagna_rasi, sav_scores, career_txt, edu_txt, health_txt, love_txt, id_data, lagna_str, moon_str, star_str, yogas, fc, micro_transits, mahadasha_data, phases, pd_info, guide, transit_texts, lang="English"):
+def generate_pdf_report(name_in, p_pos, p_d9, lagna_rasi, sav_scores, career_txt, edu_txt, health_txt, love_txt, karmic_txt, id_data, lagna_str, moon_str, star_str, yogas, fc, micro_transits, mahadasha_data, phases, pd_info, guide, transit_texts, lang="English"):
+    
+    # UPGRADED PARSER: Converts Markdown (**bold**, *italic*, > quotes) into clean PDF HTML
     def format_section(text_list):
         out = ""
         for line in text_list:
-            if line.startswith("#### "): out += f"<h4>{line.replace('#### ', '')}</h4>"
+            if line.startswith("#### "): 
+                out += f"<h4>{line.replace('#### ', '')}</h4>"
+            elif line.startswith("> "): 
+                parsed_quote = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', line.replace('> ', ''))
+                parsed_quote = re.sub(r'\*(.*?)\*', r'<i>\1</i>', parsed_quote)
+                out += f"<blockquote style='background:#fdfae6; border-left:4px solid #f1c40f; padding:10px; margin:10px 0; font-size:13px;'>{parsed_quote}</blockquote>"
             else: 
                 html_line = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', line)
+                html_line = re.sub(r'\*(.*?)\*', r'<i>\1</i>', html_line)
                 out += f"<p>{html_line}</p>"
         return out
 
@@ -65,29 +73,86 @@ def generate_pdf_report(name_in, p_pos, p_d9, lagna_rasi, sav_scores, career_txt
     html = f"""
     <!DOCTYPE html><html><head><meta charset="utf-8"><title>{h_title}</title>
     <style>
-        body {{ font-family: Helvetica, sans-serif; color: #333; line-height: 1.6; padding: 20px; }}
-        h1 {{ text-align: center; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; }}
-        h2 {{ color: #2980b9; margin-top: 30px; border-bottom: 1px solid #eee; padding-bottom: 5px; }}
-        h4 {{ color: #2c3e50; margin-top: 15px; margin-bottom: 5px; }}
-        p {{ margin-top: 5px; font-size: 14px; text-align: justify; }}
-        .bar-chart {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }}
-        .bar-chart td {{ padding: 6px 0; border-bottom: 1px dashed #eee; }}
-        .bar {{ background-color: #95a5a6; height: 18px; border-radius: 4px; }}
+        body {{ font-family: Helvetica, Arial, sans-serif; color: #333; line-height: 1.5; padding: 20px; }}
+        h1 {{ text-align: center; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 24px; }}
+        h2 {{ color: #2980b9; margin-top: 25px; border-bottom: 1px solid #eee; padding-bottom: 5px; font-size: 18px; page-break-after: avoid; }}
+        h4 {{ color: #2c3e50; margin-top: 15px; margin-bottom: 5px; font-size: 14px; }}
+        p {{ margin-top: 5px; font-size: 13px; text-align: justify; color: #444; }}
+        .bar-chart {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }}
+        .bar-chart td {{ padding: 6px 0; border-bottom: 1px dashed #eee; vertical-align: middle; }}
+        .bar {{ background-color: #95a5a6; height: 16px; border-radius: 3px; }}
         .bar.high {{ background-color: #27ae60; }}
         .bar.low {{ background-color: #e74c3c; }}
         .page-break {{ page-break-before: always; }}
+        table.timeline {{ width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }}
+        table.timeline th, table.timeline td {{ padding: 8px; text-align: left; border-bottom: 1px solid #ddd; vertical-align: top; }}
+        table.timeline th {{ background-color: #f0f3f4; color: #2c3e50; }}
+        .footer {{ text-align: center; font-size: 11px; color: #95a5a6; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px; }}
     </style></head><body>
         <h1>{h_title}</h1>
-        <p style="text-align:center;"><b>Lagna:</b> {lagna_str} | <b>Moon:</b> {moon_str} | <b>Star:</b> {star_str}</p>
-        <h2>Identity</h2><p><b>Purpose:</b> {id_data.get('Purpose', '')}</p>
-        <h2>Rasi Chart</h2>{chart1}
-        <h2>Destiny Radar</h2>{score_html}
+        <p style="text-align:center; font-size:14px;"><b>Lagna:</b> {lagna_str} | <b>Moon:</b> {moon_str} | <b>Star:</b> {star_str}</p>
+        
+        <h2>{"1. சுயவிவரம் (Identity)" if lang == "Tamil" else "1. Identity"}</h2>
+        <p><b>Purpose:</b> {id_data.get('Purpose', '')}</p>
+        
+        <h2>{"2. ராசி சக்கரம் (Rasi Chart)" if lang == "Tamil" else "2. Rasi Chart"}</h2>{chart1}
+        
+        <h2>{"3. அஷ்டகவர்க்கம் (Destiny Radar)" if lang == "Tamil" else "3. Destiny Radar"}</h2>{score_html}
+        
         <div class="page-break"></div>
-        <h2>Work & Intellect</h2>{format_section(edu_txt)}{format_section(career_txt)}
-        <h2>Navamsa & Marriage</h2>{chart2}{format_section(love_txt)}
-        <h2>Health & Vitality</h2>{format_section(health_txt)}
-    </body></html>
+        
+        <h2>{"4. கல்வி, தொழில் மற்றும் கர்மம் (Work & Karma)" if lang == "Tamil" else "4. Work, Intellect & Karma"}</h2>
+        {format_section(edu_txt)}
+        <hr style="border: 0; border-top: 1px dashed #ccc; margin: 15px 0;">
+        {format_section(career_txt)}
+        <hr style="border: 0; border-top: 1px dashed #ccc; margin: 15px 0;">
+        {format_section(karmic_txt)}
+        
+        <h2>{"5. நவாம்சம் மற்றும் திருமணம் (Marriage)" if lang == "Tamil" else "5. Navamsa & Marriage"}</h2>
+        <div style="margin-bottom: 15px;">{chart2}</div>
+        {format_section(love_txt)}
+        
+        <h2>{"6. ஆரோக்கியம் (Health & Vitality)" if lang == "Tamil" else "6. Health & Vitality"}</h2>
+        {format_section(health_txt)}
+        
+        <div class="page-break"></div>
+        
+        <h2>{"7. யோகங்கள் (Wealth Combinations)" if lang == "Tamil" else "7. Wealth & Power Yogas"}</h2>
     """
+    
+    # Add Yogas
+    for y in yogas: 
+        html += f"<h4>{y['Name']} ({y['Type']})</h4><p>{re.sub(r'\\*\\*(.*?)\\*\\*', r'<b>\1</b>', y['Description'])}</p>"
+
+    # Add Forecast with Highlighted Remedies
+    html += f"<h2>{'8. வருடாந்திர கணிப்பு (Annual Forecast)' if lang == 'Tamil' else '8. Annual Forecast'}</h2>"
+    for cat, data in fc.items():
+        parsed_desc = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', data[0])
+        rem_lbl = "பரிகாரம்" if lang == "Tamil" else "Remedy"
+        html += f"<h4>{cat}</h4><p>{parsed_desc}</p><blockquote style='background:#fdfae6; border-left:4px solid #f1c40f; padding:8px 12px; margin:5px 0; font-size:13px;'><b>{rem_lbl}:</b> {data[1]}</blockquote>"
+
+    # Add Transits
+    html += f"<h2>{'9. முக்கிய கிரகப் பெயர்ச்சிகள் (Transits)' if lang == 'Tamil' else '9. Planetary Transits'}</h2>"
+    for txt in transit_texts: 
+        html += f"<p>{re.sub(r'\\*\\*(.*?)\\*\\*', r'<b>\1</b>', txt)}</p>"
+
+    # Add Roadmap Table
+    age_lbl = "வயது" if lang == "Tamil" else "Age"
+    yr_lbl = "ஆண்டுகள்" if lang == "Tamil" else "Years"
+    md_lbl = "மகா தசை" if lang == "Tamil" else "Mahadasha"
+    pred_lbl = "கணிப்பு" if lang == "Tamil" else "Context & Prediction"
+    
+    html += f"""
+        <div class="page-break"></div>
+        <h2>{"10. தசா புக்தி (Strategic Roadmap)" if lang == "Tamil" else "10. Strategic Roadmap"}</h2>
+        <table class="timeline">
+            <tr><th width="12%">{age_lbl}</th><th width="13%">{yr_lbl}</th><th width="15%">{md_lbl}</th><th width="60%">{pred_lbl}</th></tr>
+    """
+    for row in mahadasha_data:
+        html += f"<tr><td>{row['Age (From-To)']}</td><td>{row['Years']}</td><td><b>{row['Mahadasha']}</b></td><td>{row['Prediction']}</td></tr>"
+    html += "</table>"
+
+    html += f"<div class='footer'>{'வேத ஜோதிட என்ஜின் மூலம் உருவாக்கப்பட்டது' if lang == 'Tamil' else 'Generated by Vedic Astro AI Engine'}</div></body></html>"
     
     options = {'page-size': 'A4', 'encoding': "UTF-8", 'enable-local-file-access': None, 'quiet': ''}
     try: return pdfkit.from_string(html, False, options=options)
