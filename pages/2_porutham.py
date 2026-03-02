@@ -176,16 +176,26 @@ if calc_btn:
                         (2-sentence intro, then 2 bullet points on how to use their strengths to overcome their weaknesses)
                         """
                         
-                        # FIX: Simple, robust model declaration to bypass 404 errors
-                        try:
-                            model = genai.GenerativeModel('gemini-1.5-flash')
-                            response = model.generate_content(prompt)
-                            st.markdown(response.text)
-                        except Exception as e1:
-                            # Fallback if 1.5 flash fails in user's region
-                            model = genai.GenerativeModel('gemini-1.0-pro')
+                        # --- FOOLPROOF MODEL SELECTION ---
+                        # 1. Ask Google what models are actually available to this specific API key
+                        available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+                        
+                        if not available_models:
+                            st.error("⚠️ Your API Key is valid, but Google is blocking text generation. Please check your Google AI Studio billing or region restrictions.")
+                        else:
+                            # 2. Pick the best available model dynamically
+                            target_model = available_models[0] # Fallback to whatever is first on the list
+                            for m in available_models:
+                                if 'gemini-1.5-flash' in m:
+                                    target_model = m
+                                    break
+                                elif '1.5-pro' in m or '1.0-pro' in m:
+                                    target_model = m
+                            
+                            # 3. Generate with the guaranteed-valid model
+                            model = genai.GenerativeModel(target_model)
                             response = model.generate_content(prompt)
                             st.markdown(response.text)
                             
                     except Exception as e:
-                        st.error(f"AI Generation Failed. Please check your API Key. Details: {e}")
+                        st.error(f"AI Generation Failed. Details: {e}")
