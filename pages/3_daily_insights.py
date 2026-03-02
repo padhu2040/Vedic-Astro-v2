@@ -122,23 +122,45 @@ def get_daily_panchangam(calc_date):
         "Weekday": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][weekday]
     }
 
-# --- DATABASE FETCHER HELPER ---
+# --- BULLETPROOF DATABASE HELPER ---
 def load_profiles_from_db():
     profiles = {}
-    if os.path.exists('astro_profiles.db'):
+    db_path = 'astro_profiles.db'
+    
+    if os.path.exists(db_path):
         try:
-            conn = sqlite3.connect('astro_profiles.db')
+            conn = sqlite3.connect(db_path)
             c = conn.cursor()
-            c.execute("SELECT * FROM profiles")
-            for row in c.fetchall():
-                profiles[row[0]] = {
-                    "dob": datetime.strptime(row[1], "%Y-%m-%d").date(),
-                    "tob": datetime.strptime(row[2], "%H:%M:%S").time(),
-                    "city": row[3]
-                }
+            # Explicitly select columns in the correct order
+            c.execute("SELECT name, dob, tob, city FROM profiles")
+            rows = c.fetchall()
+            
+            for row in rows:
+                try:
+                    name, dob_str, tob_str, city = row
+                    
+                    # Robust Date Parsing
+                    parsed_dob = datetime.strptime(dob_str, "%Y-%m-%d").date()
+                    
+                    # Robust Time Parsing (Handles both "HH:MM:SS" and "HH:MM")
+                    try:
+                        parsed_tob = datetime.strptime(tob_str, "%H:%M:%S").time()
+                    except ValueError:
+                        parsed_tob = datetime.strptime(tob_str, "%H:%M").time()
+                        
+                    profiles[name] = {
+                        "dob": parsed_dob,
+                        "tob": parsed_tob,
+                        "city": city
+                    }
+                except Exception as parse_err:
+                    # If ONE profile fails, it shows an error but CONTINUES loading the rest!
+                    st.error(f"Error parsing profile '{row[0]}': {parse_err}")
+                    
             conn.close()
-        except Exception as e:
-            pass
+        except Exception as db_err:
+            st.error(f"Database connection error: {db_err}")
+            
     return profiles
 
 # --- UI LAYOUT ---
