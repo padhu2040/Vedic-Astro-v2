@@ -235,6 +235,19 @@ if calc_btn:
                         ### ⚖️ Harnessing & Balancing
                         (2-sentence intro, then 2 bullet points on how to use their strengths to overcome their weaknesses)
                         """
+                        
+                        # --- ROBUST MODEL SELECTION ---
+                        available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+                        target_model = 'gemini-1.5-flash-latest' # Safe Fallback
+                        if 'models/gemini-1.5-flash' in available_models: target_model = 'models/gemini-1.5-flash'
+                        elif 'models/gemini-1.0-pro' in available_models: target_model = 'models/gemini-1.0-pro'
+                        
+                        model = genai.GenerativeModel(target_model)
+                        response = model.generate_content(prompt)
+                        st.markdown(response.text)
+                    except Exception as e:
+                        st.error(f"AI Generation Failed. Please try again. Details: {e}")
+                        
                         model = genai.GenerativeModel('gemini-1.5-flash')
                         response = model.generate_content(prompt)
                         st.markdown(response.text)
