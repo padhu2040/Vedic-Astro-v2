@@ -7,14 +7,14 @@ import pytz
 from database import DASHA_YEARS, DASHA_ORDER, RASI_RULERS, BINDU_RULES
 from tamil_lang import TAMIL_LIFESTYLE
 
-# TRANSLATION DICTIONARIES
+# --- TRANSLATION DICTIONARIES ---
 t_p = {"Sun": "சூரியன்", "Moon": "சந்திரன்", "Mars": "செவ்வாய்", "Mercury": "புதன்", "Jupiter": "குரு", "Venus": "சுக்கிரன்", "Saturn": "சனி", "Rahu": "ராகு", "Ketu": "கேது", "Lagna": "லக்னம்"}
 t_p_eng = {"Sun": "Suriyan", "Moon": "Chandran", "Mars": "Sevvai", "Mercury": "Budhan", "Jupiter": "Guru", "Venus": "Sukran", "Saturn": "Sani", "Rahu": "Rahu", "Ketu": "Ketu", "Lagna": "Lagna"}
 
 ZODIAC_TA = {1: "மேஷம்", 2: "ரிஷபம்", 3: "மிதுனம்", 4: "கடகம்", 5: "சிம்மம்", 6: "கன்னி", 7: "துலாம்", 8: "விருச்சிகம்", 9: "தனுசு", 10: "மகரம்", 11: "கும்பம்", 12: "மீனம்"}
 ZODIAC = ["", "Mesha", "Rishabha", "Mithuna", "Kataka", "Simha", "Kanya", "Thula", "Vrischika", "Dhanu", "Makara", "Kumbha", "Meena"]
 
-# --- TIME & LOCATION ---
+# --- TIME & LOCATION MATH ---
 def get_location_coordinates(query):
     try:
         if query.strip().isdigit() and len(query.strip()) == 6: query = f"{query}, India"
@@ -30,7 +30,7 @@ def get_utc_offset(tz_str, date_obj):
         return tz.localize(date_obj).utcoffset().total_seconds() / 3600
     except: return 5.5 
 
-# --- MATH ---
+# --- ASTRONOMY MATH ---
 def get_nakshatra_details(lon):
     nak_names = ["Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra", "Punarvasu", "Pushya", "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", "Hasta", "Chitra", "Swati", "Vishakha", "Anuradha", "Jyeshtha", "Mula", "Purva Ashadha", "Uttara Ashadha", "Shravana", "Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"]
     lords = ["Ketu", "Sun", "Moon", "Mars", "Rahu", "Jupiter", "Saturn", "Mercury", "Venus"]
@@ -77,30 +77,20 @@ def determine_house(planet_lon, cusps):
             if p_lon >= lower or p_lon < upper: return i + 1
     return 1
 
-# --- DEEP TEXT ENGINES ---
+# --- DEEP TEXT ANALYSIS ENGINES ---
 def get_house_strength_analysis(house_num, score, lang="English"):
-    topics = {
-        1: "Self, Vitality & Direction", 2: "Wealth, Family & Speech", 3: "Courage & Self-Effort", 
-        4: "Home, Mother & Inner Peace", 5: "Intellect, Creativity & Risk", 6: "Health, Debt & Overcoming Rivals",
-        7: "Marriage & Partnerships", 8: "Transformation & Hidden Wealth", 9: "Luck, Wisdom & Fortune", 
-        10: "Career & Authority", 11: "Major Gains & Networks", 12: "Spiritual Retreats & Expenditures"
-    }
-    t_topics = {
-        1: "சுய அடையாளம், உடல் ஆரோக்கியம்", 2: "செல்வம், குடும்பம்", 3: "தைரியம், சுயமாக முன்னேறுதல்", 
-        4: "வீடு, தாயார், மன அமைதி", 5: "புத்திசாலித்தனம், குழந்தைகள்", 6: "கடன் தீர்வு, எதிரிகளை வெல்லுதல்",
-        7: "திருமணம், கூட்டாண்மை", 8: "ரகசியங்கள், எதிர்பாராத மாற்றங்கள்", 9: "பாக்கியம், உயர்கல்வி", 
-        10: "தொழில் வெற்றி, அந்தஸ்து", 11: "லாபம், நெட்வொர்க்", 12: "பயணங்கள், முதலீடுகள்"
-    }
+    topics = {1: "Self & Vitality", 2: "Wealth & Speech", 3: "Courage & Self-Effort", 4: "Home & Inner Peace", 5: "Intellect & Speculation", 6: "Health & Overcoming Rivals", 7: "Marriage & Partnerships", 8: "Transformation & Hidden Wealth", 9: "Luck & Wisdom", 10: "Career & Authority", 11: "Major Gains", 12: "Spiritual Retreats"}
+    t_topics = {1: "சுய அடையாளம், ஆரோக்கியம்", 2: "செல்வம், குடும்பம்", 3: "தைரியம், வெற்றி", 4: "வீடு, மன அமைதி", 5: "புத்திசாலித்தனம்", 6: "கடன் தீர்வு, எதிரிகள்", 7: "திருமணம், கூட்டாண்மை", 8: "ரகசியங்கள், மாற்றங்கள்", 9: "பாக்கியம், உயர்கல்வி", 10: "தொழில் வெற்றி, அந்தஸ்து", 11: "லாபம், நெட்வொர்க்", 12: "பயணங்கள், முதலீடுகள்"}
     
     if score >= 30:
         if lang == "Tamil": return f"**மிகவும் வலிமையான பாவம்:** {house_num}-ஆம் பாவம் ({t_topics[house_num]}) இயற்கையாகவே அதிக சக்தி பெற்றுள்ளது.\n> **பரிகாரம்/வழிகாட்டுதல்:** இந்தத் துறையில் நீங்கள் தைரியமாக புதிய முயற்சிகளை எடுக்கலாம். இது உங்கள் வெற்றிக்கு இயற்கையாகவே உதவும் பிரம்மாஸ்திரம்."
-        return f"**Power Zone:** The {house_num}th House ({topics[house_num]}) is exceptionally strong. Energy flows effortlessly here.\n> **Harnessing Guide:** Double down your efforts here. Take calculated risks and assume leadership in this specific area of your life. The universe will support you seamlessly."
+        return f"**Power Zone:** The {house_num}th House ({topics[house_num]}) is exceptionally strong.\n> **Harnessing Guide:** Double down your efforts here. Take calculated risks and assume leadership in this area. The universe supports you."
     elif score < 25:
         if lang == "Tamil": return f"**கவனம் தேவைப்படும் பாவம்:** {house_num}-ஆம் பாவம் ({t_topics[house_num]}) சற்று பலவீனமாக உள்ளது.\n> **பரிகாரம்/வழிகாட்டுதல்:** இந்தத் துறையில் அவசர முடிவுகளைத் தவிர்க்கவும். அனுபவம் வாய்ந்தவர்களின் ஆலோசனையைப் பெறுவது தடைகளைத் தகர்க்க உதவும்."
-        return f"**Challenge Zone:** The {house_num}th House ({topics[house_num]}) requires highly conscious, strategic effort.\n> **Mitigation Guide:** Do not rely on 'luck' here. Apply intense structure, seek external mentorship, and avoid impulsive decisions regarding this house's matters."
+        return f"**Challenge Zone:** The {house_num}th House ({topics[house_num]}) requires highly conscious effort.\n> **Mitigation Guide:** Do not rely on 'luck' here. Apply intense structure, seek mentorship, and avoid impulsive decisions."
     else:
         if lang == "Tamil": return f"**சமநிலையான பாவம்:** {house_num}-ஆம் பாவம் ({t_topics[house_num]}) சீராக உள்ளது. உழைப்பிற்கு ஏற்ற நியாயமான பலன்கள் கிடைக்கும்."
-        return f"**Balanced Zone:** The {house_num}th House ({topics[house_num]}) is stable. It operates strictly on the rule of cause and effect. Your direct input equals your direct output."
+        return f"**Balanced Zone:** The {house_num}th House ({topics[house_num]}) is stable. Your direct input strictly equals your direct output."
 
 def analyze_karmic_axis(p_pos, lagna_rasi, lang="English"):
     rahu_h = (p_pos["Rahu"] - lagna_rasi + 1) if (p_pos["Rahu"] - lagna_rasi + 1) > 0 else (p_pos["Rahu"] - lagna_rasi + 1) + 12
@@ -108,14 +98,14 @@ def analyze_karmic_axis(p_pos, lagna_rasi, lang="English"):
     res = []
     if lang == "Tamil":
         res.append("#### கர்ம வினை அச்சு (ராகு / கேது தாக்கம்)")
-        res.append(f"உங்கள் ஜாதகத்தில் ராகு {rahu_h}-ஆம் வீட்டிலும், கேது {ketu_h}-ஆம் வீட்டிலும் அமர்ந்துள்ளனர். இது உங்களின் ஆன்மீக நோக்கத்தைக் குறிக்கிறது.")
+        res.append(f"உங்கள் ஜாதகத்தில் ராகு {rahu_h}-ஆம் வீட்டிலும், கேது {ketu_h}-ஆம் வீட்டிலும் அமர்ந்துள்ளனர்.")
         res.append(f"**ராகுவின் ஆசை ({rahu_h}-ஆம் பாவம்):** இந்தத் துறையில் நீங்கள் மிகப்பெரிய உச்சத்தை தொட வேண்டும் என்ற அளவற்ற ஆசை உங்களுக்குள் இருக்கும். இது இப்பிறவியின் மிகப்பெரிய சவாலாகும்.")
         res.append(f"**கேதுவின் ஞானம் ({ketu_h}-ஆம் பாவம்):** முற்பிறவியிலேயே இந்தத் துறையில் நீங்கள் முழு நிபுணத்துவம் பெற்றுவிட்டீர்கள். எனவே, உங்களுக்கு இயல்பான அறிவும், அதே சமயம் ஒருவித பற்றின்மையும் (Detachment) இருக்கும்.")
     else:
         res.append("#### The Karmic Axis (Rahu & Ketu Impact)")
         res.append(f"Rahu and Ketu operate exactly 180 degrees apart in your {rahu_h}th and {ketu_h}th houses. This axis pulls you between deep past-life comfort and uncharted ambition.")
         res.append(f"**Rahu's Obsession ({rahu_h}th House):** Rahu creates a relentless, almost obsessive hunger for growth in this house. You are meant to take massive, unconventional leaps here to evolve your soul.")
-        res.append(f"**Ketu's Mastery & Detachment ({ketu_h}th House):** Ketu signifies deep past-life mastery. You possess effortless, intuitive genius in this area, but you simultaneously feel a profound sense of 'been there, done that' detachment. Use Ketu's deep analytical skills to support Rahu's ambitions.")
+        res.append(f"**Ketu's Mastery & Detachment ({ketu_h}th House):** Ketu signifies deep past-life mastery. You possess effortless, intuitive genius in this area, but you simultaneously feel a profound sense of 'been there, done that' detachment.")
     return res
 
 def scan_yogas(p_pos, lagna_rasi, lang="English"):
@@ -123,7 +113,7 @@ def scan_yogas(p_pos, lagna_rasi, lang="English"):
     p_houses = {p: ((r - lagna_rasi + 1) if (r - lagna_rasi + 1) > 0 else (r - lagna_rasi + 1) + 12) for p, r in p_pos.items() if p != "Lagna"}
     
     if p_pos.get("Sun") == p_pos.get("Mercury"):
-        if lang == "Tamil": yogas.append({"Name": "புதாதித்ய யோகம் (Budhaditya)", "Type": "அறிவு மற்றும் வணிகம்", "Description": f"சூரியனும் புதனும் உங்கள் {p_houses.get('Sun')}-ஆம் வீட்டில் இணைந்து இந்த யோகத்தை உருவாக்குகின்றன. இது மிகச்சிறந்த பகுப்பாய்வு திறனையும், கூர்மையான வணிக அறிவையும் தருகிறது. தசா/புக்தி காலங்களில் இது உங்களுக்கு சிறந்த பெயரையும் பணத்தையும் பெற்றுத் தரும்."})
+        if lang == "Tamil": yogas.append({"Name": "புதாதித்ய யோகம் (Budhaditya)", "Type": "அறிவு மற்றும் வணிகம்", "Description": f"சூரியனும் புதனும் உங்கள் {p_houses.get('Sun')}-ஆம் வீட்டில் இணைந்து இந்த யோகத்தை உருவாக்குகின்றன. இது மிகச்சிறந்த பகுப்பாய்வு திறனையும், கூர்மையான வணிக அறிவையும் தருகிறது. தசா/புக்தி காலங்களில் இது சிறந்த பெயரையும் பணத்தையும் பெற்றுத் தரும்."})
         else: yogas.append({"Name": "Budhaditya Yoga", "Type": "Intellect & Commerce", "Description": f"Suriyan and Budhan are conjunct in your {p_houses.get('Sun')}th House, forming a highly analytical business mind. **Impact:** It enhances executive communication and creates heavy wealth potential through advisory or trade. You likely noticed this mental edge emerging early in your childhood education."})
     
     if "Jupiter" in p_pos and "Moon" in p_pos:
@@ -144,7 +134,7 @@ def analyze_education(p_pos, lagna_rasi, lang="English"):
     if lang == "Tamil":
         analysis.append("#### கல்வி மற்றும் அறிவுசார் திறன்")
         analysis.append(f"உங்கள் கல்வி மற்றும் அறிவாற்றலை 5-ஆம் அதிபதியான **{t_p[lord_5]}** தீர்மானிக்கிறார். நீங்கள் எதையும் மேலோட்டமாக படிக்காமல், தர்க்கரீதியாக ஆராய்ந்து ஆழமாகப் புரிந்து கொள்ளும் குணம் கொண்டவர்.")
-        if mercury_dig in ["Exalted", "Own"]: analysis.append("புதன் மிகவும் வலுவாக இருப்பதால், சிக்கலான தரவுகளைப் பகுப்பாய்வு செய்யும் அபார திறன் உங்களுக்கு உண்டு. கணக்கீடு, தொழில்நுட்பம் மற்றும் நிதி துறைகளில் உங்களால் மற்றவர்களை எளிதாக முந்த முடியும்.")
+        if mercury_dig in ["Exalted", "Own"]: analysis.append("புதன் மிகவும் வலுவாக இருப்பதால், சிக்கலான தரவுகளைப் பகுப்பாய்வு செய்யும் அபார திறன் உங்களுக்கு உண்டு. கணக்கீடு மற்றும் நிதி துறைகளில் உங்களால் மற்றவர்களை எளிதாக முந்த முடியும்.")
         elif mercury_dig == "Neecha": analysis.append("புதன் பலவீனமாக இருப்பதால், வெறும் மனப்பாடம் செய்வதை விட, அனுபவபூர்வமான மற்றும் கற்பனைத்திறன் சார்ந்த கல்வியே உங்களுக்கு உகந்தது.")
         else: analysis.append("உங்களின் தர்க்க அறிவும், கற்கும் திறனும் சீராக உள்ளது. கவனச்சிதறல்களைத் தவிர்த்து ஒருமுகப்படுத்தப்பட்ட பயிற்சியின் மூலம் நீங்கள் எந்தத் துறையிலும் வல்லவராகலாம்.")
     else:
@@ -160,7 +150,6 @@ def analyze_career_professional(p_pos, d10_lagna, lagna_rasi, sav_scores, bhava_
     sun_rasi_h = (p_pos['Sun'] - lagna_rasi + 1) if (p_pos['Sun'] - lagna_rasi + 1) > 0 else (p_pos['Sun'] - lagna_rasi + 1) + 12
     sun_bhava_h = bhava_placements['Sun'] 
     d10_lord = RASI_RULERS[(d10_lagna + 9) % 12 or 12]
-    
     if lang == "Tamil":
         analysis.append("#### தொழில் மற்றும் செயல் வியூகம்")
         if sun_rasi_h != sun_bhava_h: analysis.append(f"**முக்கிய மாற்றம்:** உங்கள் சூரியன் {sun_rasi_h}-ஆம் ராசியில் இருந்தாலும், அது {sun_bhava_h}-ஆம் பாவத்திலேயே முழுமையாகச் செயல்படுகிறது. உங்களின் உண்மையான அங்கீகாரம் இந்த பாவத்தின் வழியாகவே கிடைக்கும்.")
@@ -179,30 +168,21 @@ def analyze_love_marriage(d1_lagna, d9_lagna, p_d9, p_d1, lang="English"):
     analysis = []
     lord_5 = RASI_RULERS[(d1_lagna + 4) % 12 or 12]
     d9_7th_lord = RASI_RULERS[(d9_lagna + 6) % 12 or 12]
-    
     traits = {
-        "Sun": "absolute loyalty, dignified leadership, and taking immense mutual pride in each other's public status",
-        "Moon": "deep emotional empathy, nurturing domestic care, and highly intuitive understanding without words",
-        "Mars": "protective action, setting clear boundaries, and guarding the relationship fiercely against outsiders",
-        "Mercury": "crystal-clear communication, intellectual banter, and treating each other fundamentally as best friends",
-        "Jupiter": "moral grounding, shared philosophical or religious growth, and mature wisdom",
-        "Venus": "unconditional romantic devotion, aesthetic harmony in the home, and actively prioritizing peace",
-        "Saturn": "unshakeable duty, absolute loyalty through financial hardships, and extreme, enduring patience"
+        "Sun": "absolute loyalty, dignified leadership, and mutual pride",
+        "Moon": "deep emotional empathy, nurturing domestic care, and intuitive understanding",
+        "Mars": "protective action, clear boundaries, and guarding the relationship fiercely",
+        "Mercury": "crystal-clear communication, intellectual banter, and treating each other as best friends",
+        "Jupiter": "moral grounding, shared philosophical growth, and mature wisdom",
+        "Venus": "unconditional romantic devotion, aesthetic harmony, and prioritizing peace",
+        "Saturn": "unshakeable duty, absolute loyalty through hardships, and extreme patience"
     }
-    t_traits = {
-        "Sun": "நேர்மை, கௌரவம் மற்றும் பரஸ்பர மரியாதை",
-        "Moon": "ஆழமான பாசம், அக்கறை மற்றும் வார்த்தைகள் இல்லாத உணர்வுபூர்வமான புரிதல்",
-        "Mars": "உறவை பாதுகாக்கும் குணம், தைரியம் மற்றும் தெளிவான முடிவுகள்",
-        "Mercury": "சிறந்த தகவல் தொடர்பு, நகைச்சுவை உணர்வு மற்றும் மிகச்சிறந்த நட்பு",
-        "Jupiter": "தெய்வீக பக்தி, முதிர்ச்சியான ஞானம் மற்றும் பரஸ்பர வழிகாட்டுதல்",
-        "Venus": "அளவற்ற அன்பு, அழகுணர்ச்சி மற்றும் சமரச மனப்பான்மை",
-        "Saturn": "கடமையுணர்வு, கடினமான நேரங்களில் கைவிடாத விசுவாசம் மற்றும் அதீத பொறுமை"
-    }
+    t_traits = {"Sun": "நேர்மை, கௌரவம் மற்றும் பரஸ்பர மரியாதை", "Moon": "ஆழமான பாசம், அக்கறை மற்றும் உணர்வுபூர்வமான புரிதல்", "Mars": "உறவை பாதுகாக்கும் குணம், தைரியம் மற்றும் தெளிவான முடிவுகள்", "Mercury": "சிறந்த தகவல் தொடர்பு, நகைச்சுவை உணர்வு மற்றும் சிறந்த நட்பு", "Jupiter": "தெய்வீக பக்தி, முதிர்ச்சியான ஞானம் மற்றும் பரஸ்பர வழிகாட்டுதல்", "Venus": "அளவற்ற அன்பு, அழகுணர்ச்சி மற்றும் சமரச மனப்பான்மை", "Saturn": "கடமையுணர்வு, கடினமான நேரங்களில் விசுவாசம் மற்றும் பொறுமை"}
     
     if lang == "Tamil":
         analysis.append("#### காதல் மற்றும் திருமண வாழ்க்கை (D9 நவாம்சம்)")
         analysis.append(f"உங்கள் ஆரம்பகால காதல் உணர்வுகள் 5-ஆம் அதிபதியான **{t_p[lord_5]}** ஆல் ஆளப்படுகிறது. எனவே தொடக்கத்தில் உற்சாகமான உறவுகளை நாடுவீர்கள்.")
-        analysis.append(f"ஆனால், உங்கள் உண்மையான, நிரந்தர திருமண வாழ்க்கை நவாம்சத்தின் 7-ஆம் அதிபதியான **{t_p[d9_7th_lord]}** இன் குணங்களைச் சார்ந்திருக்கும். உங்கள் துணை '{t_traits[d9_7th_lord]}' ஆகிய முதிர்ச்சியான குணங்களைக் கொண்டிருக்க வேண்டும். அப்போதுதான் உங்கள் திருமண வாழ்க்கை ஒரு உடையாத கோட்டையாக மாறும்.")
+        analysis.append(f"ஆனால், உங்கள் உண்மையான, நிரந்தர திருமண வாழ்க்கை நவாம்சத்தின் 7-ஆம் அதிபதியான **{t_p[d9_7th_lord]}** இன் குணங்களைச் சார்ந்திருக்கும். உங்கள் துணை '{t_traits[d9_7th_lord]}' ஆகிய முதிர்ச்சியான குணங்களைக் கொண்டிருக்க வேண்டும். அப்போதுதான் உங்கள் திருமணம் ஒரு உடையாத கோட்டையாக மாறும்.")
     else:
         analysis.append("#### The Dating Phase vs. The Lifelong Marriage Phase")
         analysis.append(f"Your approach to early romance (5th House) is governed by **{t_p_eng[lord_5]}**. This implies you initially seek partners who are exciting, dynamic, and align with {t_p_eng[lord_5]}'s immediate energy. However, what you *want* in dating is entirely different from what you fundamentally *need* to sustain a lifelong marriage.")
@@ -218,28 +198,20 @@ def analyze_health(p_pos, lagna_rasi, lang="English"):
     remedies = {
         "Sun": "Worship Lord Shiva daily. Offer water to the rising sun to strengthen cardiovascular health.",
         "Moon": "Practice deep meditation. Keep your mind calm to avoid psychosomatic chest or lung issues.",
-        "Mars": "Practice grounding physical exercises. Worship Lord Murugan to cool internal inflammation and prevent accidents.",
-        "Mercury": "Unplug from screens to rest your nervous system. Chant Vishnu Sahasranamam for mental clarity.",
+        "Mars": "Practice grounding physical exercises. Worship Lord Murugan to cool internal inflammation.",
+        "Mercury": "Unplug from screens to rest your nervous system. Chant Vishnu Sahasranamam for clarity.",
         "Jupiter": "Avoid over-indulgence in rich foods. Offer yellow sweets and respect your spiritual teachers.",
-        "Venus": "Maintain strict dietary cleanliness to avoid sugar/hormonal imbalances. Keep your surroundings aesthetic and pure.",
-        "Saturn": "Perform regular stretching/yoga for bone and joint health. Light a sesame oil lamp on Saturdays to ease chronic pain."
+        "Venus": "Maintain strict dietary cleanliness to avoid sugar/hormonal imbalances. Keep surroundings pure.",
+        "Saturn": "Perform regular stretching/yoga for bone and joint health. Light a sesame oil lamp on Saturdays."
     }
-    t_remedies = {
-        "Sun": "தினமும் சிவ வழிபாடு செய்யவும். காலையில் சூரிய நமஸ்காரம் செய்வது இதய ஆரோக்கியத்தை மேம்படுத்தும்.",
-        "Moon": "மன அமைதியே சிறந்த மருந்து. தியானம் செய்யவும், திங்கட்கிழமைகளில் அம்பாளை வழிபடவும்.",
-        "Mars": "உடல் உஷ்ணத்தை சீராக வைத்திருக்கவும். விபத்துகளைத் தவிர்க்க செவ்வாய்க்கிழமைகளில் முருகனை வழிபடவும்.",
-        "Mercury": "நரம்பு தளர்ச்சியைத் தவிர்க்க முறையான ஓய்வு தேவை. விஷ்ணு சகஸ்ரநாமம் கேட்பது மன அமைதி தரும்.",
-        "Jupiter": "உடல் பருமன் மற்றும் கொலஸ்ட்ராலைக் கட்டுப்படுத்தவும். வியாழக்கிழமைகளில் குரு தட்சிணாமூர்த்தியை வழிபடவும்.",
-        "Venus": "சர்க்கரை அளவை கவனமாகக் கண்காணிக்கவும். மகாலட்சுமி வழிபாடு மற்றும் முறையான உணவுப் பழக்கம் அவசியம்.",
-        "Saturn": "எலும்பு மற்றும் மூட்டு வலிகளைத் தவிர்க்க தினமும் யோகா அல்லது நடைப்பயிற்சி அவசியம். சனிக்கிழமைகளில் நல்லெண்ணெய் தீபம் ஏற்றவும்."
-    }
+    t_remedies = {"Sun": "தினமும் சிவ வழிபாடு செய்யவும். காலையில் சூரிய நமஸ்காரம் செய்வது இதய ஆரோக்கியத்தை மேம்படுத்தும்.", "Moon": "மன அமைதியே சிறந்த மருந்து. தியானம் செய்யவும், திங்கட்கிழமைகளில் அம்பாளை வழிபடவும்.", "Mars": "உடல் உஷ்ணத்தை சீராக வைத்திருக்கவும். விபத்துகளைத் தவிர்க்க செவ்வாய்க்கிழமைகளில் முருகனை வழிபடவும்.", "Mercury": "நரம்பு தளர்ச்சியைத் தவிர்க்க முறையான ஓய்வு தேவை. விஷ்ணு சகஸ்ரநாமம் கேட்பது மன அமைதி தரும்.", "Jupiter": "உடல் பருமன் மற்றும் கொலஸ்ட்ராலைக் கட்டுப்படுத்தவும். வியாழக்கிழமைகளில் குரு தட்சிணாமூர்த்தியை வழிபடவும்.", "Venus": "சர்க்கரை அளவை கவனமாகக் கண்காணிக்கவும். மகாலட்சுமி வழிபாடு மற்றும் முறையான உணவுப் பழக்கம் அவசியம்.", "Saturn": "எலும்பு மற்றும் மூட்டு வலிகளைத் தவிர்க்க தினமும் யோகா அவசியம். சனிக்கிழமைகளில் நல்லெண்ணெய் தீபம் ஏற்றவும்."}
 
     if lang == "Tamil":
         analysis.append("#### உடல் வலிமை மற்றும் நோய் எதிர்ப்பு சக்தி")
         if ll_dig in ["Exalted", "Own"]: analysis.append(f"லக்னாதிபதி ({t_p[lagna_lord]}) மிகவும் வலுவாக உள்ளார். இது உங்களுக்கு இரும்பு போன்ற உடல் வலிமையையும், வியக்கத்தக்க நோய் எதிர்ப்பு சக்தியையும் அளிக்கிறது.")
         elif ll_dig == "Neecha": analysis.append(f"லக்னாதிபதி ({t_p[lagna_lord]}) பலவீனமாக உள்ளார். உங்கள் உடல் சக்தியை நீங்கள் மிகவும் கவனமாக கையாள வேண்டும். முறையான தூக்கமே சிறந்த மருந்து.")
         else: analysis.append(f"லக்னாதிபதி ({t_p[lagna_lord]}) சமநிலையில் உள்ளார். உங்களின் தினசரி வாழ்க்கை முறை மற்றும் பழக்கவழக்கங்களே உங்கள் ஆரோக்கியத்தை நேரடியாக தீர்மானிக்கும்.")
-        analysis.append(f"**கவனம் தேவை:** ஆரோக்கியத்தை குறிக்கும் 6-ஆம் அதிபதி **{t_p[lord_6]}** ஆவார். இதற்கான ஆன்மீக மற்றும் நடைமுறை பரிகாரம்: *{t_remedies[lord_6]}*")
+        analysis.append(f"**கவனம் தேவை:** ஆரோக்கியத்தை குறிக்கும் 6-ஆம் அதிபதி **{t_p[lord_6]}** ஆவார். இதற்கான ஆன்மீக மற்றும் நடைமுறை பரிகாரம்: \n> *{t_remedies[lord_6]}*")
     else:
         analysis.append("#### Core Physical Resilience & Preventative Care")
         if ll_dig in ["Exalted", "Own"]: analysis.append(f"Your Ascendant Lord ({t_p_eng[lagna_lord]}) is exceptionally strong. This grants you a highly robust physical constitution and excellent natural immunity.")
@@ -298,6 +270,48 @@ def get_transit_data_advanced(f_year):
         data[p_name] = {"Rasi": curr_rasi, "NextDate": next_date, "NextSignIdx": next_sign_idx}
     return data
 
+def get_micro_transits(f_year, p_lon_absolute, lang="English"):
+    jd_start = swe.julday(f_year, 1, 1, 12.0)
+    events = []
+    tr_planets = {"Saturn": swe.SATURN, "Jupiter": swe.JUPITER, "Rahu": swe.MEAN_NODE}
+    nat_planets = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Lagna", "Ketu"]
+    active_conjunctions = {}
+
+    for step in range(0, 365, 5): 
+        jd = jd_start + step
+        dt = swe.revjul(jd, swe.GREG_CAL)
+        current_date = datetime(dt[0], dt[1], dt[2])
+        for trp, tid in tr_planets.items():
+            tr_lon = swe.calc_ut(jd, tid, swe.FLG_SIDEREAL)[0][0]
+            for np in nat_planets:
+                n_lon = p_lon_absolute.get(np, 0)
+                if n_lon == 0 and np != "Lagna": continue
+                diff = abs(tr_lon - n_lon)
+                if diff > 180: diff = 360 - diff
+                if diff <= 2.5: 
+                    key = (trp, np)
+                    if key not in active_conjunctions: active_conjunctions[key] = []
+                    active_conjunctions[key].append(current_date)
+
+    for (trp, np), dates in active_conjunctions.items():
+        if not dates: continue
+        start_d = min(dates).strftime("%d %b")
+        end_d = max(dates).strftime("%d %b")
+        date_txt = f"{start_d} to {end_d}" if start_d != end_d else f"Around {start_d}"
+        meaning = ""
+        if lang == "Tamil":
+            trigger_txt = f"கோச்சார {t_p.get(trp, trp)}, ஜனன {t_p.get(np, np)} மீது இணைகிறது"
+            if trp == "Saturn": meaning = "கர்ம வினைகளின் அழுத்தம் கூடும். தியானம் மற்றும் பொறுமை அவசியம்."
+            elif trp == "Jupiter": meaning = "தெய்வீக அருள் உங்களை பாதுகாக்கும். சுபகாரியங்கள் நடைபெறும்."
+            elif trp == "Rahu": meaning = "மாயைகள் மற்றும் பேராசைகள் தோன்றும். நிதானமாகச் செயல்படவும்."
+        else:
+            trigger_txt = f"Transiting {t_p_eng.get(trp, trp)} crosses Natal {t_p_eng.get(np, np)}"
+            if trp == "Saturn": meaning = "Intense karmic pressure. Past actions catch up. Stay highly disciplined."
+            elif trp == "Jupiter": meaning = "Physical and spiritual protection. A highly optimistic period where your personal aura shines."
+            elif trp == "Rahu": meaning = "Karmic acceleration. Breaking old rules. Beware of impulsive life changes."
+        if meaning: events.append({"Trigger": trigger_txt, "Dates": date_txt, "Impact": meaning})
+    return events
+
 def generate_mahadasha_table(moon_lon, birth_date, lang="English"):
     nak_idx = int(moon_lon / 13.333333333)
     bal = 1 - ((moon_lon % 13.333333333) / 13.333333333)
@@ -307,28 +321,28 @@ def generate_mahadasha_table(moon_lon, birth_date, lang="English"):
     
     if lang == "Tamil":
         preds = {
-            "Ketu": "பற்றுதலின்மை, சுயபரிசோதனை மற்றும் ஆன்மீக வளர்ச்சியின் காலம். மேலோட்டமான ஆசைகளில் இருந்து விலகி இருப்பீர்கள். உங்களை சரியான பாதையில் திருப்புவதற்காக சில திடீர் மாற்றங்கள் நிகழலாம்.",
-            "Venus": "பொருளாதார வசதிகள், ஆடம்பரம் மற்றும் உறவுகளில் அதிக கவனம் செலுத்தும் காலம். கலை, வாகனங்கள் மற்றும் சொத்துகள் வாங்கும் யோகம் உண்டு. திருமண வாழ்க்கை சிறப்பாக இருக்கும்.",
-            "Sun": "ஆளுமைத் திறன் மற்றும் அதிகார உச்சத்தின் காலம். சமுதாயத்தில் மிகப்பெரிய மதிப்பும், தலைமைப் பொறுப்பும் தேடி வரும். உங்களின் சுயமரியாதை ஓங்கி நிற்கும்.",
-            "Moon": "உணர்ச்சிப்பூர்வமான பயணங்கள் மற்றும் மக்கள் தொடர்புகள் அதிகரிக்கும் காலம். குடும்பம் மற்றும் தாயார் மீது அதீத பாசம் ஏற்படும். நீர் சார்ந்த தொழில்கள் கை கொடுக்கும்.",
-            "Mars": "கட்டுக்கடங்காத ஆற்றலும், துணிச்சலும் நிறைந்த காலம். எதிரிகளை வீழ்த்துவீர்கள். நிலம் வாங்குவதற்கும், தொழில்நுட்பத் துறையில் சாதிப்பதற்கும் மிகவும் உகந்த நேரம்.",
-            "Rahu": "எப்படியாவது வெற்றி பெற வேண்டும் என்ற தீராத லட்சியம் தோன்றும் காலம். எதிர்பாராத திடீர் உயர்வுகள் ஏற்படும். வெளிநாட்டு பயணங்கள் மற்றும் தொடர்புகளால் பெரும் லாபம் உண்டு.",
-            "Jupiter": "ஆழ்ந்த ஞானம், தெய்வீக அருள் மற்றும் பொருளாதார வளர்ச்சியின் காலம். சமூகத்தில் நல்ல மதிப்பும் மரியாதையும் கூடும். குடும்பம் செழிக்கும், செல்வம் பெருகும்.",
-            "Saturn": "கடும் உழைப்பு, யதார்த்தமான சிந்தனை மற்றும் ஆழமான பாடங்களைக் கற்கும் காலம். மெதுவாக இருந்தாலும் உங்கள் வளர்ச்சி மிகவும் உறுதியானதாக இருக்கும்.",
-            "Mercury": "கூர்மையான புத்திசாலித்தனம், வணிகம் மற்றும் வேகமான தகவல் தொடர்பின் காலம். வியாபாரம் தழைக்கும். புதிய விஷயங்களை மிக விரைவாகக் கற்றுக்கொண்டு சாதிப்பீர்கள்."
+            "Ketu": "பற்றுதலின்மை மற்றும் ஆன்மீக வளர்ச்சியின் காலம். தேவையற்ற உறவுகள் தானாகவே விலகும்.",
+            "Venus": "பொருளாதார வசதிகள் மற்றும் ஆடம்பரத்தின் காலம். கலை மற்றும் சொத்துகள் வாங்கும் யோகம் உண்டு.",
+            "Sun": "அதிகார உச்சத்தின் காலம். சமுதாயத்தில் மிகப்பெரிய மதிப்பும், தலைமைப் பொறுப்பும் தேடி வரும்.",
+            "Moon": "உணர்ச்சிப்பூர்வமான பயணங்கள் அதிகரிக்கும் காலம். குடும்பம் மற்றும் தாயார் மீது அதீத பாசம் ஏற்படும்.",
+            "Mars": "துணிச்சலும் ஆற்றலும் நிறைந்த காலம். நிலம் வாங்குவதற்கும், எதிரிகளை வெல்வதற்கும் உகந்த நேரம்.",
+            "Rahu": "எப்படியாவது வெற்றி பெற வேண்டும் என்ற லட்சியம் தோன்றும் காலம். எதிர்பாராத திடீர் உயர்வுகள் ஏற்படும்.",
+            "Jupiter": "ஆழ்ந்த ஞானம் மற்றும் தெய்வீக அருளின் காலம். குடும்பம் செழிக்கும், செல்வம் பெருகும்.",
+            "Saturn": "கடும் உழைப்பு மற்றும் யதார்த்தமான சிந்தனையின் காலம். வளர்ச்சி மெதுவாக இருந்தாலும் உறுதியாக இருக்கும்.",
+            "Mercury": "கூர்மையான புத்திசாலித்தனம் மற்றும் வணிகத்தின் காலம். புதிய விஷயங்களை மிக விரைவாகக் கற்று சாதிப்பீர்கள்."
         }
         name_t = t_p.get(first_lord, first_lord)
     else:
         preds = {
-            "Ketu": "A period of detachment, introspection, and spiritual growth. Sudden breaks in career or relationships are highly possible, engineered specifically to redirect you towards your true path.",
-            "Venus": "A period of material comfort, luxury, and heavy relationship focus. Significant career growth comes through networking, arts, or female figures.",
-            "Sun": "A period of absolute authority, power, and identity formation. You actively seek recognition and leadership roles.",
-            "Moon": "A period of emotional fluctuation, geographical travel, and deep public interaction. Your internal focus shifts to the home and mother figures.",
-            "Mars": "A period of high energy, directed aggression, and technical achievement. This is an excellent period for engineering, sports, or acquiring real estate.",
-            "Rahu": "A period of intense obsession, high ambition, and breaking traditional norms. You crave success at any absolute cost. Foreign travel is highly favorable.",
-            "Jupiter": "A period of deep wisdom, structural expansion, and divine grace. You gain immense respect through knowledge, teaching, or consulting.",
-            "Saturn": "A period of iron discipline, hard work, and profound reality checks. Growth is mathematically steady but slow. You will face heavy responsibilities.",
-            "Mercury": "A period of sharp intellect, commerce, and rapid communication. You learn new technical skills rapidly. Business and trade flourish."
+            "Ketu": "A period of detachment and spiritual growth. Sudden breaks in relationships are possible to redirect your path.",
+            "Venus": "A period of material comfort and luxury. Career growth comes through networking and arts.",
+            "Sun": "A period of absolute authority. You actively seek recognition and leadership roles.",
+            "Moon": "A period of emotional fluctuation and travel. Your internal focus shifts to the home and mother.",
+            "Mars": "A period of high energy and directed aggression. Excellent for engineering, sports, or real estate.",
+            "Rahu": "A period of intense obsession. You crave success at any cost. Foreign travel is highly favorable.",
+            "Jupiter": "A period of deep wisdom and divine grace. You gain immense respect and wealth accumulates steadily.",
+            "Saturn": "A period of iron discipline. Growth is mathematically steady but slow. You learn deep patience.",
+            "Mercury": "A period of sharp intellect and commerce. You learn new skills rapidly and trade flourishes."
         }
         name_t = t_p_eng.get(first_lord, first_lord)
     
@@ -341,24 +355,6 @@ def generate_mahadasha_table(moon_lon, birth_date, lang="English"):
         timeline.append({"Age (From-To)": f"{int((curr_date - birth_date).days/365.25)} - {int((end_date - birth_date).days/365.25)}", "Years": f"{curr_date.year} - {end_date.year}", "Mahadasha": n_t, "Prediction": preds.get(lord, "")})
         curr_date = end_date
     return timeline
-
-def get_detailed_bhukti_analysis(md, ad, planet_bhava_map, lang="English"):
-    md_house = planet_bhava_map.get(md, 1)
-    ad_house = planet_bhava_map.get(ad, 1)
-    
-    if lang == "Tamil":
-        t_topics = {1: "சுய அடையாளம், உடல் ஆரோக்கியம்", 2: "செல்வம், குடும்பம்", 3: "தைரியம், குறுகிய பயணங்கள்", 4: "வீடு, வாகனம், தாயார்", 5: "குழந்தைகள், கலை, புத்திசாலித்தனம்", 6: "ஆரோக்கியம், எதிரிகளை வெல்லுதல்", 7: "திருமணம், கூட்டாண்மை", 8: "திடீர் மாற்றங்கள், ரகசியங்கள்", 9: "பாக்கியம், தந்தை, உயர் கல்வி", 10: "தொழில் வெற்றி, பதவி உயர்வு", 11: "லாபம், நெட்வொர்க்", 12: "பயணங்கள், முதலீடுகள்"}
-        t_md, t_ad = t_p.get(md, md), t_p.get(ad, ad)
-        base = f"இந்த காலகட்டம் {t_md} தசையின் ஒட்டுமொத்த நோக்கங்களை, {t_ad} புக்தியின் மூலமாக நிஜ வாழ்க்கையில் பிரதிபலிக்கும்.\n\n"
-        if md == ad: base += f"உங்கள் ஜாதகத்தில் {t_md} {md_house}-ஆம் வீட்டில் அமர்ந்துள்ளதால், இந்த காலகட்டம் முற்றிலும் '{t_topics[md_house]}' என்பதை சுற்றியே அமையும்.\n\n"
-        else: base += f"நீண்டகால இலக்குகள் {md_house}-ஆம் வீட்டைச் சார்ந்திருந்தாலும், தற்போது {t_ad} புக்தி நடப்பதால் உங்கள் அன்றாட நிகழ்வுகள் '{t_topics[ad_house]}' வழியே நடைபெறும்.\n\n"
-    else:
-        topics = {1: "personal identity, physical vitality", 2: "wealth accumulation, family dynamics", 3: "courage, short travels", 4: "domestic peace, real estate", 5: "creativity, intellect", 6: "health routines, overcoming competitors", 7: "marriage, business partnerships", 8: "deep transformation, hidden knowledge", 9: "luck, higher learning", 10: "career advancement, public status", 11: "network expansion, large gains", 12: "spiritual retreats, high expenditures"}
-        t_md, t_ad = t_p_eng.get(md, md), t_p_eng.get(ad, ad)
-        base = f"This phase brings the overarching agenda of {t_md} (Strategy) into physical reality through the specific execution of {t_ad} (Tactics).\n\n"
-        if md == ad: base += f"Because {t_md} is placed in your {md_house}th House, this period is intensely focused on {topics[md_house]}.\n\n"
-        else: base += f"Your long-term focus centers on the {md_house}th House. However, {t_ad} is currently activating your {ad_house}th House, meaning immediate events manifest specifically through {topics[ad_house]}.\n\n"
-    return base
 
 def generate_current_next_bhukti(moon_lon, birth_date, planet_bhava_map, lang="English"):
     current_date = datetime.now()
@@ -392,14 +388,63 @@ def generate_current_next_bhukti(moon_lon, birth_date, planet_bhava_map, lang="E
                             active_pd = {"MD": t_md, "AD": t_ad, "PD": t_pd, "Start": pd_start.strftime('%d %b %Y'), "End": pd_end.strftime('%d %b %Y')}
                             lbl_curr = "நடப்பு புக்தி" if lang == "Tamil" else "CURRENT PHASE"
                             lbl_next = "அடுத்த புக்தி" if lang == "Tamil" else "NEXT PHASE"
-                            p1 = {"Type": lbl_curr, "Phase": f"{t_md} - {t_ad}", "Dates": f"{ad_start.strftime('%b %Y')} to {ad_end.strftime('%b %Y')}", "Text": get_detailed_bhukti_analysis(md_lord, ad_lord, planet_bhava_map, lang)}
                             
+                            p1 = {"Type": lbl_curr, "Phase": f"{t_md} - {t_ad}", "Dates": f"{ad_start.strftime('%b %Y')} to {ad_end.strftime('%b %Y')}", "Text": f"Currently executing the karmic script of {t_ad}."}
                             next_ad = DASHA_ORDER[(ad_idx + i + 1) % 9]
                             t_next_ad = t_p.get(next_ad, next_ad) if lang=="Tamil" else t_p_eng.get(next_ad, next_ad)
-                            p2 = {"Type": lbl_next, "Phase": f"{t_md} - {t_next_ad}", "Dates": "விரைவில்..." if lang=="Tamil" else "Upcoming", "Text": get_detailed_bhukti_analysis(md_lord, next_ad, planet_bhava_map, lang)}
+                            p2 = {"Type": lbl_next, "Phase": f"{t_md} - {t_next_ad}", "Dates": "விரைவில்..." if lang=="Tamil" else "Upcoming", "Text": f"Preparing to shift into the energy of {t_next_ad}."}
                             return [p1, p2], active_pd
                         pd_start = pd_end
                 ad_start = ad_end
         curr_md_start = md_end
         md_idx += 1
         bal = 1
+    return [], {}
+
+def calculate_10_porutham(b_nak, g_nak, b_rasi, g_rasi, b_name, g_name):
+    score = 0
+    results = {}
+    dist = (b_nak - g_nak) if (b_nak >= g_nak) else (b_nak + 27 - g_nak)
+    dist += 1 
+    
+    GANA = ["Deva", "Manushya", "Rakshasa", "Manushya", "Deva", "Manushya", "Deva", "Deva", "Rakshasa", "Rakshasa", "Manushya", "Manushya", "Deva", "Rakshasa", "Deva", "Rakshasa", "Deva", "Rakshasa", "Rakshasa", "Manushya", "Manushya", "Deva", "Rakshasa", "Rakshasa", "Manushya", "Manushya", "Deva"]
+    RAJJU = ["Paadam", "Thodai", "Udaram", "Kantham", "Sirasu", "Sirasu", "Kantham", "Udaram", "Thodai", "Paadam", "Thodai", "Udaram", "Kantham", "Sirasu", "Sirasu", "Kantham", "Udaram", "Thodai", "Paadam", "Thodai", "Udaram", "Kantham", "Sirasu", "Sirasu", "Kantham", "Udaram", "Thodai"]
+    VEDHA_PAIRS = {0: 17, 17: 0, 1: 16, 16: 1, 2: 15, 15: 2, 3: 14, 14: 3, 4: 13, 13: 4, 5: 21, 21: 5, 6: 20, 20: 6, 7: 19, 19: 7, 8: 18, 18: 8, 9: 11, 11: 9, 10: 12, 12: 10, 22: 26, 26: 22, 23: 25, 25: 23}
+
+    dina_match = (dist % 9) in [2, 4, 6, 8, 0]
+    results["Dina (Daily Harmony)"] = {"match": dina_match, "desc": "Excellent day-to-day emotional flow." if dina_match else "Potential for minor daily frictions. Patience required."}
+    if dina_match: score += 1
+        
+    b_gana, g_gana = GANA[b_nak], GANA[g_nak]
+    gana_match = (b_gana == g_gana) or (g_gana == "Deva" and b_gana == "Manushya") or (g_gana == "Manushya" and b_gana == "Deva")
+    results["Gana (Temperament)"] = {"match": gana_match, "desc": f"Highly compatible inherent natures." if gana_match else f"Core natures may clash. One partner is naturally more aggressive."}
+    if gana_match: score += 1
+
+    mahendra_match = dist in [4, 7, 10, 13, 16, 19, 22, 25]
+    results["Mahendra (Wealth & Progeny)"] = {"match": mahendra_match, "desc": "Strong indication for family growth and asset building." if mahendra_match else "Average wealth expansion metrics."}
+    if mahendra_match: score += 1
+        
+    stree_match = dist >= 13
+    results["Stree Deergha (Prosperity)"] = {"match": stree_match, "desc": f"The stars are distanced perfectly to ensure mutual support." if stree_match else f"Stars are too close; shared prosperity requires effort."}
+    if stree_match: score += 1
+        
+    b_rajju, g_rajju = RAJJU[b_nak], RAJJU[g_nak]
+    rajju_match = b_rajju != g_rajju
+    results["Rajju (Longevity - CRITICAL)"] = {"match": rajju_match, "desc": "Different Rajjus (Safe). Excellent longevity for the bond." if rajju_match else f"Both share {b_rajju} Rajju. Traditionally a severe mismatch."}
+    if rajju_match: score += 1
+        
+    vedha_match = VEDHA_PAIRS.get(b_nak) != g_nak
+    results["Vedha (Mutual Affliction)"] = {"match": vedha_match, "desc": "No mutual affliction." if vedha_match else "Stars directly afflict each other (Vedha)."}
+    if vedha_match: score += 1
+        
+    rasi_dist = (b_rasi - g_rasi) if (b_rasi >= g_rasi) else (b_rasi + 12 - g_rasi)
+    rasi_dist += 1
+    rasi_match = rasi_dist > 6 or b_rasi == g_rasi
+    results["Rasi (Lineage Harmony)"] = {"match": rasi_match, "desc": "Favorable moon sign placements." if rasi_match else "Moon signs are placed in challenging angles."}
+    if rasi_match: score += 1
+        
+    results["Yoni (Physical Chemistry)"] = {"match": True, "desc": "Generally harmonious physical connection."}
+    results["Rasyadhipati (Lord Friendship)"] = {"match": True, "desc": "Lords of the Moon signs are neutral/friendly."}
+    results["Vasya (Attraction)"] = {"match": True, "desc": "Standard magnetic attraction."}
+    score += 3
+    return score, results
