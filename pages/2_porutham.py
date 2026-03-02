@@ -22,22 +22,45 @@ GANA = ["Deva", "Manushya", "Rakshasa", "Manushya", "Deva", "Manushya", "Deva", 
 RAJJU = ["Paadam", "Thodai", "Udaram", "Kantham", "Sirasu", "Sirasu", "Kantham", "Udaram", "Thodai", "Paadam", "Thodai", "Udaram", "Kantham", "Sirasu", "Sirasu", "Kantham", "Udaram", "Thodai", "Paadam", "Thodai", "Udaram", "Kantham", "Sirasu", "Sirasu", "Kantham", "Udaram", "Thodai"]
 VEDHA_PAIRS = {0: 17, 17: 0, 1: 16, 16: 1, 2: 15, 15: 2, 3: 14, 14: 3, 4: 13, 13: 4, 5: 21, 21: 5, 6: 20, 20: 6, 7: 19, 19: 7, 8: 18, 18: 8, 9: 11, 11: 9, 10: 12, 12: 10, 22: 26, 26: 22, 23: 25, 25: 23}
 
-# --- DATABASE HELPER ---
+# --- BULLETPROOF DATABASE HELPER ---
 def load_profiles_from_db():
     profiles = {}
-    if os.path.exists('astro_profiles.db'):
+    db_path = 'astro_profiles.db'
+    
+    if os.path.exists(db_path):
         try:
-            conn = sqlite3.connect('astro_profiles.db')
+            conn = sqlite3.connect(db_path)
             c = conn.cursor()
-            c.execute("SELECT * FROM profiles")
-            for row in c.fetchall():
-                profiles[row[0]] = {
-                    "dob": datetime.strptime(row[1], "%Y-%m-%d").date(),
-                    "tob": datetime.strptime(row[2], "%H:%M:%S").time(),
-                    "city": row[3]
-                }
+            # Explicitly select columns in the correct order
+            c.execute("SELECT name, dob, tob, city FROM profiles")
+            rows = c.fetchall()
+            
+            for row in rows:
+                try:
+                    name, dob_str, tob_str, city = row
+                    
+                    # Robust Date Parsing
+                    parsed_dob = datetime.strptime(dob_str, "%Y-%m-%d").date()
+                    
+                    # Robust Time Parsing (Handles both "HH:MM:SS" and "HH:MM")
+                    try:
+                        parsed_tob = datetime.strptime(tob_str, "%H:%M:%S").time()
+                    except ValueError:
+                        parsed_tob = datetime.strptime(tob_str, "%H:%M").time()
+                        
+                    profiles[name] = {
+                        "dob": parsed_dob,
+                        "tob": parsed_tob,
+                        "city": city
+                    }
+                except Exception as parse_err:
+                    # If ONE profile fails, it shows an error but CONTINUES loading the rest!
+                    st.error(f"Error parsing profile '{row[0]}': {parse_err}")
+                    
             conn.close()
-        except: pass
+        except Exception as db_err:
+            st.error(f"Database connection error: {db_err}")
+            
     return profiles
 
 # --- HELPER FUNCTIONS ---
