@@ -4,7 +4,8 @@ plotly
 geopy
 timezonefinder
 pytz
-fpdf2
 uharfbuzz
 google-generativeai
 supabase
+pdfkit
+fpdf2
