@@ -843,36 +843,58 @@ def load_profiles_from_db():
         
     return profiles
 
+# --- CLOUD DATABASE HELPER ---
+# Make sure: from supabase import create_client, Client is at the top of your file!
+@st.cache_resource
+def init_connection():
+    try:
+        url = st.secrets["SUPABASE_URL"]
+        key = st.secrets["SUPABASE_KEY"]
+        return create_client(url, key)
+    except: return None
+
+supabase = init_connection()
+
+def load_profiles_from_db():
+    profiles = {}
+    if supabase:
+        try:
+            response = supabase.table("profiles").select("*").execute()
+            for row in response.data:
+                try:
+                    name, dob_str, tob_str, city = row["name"], row["dob"], row["tob"], row["city"]
+                    parsed_dob = datetime.strptime(dob_str, "%Y-%m-%d").date()
+                    try: parsed_tob = datetime.strptime(tob_str, "%H:%M:%S").time()
+                    except ValueError: parsed_tob = datetime.strptime(tob_str, "%H:%M").time()
+                    profiles[name] = {"dob": parsed_dob, "tob": parsed_tob, "city": city}
+                except: pass
+        except: pass
+    return profiles
+
 # --- SIDEBAR CONFIGURATION ---
 with st.sidebar:
     st.markdown("### Birth Details")
     
-    # MAGIC CLOUD DATABASE HOOKUP
     saved_profiles = load_profiles_from_db()
     profile_options = ["Custom Entry"] + list(saved_profiles.keys())
     selected_profile = st.selectbox("Load Saved Profile", profile_options)
     
-    # Default values
-    def_n = "Padmanabhan"
-    def_dob = datetime(1977, 11, 14).date()
-    def_tob = time(1, 45)
-    def_loc = "Saidapet, Chennai"
+    # Defaults
+    def_n, def_dob, def_tob, def_loc = "Padmanabhan", datetime(1977, 11, 14).date(), time(1, 45), "Saidapet, Chennai"
 
-    # Auto-populate logic
     if selected_profile != "Custom Entry":
-        def_n = selected_profile
-        def_dob = saved_profiles[selected_profile]["dob"]
-        def_tob = saved_profiles[selected_profile]["tob"]
-        def_loc = saved_profiles[selected_profile]["city"]
+        def_n, def_dob, def_tob, def_loc = selected_profile, saved_profiles[selected_profile]["dob"], saved_profiles[selected_profile]["tob"], saved_profiles[selected_profile]["city"]
 
-    # The Input Fields
-    name = st.text_input("Name", value=def_n)
-    dob = st.date_input("Date of Birth", value=def_dob, min_value=datetime(1950, 1, 1).date())
-    tob = st.time_input("Time of Birth", value=def_tob, step=60)
-    city = st.text_input("City", value=def_loc)
+    # DYNAMIC KEYS FIX: Forces UI to update
+    k = selected_profile.replace(" ", "_")
+    name = st.text_input("Name", value=def_n, key=f"h_name_{k}")
+    dob = st.date_input("Date of Birth", value=def_dob, min_value=datetime(1950, 1, 1).date(), key=f"h_dob_{k}")
+    tob = st.time_input("Time of Birth", value=def_tob, step=60, key=f"h_tob_{k}")
+    city = st.text_input("City", value=def_loc, key=f"h_loc_{k}")
     
     forecast_year = st.number_input("Forecast Year", min_value=datetime.now().year, max_value=2050, value=2026)
     
+    # Assuming get_location_coordinates is defined earlier in your 1000 lines
     lat, lon, tz_str = get_location_coordinates(city)
     st.markdown(f"<span style='font-size:12px; color:gray;'>Resolved: {lat:.2f}, {lon:.2f} ({tz_str})</span>", unsafe_allow_html=True)
     
