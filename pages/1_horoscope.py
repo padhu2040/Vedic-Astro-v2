@@ -189,7 +189,7 @@ if st.session_state.report_generated:
                     type="primary"
                 )
             else:
-                st.error("PDF Engine not yet installed. Generating HTML backup instead...")
+                st.error("PDF Engine not yet installed. Backup HTML will render shortly.")
 
         # --- UI TABS ---
         tb_lbls = ["Profile", "Scorecard", "Work & Intellect", "Love & Health", "Yogas", "Forecast", "Roadmap", "💬 Oracle"] if LANG == "English" else ["சுயவிவரம்", "அஷ்டகவர்க்கம்", "தொழில்", "திருமணம் & ஆரோக்கியம்", "யோகங்கள்", "ஆண்டு பலன்கள்", "தசா புக்தி", "💬 ஜோதிடர்"]
