@@ -243,7 +243,7 @@ with col_b:
     # DYNAMIC KEYS FIX
     k1 = sel_p1.replace(" ", "_")
     b_name = st.text_input("Name", value=def_n1, key=f"b_name_{k1}")
-    b_dob = st.date_input("Date of Birth", value=def_dob1, min_value=datetime(1950, 1, 1).date(), key=f"b_dob_{k1}")
+    b_dob = st.date_input("Date of Birth", value=def_dob1, min_value=datetime(1950, 1, 1).date(), max_value=datetime.today().date(), key=f"b_dob_{k1}")
     b_tob = st.time_input("Time of Birth", value=def_tob1, step=60, key=f"b_tob_{k1}")
     b_loc = st.text_input("City", value=def_loc1, key=f"b_loc_{k1}")
 
@@ -265,7 +265,7 @@ with col_g:
     # DYNAMIC KEYS FIX
     k2 = sel_p2.replace(" ", "_")
     g_name = st.text_input("Name", value=def_n2, key=f"g_name_{k2}")
-    g_dob = st.date_input("Date of Birth", value=def_dob2, min_value=datetime(1950, 1, 1).date(), key=f"g_dob_{k2}")
+    b_dob = st.date_input("Date of Birth", value=def_dob2, min_value=datetime(1950, 1, 1).date(), max_value=datetime.today().date(), key=f"b_dob_{k2}")
     g_tob = st.time_input("Time of Birth", value=def_tob2, step=60, key=f"g_tob_{k2}")
     g_loc = st.text_input("City", value=def_loc2, key=f"g_loc_{k2}")
 
