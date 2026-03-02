@@ -7,3 +7,4 @@ pytz
 fpdf2
 uharfbuzz
 google-generativeai
+supabase
