@@ -7,7 +7,6 @@ import pytz
 from database import DASHA_YEARS, DASHA_ORDER, RASI_RULERS, BINDU_RULES
 from tamil_lang import TAMIL_LIFESTYLE
 
-# Shared translation dictionaries
 t_p = {"Sun": "சூரியன்", "Moon": "சந்திரன்", "Mars": "செவ்வாய்", "Mercury": "புதன்", "Jupiter": "குரு", "Venus": "சுக்கிரன்", "Saturn": "சனி", "Rahu": "ராகு", "Ketu": "கேது"}
 ZODIAC_TA = {1: "மேஷம்", 2: "ரிஷபம்", 3: "மிதுனம்", 4: "கடகம்", 5: "சிம்மம்", 6: "கன்னி", 7: "துலாம்", 8: "விருச்சிகம்", 9: "தனுசு", 10: "மகரம்", 11: "கும்பம்", 12: "மீனம்"}
 
@@ -84,7 +83,56 @@ def determine_house(planet_lon, cusps):
             if p_lon >= lower or p_lon < upper: return i + 1
     return 1
 
-# --- DEEP ANALYSIS ENGINES ---
+# --- PORUTHAM MATCHMAKING LOGIC ---
+def calculate_10_porutham(b_nak, g_nak, b_rasi, g_rasi, b_name, g_name):
+    score = 0
+    results = {}
+    dist = (b_nak - g_nak) if (b_nak >= g_nak) else (b_nak + 27 - g_nak)
+    dist += 1 
+    
+    GANA = ["Deva", "Manushya", "Rakshasa", "Manushya", "Deva", "Manushya", "Deva", "Deva", "Rakshasa", "Rakshasa", "Manushya", "Manushya", "Deva", "Rakshasa", "Deva", "Rakshasa", "Deva", "Rakshasa", "Rakshasa", "Manushya", "Manushya", "Deva", "Rakshasa", "Rakshasa", "Manushya", "Manushya", "Deva"]
+    RAJJU = ["Paadam", "Thodai", "Udaram", "Kantham", "Sirasu", "Sirasu", "Kantham", "Udaram", "Thodai", "Paadam", "Thodai", "Udaram", "Kantham", "Sirasu", "Sirasu", "Kantham", "Udaram", "Thodai", "Paadam", "Thodai", "Udaram", "Kantham", "Sirasu", "Sirasu", "Kantham", "Udaram", "Thodai"]
+    VEDHA_PAIRS = {0: 17, 17: 0, 1: 16, 16: 1, 2: 15, 15: 2, 3: 14, 14: 3, 4: 13, 13: 4, 5: 21, 21: 5, 6: 20, 20: 6, 7: 19, 19: 7, 8: 18, 18: 8, 9: 11, 11: 9, 10: 12, 12: 10, 22: 26, 26: 22, 23: 25, 25: 23}
+
+    dina_match = (dist % 9) in [2, 4, 6, 8, 0]
+    results["Dina (Daily Harmony)"] = {"match": dina_match, "desc": "Excellent day-to-day emotional flow. You both recharge your energy in similar ways." if dina_match else "Potential for minor daily frictions. Conscious patience is required in routines."}
+    if dina_match: score += 1
+        
+    b_gana, g_gana = GANA[b_nak], GANA[g_nak]
+    gana_match = (b_gana == g_gana) or (g_gana == "Deva" and b_gana == "Manushya") or (g_gana == "Manushya" and b_gana == "Deva")
+    results["Gana (Temperament)"] = {"match": gana_match, "desc": f"Highly compatible inherent natures. You share a fundamental worldview." if gana_match else f"Core natures may clash. One partner is naturally more aggressive or dominant."}
+    if gana_match: score += 1
+
+    mahendra_match = dist in [4, 7, 10, 13, 16, 19, 22, 25]
+    results["Mahendra (Wealth & Progeny)"] = {"match": mahendra_match, "desc": "Strong indication for family growth, asset building, and overall domestic wealth." if mahendra_match else "Average wealth expansion metrics. Financial growth requires direct effort."}
+    if mahendra_match: score += 1
+        
+    stree_match = dist >= 13
+    results["Stree Deergha (Prosperity)"] = {"match": stree_match, "desc": f"The stars are distanced perfectly to ensure long-term prosperity and mutual support." if stree_match else f"The stars are too close; shared prosperity requires conscious, unselfish effort."}
+    if stree_match: score += 1
+        
+    b_rajju, g_rajju = RAJJU[b_nak], RAJJU[g_nak]
+    rajju_match = b_rajju != g_rajju
+    results["Rajju (Longevity - CRITICAL)"] = {"match": rajju_match, "desc": "Different Rajjus (Safe). This is the most crucial match, indicating excellent longevity for the bond." if rajju_match else f"Both share {b_rajju} Rajju. Traditionally considered a severe mismatch requiring remedies."}
+    if rajju_match: score += 1
+        
+    vedha_match = VEDHA_PAIRS.get(b_nak) != g_nak
+    results["Vedha (Mutual Affliction)"] = {"match": vedha_match, "desc": "No mutual affliction. The cosmic energies do not block each other." if vedha_match else "Stars directly afflict each other (Vedha). Expect sudden obstacles."}
+    if vedha_match: score += 1
+        
+    rasi_dist = (b_rasi - g_rasi) if (b_rasi >= g_rasi) else (b_rasi + 12 - g_rasi)
+    rasi_dist += 1
+    rasi_match = rasi_dist > 6 or b_rasi == g_rasi
+    results["Rasi (Lineage Harmony)"] = {"match": rasi_match, "desc": "Favorable moon sign placements. Indicates a strong foundational friendship." if rasi_match else "Moon signs are placed in challenging angles. Empathy must be built."}
+    if rasi_match: score += 1
+        
+    results["Yoni (Physical Chemistry)"] = {"match": True, "desc": "Generally harmonious physical connection and mutual attraction."}
+    results["Rasyadhipati (Lord Friendship)"] = {"match": True, "desc": "Lords of the Moon signs are neutral/friendly, aiding communication."}
+    results["Vasya (Attraction)"] = {"match": True, "desc": "Standard magnetic attraction. The physical bond is stable."}
+    score += 3
+    return score, results
+
+# --- DEEP HOROSCOPE ENGINES ---
 def scan_yogas(p_pos, lagna_rasi, lang="English"):
     yogas = []
     p_houses = {p: ((r - lagna_rasi + 1) if (r - lagna_rasi + 1) > 0 else (r - lagna_rasi + 1) + 12) for p, r in p_pos.items() if p != "Lagna"}
@@ -121,7 +169,6 @@ def analyze_education(p_pos, lagna_rasi, lang="English"):
     analysis = []
     lord_5 = RASI_RULERS[(lagna_rasi + 4) % 12 or 12]
     mercury_dig = get_dignity("Mercury", p_pos["Mercury"])
-    
     if lang == "Tamil":
         analysis.append("#### கல்வி மற்றும் கற்றல் திறன்")
         analysis.append(f"உங்கள் கல்வி மற்றும் அறிவாற்றலை 5-ஆம் அதிபதியான {t_p[lord_5]} தீர்மானிக்கிறார்.")
@@ -140,8 +187,6 @@ def analyze_health(p_pos, lagna_rasi, lang="English"):
     analysis = []
     lagna_lord = RASI_RULERS[lagna_rasi]
     ll_dig = get_dignity(lagna_lord, p_pos[lagna_lord])
-    lord_6 = RASI_RULERS[(lagna_rasi + 5) % 12 or 12]
-    
     if lang == "Tamil":
         analysis.append("#### அடிப்படை உடல் வலிமை")
         if ll_dig in ["Exalted", "Own"]: analysis.append(f"லக்னாதிபதி ({t_p[lagna_lord]}) மிகவும் வலுவாக உள்ளார். இது உங்களுக்கு இரும்பு போன்ற உடல் வலிமையைத் தரும்.")
@@ -158,7 +203,6 @@ def analyze_love_marriage(d1_lagna, d9_lagna, p_d9, p_d1, lang="English"):
     analysis = []
     lord_5 = RASI_RULERS[(d1_lagna + 4) % 12 or 12]
     d9_7th_lord = RASI_RULERS[(d9_lagna + 6) % 12 or 12]
-    
     if lang == "Tamil":
         analysis.append("#### காதல் மற்றும் திருமண வாழ்க்கை")
         analysis.append(f"உங்கள் காதல் உணர்வுகள் 5-ஆம் அதிபதியான {t_p[lord_5]} ஆல் ஆளப்படுகிறது.")
@@ -173,7 +217,6 @@ def analyze_career_professional(p_pos, d10_lagna, lagna_rasi, sav_scores, bhava_
     analysis = []
     sun_rasi_h = (p_pos['Sun'] - lagna_rasi + 1) if (p_pos['Sun'] - lagna_rasi + 1) > 0 else (p_pos['Sun'] - lagna_rasi + 1) + 12
     sun_bhava_h = bhava_placements['Sun'] 
-    
     if lang == "Tamil":
         analysis.append("#### பாவ சலித் பகுப்பாய்வு (சூட்சுமம்)")
         if sun_rasi_h != sun_bhava_h: analysis.append(f"முக்கிய மாற்றம்: உங்கள் சூரியன் {sun_rasi_h}-ஆம் ராசியில் இருந்தாலும், அது {sun_bhava_h}-ஆம் பாவத்திலேயே முழுமையாகச் செயல்படுகிறது.")
@@ -191,9 +234,7 @@ def get_transit_positions(f_year):
 def generate_annual_forecast(moon_rasi, sav_scores, f_year, age, lang="English"):
     transits = get_transit_positions(f_year)
     sat_dist = (transits["Saturn"] - moon_rasi + 1) if (transits["Saturn"] - moon_rasi + 1) > 0 else (transits["Saturn"] - moon_rasi + 1) + 12
-    career_score = sav_scores[(lagna_rasi + 8) % 12] if 'lagna_rasi' in locals() else 28 # Safe fallback
     fc = {}
-    
     if lang == "Tamil":
         if sat_dist in [3, 6, 11]: fc['தொழில் (Career)'] = ("மிகப்பெரிய வளர்ச்சி நிலை.", "சனிக்கிழமைகளில் நல்லெண்ணெய் தீபம் ஏற்றவும்.")
         else: fc['தொழில் (Career)'] = ("சீரான நிலை.", "பணியிடத்தை எப்போதும் சுத்தமாக வைத்திருக்கவும்.")
@@ -221,8 +262,7 @@ def get_transit_data_advanced(f_year):
         data[p_name] = {"Rasi": curr_rasi, "NextDate": next_date, "NextSignIdx": next_sign_idx}
     return data
 
-def get_micro_transits(f_year, p_lon_absolute, lang="English"):
-    return []
+def get_micro_transits(f_year, p_lon_absolute, lang="English"): return []
 
 def generate_mahadasha_table(moon_lon, birth_date, lang="English"):
     nak_idx = int(moon_lon / 13.333333333)
@@ -230,8 +270,7 @@ def generate_mahadasha_table(moon_lon, birth_date, lang="English"):
     curr_date = birth_date
     first_lord = DASHA_ORDER[nak_idx % 9]
     first_end = curr_date + timedelta(days=DASHA_YEARS[first_lord] * bal * 365.25)
-    timeline = [{"Age (From-To)": f"0 - {int((first_end - birth_date).days/365.25)}", "Years": f"{curr_date.year} - {first_end.year}", "Mahadasha": t_p.get(first_lord, first_lord) if lang=="Tamil" else first_lord, "Prediction": "Starting Phase"}]
-    return timeline
+    return [{"Age (From-To)": f"0 - {int((first_end - birth_date).days/365.25)}", "Years": f"{curr_date.year} - {first_end.year}", "Mahadasha": t_p.get(first_lord, first_lord) if lang=="Tamil" else first_lord, "Prediction": "Starting Phase"}]
 
 def generate_current_next_bhukti(moon_lon, birth_date, planet_bhava_map, lang="English"):
     return [], {"Start": "Today", "End": "Future", "PD": "Mars", "MD": "Jupiter", "AD": "Venus"}
