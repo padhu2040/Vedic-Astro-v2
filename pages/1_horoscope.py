@@ -6,6 +6,7 @@ from geopy.geocoders import Nominatim
 from timezonefinder import TimezoneFinder
 import pytz
 import google.generativeai as genai
+from supabase import create_client, Client
 
 # Securely fetch API key from Streamlit Cloud Secrets, or fallback to local config
 try:
@@ -803,31 +804,80 @@ def generate_html_report(name_in, p_pos, p_d9, lagna_rasi, sav_scores, career_tx
 if 'report_generated' not in st.session_state: st.session_state.report_generated = False
 if 'messages' not in st.session_state: st.session_state.messages = []
 
-with st.sidebar:
-    LANG = st.radio("Language / மொழி", ["English", "Tamil"])
-    st.header("Birth Details")
-    name_in = st.text_input("Name", "Padmanabhan")
-    dob_in = st.date_input("Date of Birth", datetime(1977, 11, 14))
-    tob_in = st.time_input("Time of Birth", datetime.now().replace(hour=1, minute=45))
-    loc_query = st.text_input("City", "Saidapet, Chennai")
-    
-    f_year = st.number_input("Forecast Year", 2024, 2050, 2026)
-    
-    lat_val, lon_val, tz_val = 13.08, 80.27, "Asia/Kolkata"
-    if loc_query:
-        results = get_location_search(loc_query)
-        if results:
-            addr_list = [format_address(l.address) for l in results]
-            selection = st.selectbox("Select exact location:", list(dict.fromkeys(addr_list)))
-            chosen = results[addr_list.index(selection)]
-            tf = TimezoneFinder()
-            tz_val = tf.timezone_at(lng=chosen.longitude, lat=chosen.latitude)
-            lat_val, lon_val = chosen.latitude, chosen.longitude
-            
-    if st.button("Generate Report"):
-        st.session_state.report_generated = True
-        st.session_state.messages = []
+# --- SETUP SUPABASE CONNECTION ---
+@st.cache_resource
+def init_connection():
+    url = st.secrets["SUPABASE_URL"]
+    key = st.secrets["SUPABASE_KEY"]
+    return create_client(url, key)
 
+try:
+    supabase = init_connection()
+except Exception as e:
+    st.error("⚠️ Could not connect to Supabase. Check your Streamlit secrets.")
+
+# --- CLOUD DATABASE HELPER ---
+def load_profiles_from_db():
+    profiles = {}
+    try:
+        response = supabase.table("profiles").select("*").execute()
+        for row in response.data:
+            try:
+                name = row["name"]
+                dob_str = row["dob"]
+                tob_str = row["tob"]
+                city = row["city"]
+                
+                parsed_dob = datetime.strptime(dob_str, "%Y-%m-%d").date()
+                
+                try:
+                    parsed_tob = datetime.strptime(tob_str, "%H:%M:%S").time()
+                except ValueError:
+                    parsed_tob = datetime.strptime(tob_str, "%H:%M").time()
+                    
+                profiles[name] = {"dob": parsed_dob, "tob": parsed_tob, "city": city}
+            except Exception:
+                pass 
+    except Exception:
+        pass 
+        
+    return profiles
+
+# --- SIDEBAR CONFIGURATION ---
+with st.sidebar:
+    st.markdown("### Birth Details")
+    
+    # MAGIC CLOUD DATABASE HOOKUP
+    saved_profiles = load_profiles_from_db()
+    profile_options = ["Custom Entry"] + list(saved_profiles.keys())
+    selected_profile = st.selectbox("Load Saved Profile", profile_options)
+    
+    # Default values
+    def_n = "Padmanabhan"
+    def_dob = datetime(1977, 11, 14).date()
+    def_tob = time(1, 45)
+    def_loc = "Saidapet, Chennai"
+
+    # Auto-populate logic
+    if selected_profile != "Custom Entry":
+        def_n = selected_profile
+        def_dob = saved_profiles[selected_profile]["dob"]
+        def_tob = saved_profiles[selected_profile]["tob"]
+        def_loc = saved_profiles[selected_profile]["city"]
+
+    # The Input Fields
+    name = st.text_input("Name", value=def_n)
+    dob = st.date_input("Date of Birth", value=def_dob, min_value=datetime(1950, 1, 1).date())
+    tob = st.time_input("Time of Birth", value=def_tob, step=60)
+    city = st.text_input("City", value=def_loc)
+    
+    forecast_year = st.number_input("Forecast Year", min_value=datetime.now().year, max_value=2050, value=2026)
+    
+    lat, lon, tz_str = get_location_coordinates(city)
+    st.markdown(f"<span style='font-size:12px; color:gray;'>Resolved: {lat:.2f}, {lon:.2f} ({tz_str})</span>", unsafe_allow_html=True)
+    
+    calc_btn = st.button("Generate Report", type="primary", use_container_width=True)
+    
 if st.session_state.report_generated:
     swe.set_sid_mode(swe.SIDM_LAHIRI)
     birth_dt = datetime.combine(dob_in, tob_in)
