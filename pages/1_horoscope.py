@@ -913,7 +913,6 @@ with st.sidebar:
     
     forecast_year = st.number_input("Forecast Year", min_value=datetime.now().year, max_value=2050, value=2026)
     
-    # Assuming get_location_coordinates is defined earlier in your 1000 lines
     lat, lon, tz_str = get_location_coordinates(city)
     st.markdown(f"<span style='font-size:12px; color:gray;'>Resolved: {lat:.2f}, {lon:.2f} ({tz_str})</span>", unsafe_allow_html=True)
     
