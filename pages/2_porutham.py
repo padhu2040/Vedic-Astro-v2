@@ -4,17 +4,11 @@ from datetime import datetime, time
 import google.generativeai as genai
 from supabase import create_client
 
-# --- IMPORTS FROM OUR ENGINE ---
-from astro_engine import get_location_coordinates, get_utc_offset, ZODIAC, ZODIAC_TA
+from astro_engine import get_location_coordinates, get_utc_offset, calculate_10_porutham, ZODIAC, ZODIAC_TA
 from report_generator import get_south_indian_chart_html
 
-# --- MATCHMAKING CONSTANTS ---
 NAKSHATRAS = ["Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra", "Punarvasu", "Pushya", "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", "Hasta", "Chitra", "Swati", "Vishakha", "Anuradha", "Jyeshtha", "Mula", "Purva Ashadha", "Uttara Ashadha", "Shravana", "Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"]
-GANA = ["Deva", "Manushya", "Rakshasa", "Manushya", "Deva", "Manushya", "Deva", "Deva", "Rakshasa", "Rakshasa", "Manushya", "Manushya", "Deva", "Rakshasa", "Deva", "Rakshasa", "Deva", "Rakshasa", "Rakshasa", "Manushya", "Manushya", "Deva", "Rakshasa", "Rakshasa", "Manushya", "Manushya", "Deva"]
-RAJJU = ["Paadam", "Thodai", "Udaram", "Kantham", "Sirasu", "Sirasu", "Kantham", "Udaram", "Thodai", "Paadam", "Thodai", "Udaram", "Kantham", "Sirasu", "Sirasu", "Kantham", "Udaram", "Thodai", "Paadam", "Thodai", "Udaram", "Kantham", "Sirasu", "Sirasu", "Kantham", "Udaram", "Thodai"]
-VEDHA_PAIRS = {0: 17, 17: 0, 1: 16, 16: 1, 2: 15, 15: 2, 3: 14, 14: 3, 4: 13, 13: 4, 5: 21, 21: 5, 6: 20, 20: 6, 7: 19, 19: 7, 8: 18, 18: 8, 9: 11, 11: 9, 10: 12, 12: 10, 22: 26, 26: 22, 23: 25, 25: 23}
 
-# --- SECURE CLOUD CONNECTION ---
 @st.cache_resource
 def init_connection():
     try: return create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
@@ -38,7 +32,6 @@ def load_profiles_from_db():
         except: pass
     return profiles
 
-# --- MATCHMAKING MATH ENGINES ---
 def calculate_match_chart(dob, tob, lat, lon, tz_str):
     swe.set_sid_mode(swe.SIDM_LAHIRI)
     offset = get_utc_offset(tz_str, datetime.combine(dob, tob))
@@ -47,7 +40,6 @@ def calculate_match_chart(dob, tob, lat, lon, tz_str):
     planets = {"Sun": swe.SUN, "Moon": swe.MOON, "Mars": swe.MARS, "Mercury": swe.MERCURY, "Jupiter": swe.JUPITER, "Venus": swe.VENUS, "Saturn": swe.SATURN, "Rahu": swe.MEAN_NODE}
     p_pos = {p: int(swe.calc_ut(jd_ut, pid, swe.FLG_SIDEREAL)[0][0] / 30) + 1 for p, pid in planets.items()}
     
-    # KETU FIX INTEGRATED
     rahu_lon = swe.calc_ut(jd_ut, swe.MEAN_NODE, swe.FLG_SIDEREAL)[0][0]
     p_pos["Ketu"] = int(((rahu_lon + 180) % 360) / 30) + 1
     
@@ -60,58 +52,8 @@ def calculate_match_chart(dob, tob, lat, lon, tz_str):
     is_manglik = m_l_dist in [2, 4, 7, 8, 12] or m_m_dist in [2, 4, 7, 8, 12]
     
     nak_idx = int(moon_lon / 13.333333333)
-    return {
-        "Lagna": ZODIAC[lagna_rasi], "Lagna_Idx": lagna_rasi,
-        "Rasi": ZODIAC[p_pos["Moon"]], "Rasi_Idx": p_pos["Moon"],
-        "Nakshatra": NAKSHATRAS[nak_idx], "Nak_Idx": nak_idx,
-        "Is_Manglik": is_manglik, "P_Pos": p_pos
-    }
+    return {"Lagna": ZODIAC[lagna_rasi], "Lagna_Idx": lagna_rasi, "Rasi": ZODIAC[p_pos["Moon"]], "Rasi_Idx": p_pos["Moon"], "Nakshatra": NAKSHATRAS[nak_idx], "Nak_Idx": nak_idx, "Is_Manglik": is_manglik, "P_Pos": p_pos}
 
-def calculate_10_porutham(b_nak, g_nak, b_rasi, g_rasi, b_name, g_name):
-    score = 0
-    results = {}
-    dist = (b_nak - g_nak) if (b_nak >= g_nak) else (b_nak + 27 - g_nak)
-    dist += 1 
-    
-    dina_match = (dist % 9) in [2, 4, 6, 8, 0]
-    results["Dina (Daily Harmony)"] = {"match": dina_match, "desc": "Excellent day-to-day emotional flow. You both recharge your energy in similar ways." if dina_match else "Potential for minor daily frictions. Conscious patience is required in routines."}
-    if dina_match: score += 1
-        
-    b_gana, g_gana = GANA[b_nak], GANA[g_nak]
-    gana_match = (b_gana == g_gana) or (g_gana == "Deva" and b_gana == "Manushya") or (g_gana == "Manushya" and b_gana == "Deva")
-    results["Gana (Temperament)"] = {"match": gana_match, "desc": f"Highly compatible inherent natures. You share a fundamental worldview." if gana_match else f"Core natures may clash. One partner is naturally more aggressive or dominant."}
-    if gana_match: score += 1
-
-    mahendra_match = dist in [4, 7, 10, 13, 16, 19, 22, 25]
-    results["Mahendra (Wealth & Progeny)"] = {"match": mahendra_match, "desc": "Strong indication for family growth, asset building, and overall domestic wealth." if mahendra_match else "Average wealth expansion metrics. Financial growth requires direct effort."}
-    if mahendra_match: score += 1
-        
-    stree_match = dist >= 13
-    results["Stree Deergha (Prosperity)"] = {"match": stree_match, "desc": f"The stars are distanced perfectly to ensure long-term prosperity and mutual support." if stree_match else f"The stars are too close; shared prosperity requires conscious, unselfish effort."}
-    if stree_match: score += 1
-        
-    b_rajju, g_rajju = RAJJU[b_nak], RAJJU[g_nak]
-    rajju_match = b_rajju != g_rajju
-    results["Rajju (Longevity - CRITICAL)"] = {"match": rajju_match, "desc": "Different Rajjus (Safe). This is the most crucial match, indicating excellent longevity for the bond." if rajju_match else f"Both share {b_rajju} Rajju. Traditionally considered a severe mismatch requiring remedies."}
-    if rajju_match: score += 1
-        
-    vedha_match = VEDHA_PAIRS.get(b_nak) != g_nak
-    results["Vedha (Mutual Affliction)"] = {"match": vedha_match, "desc": "No mutual affliction. The cosmic energies do not block each other." if vedha_match else "Stars directly afflict each other (Vedha). Expect sudden obstacles."}
-    if vedha_match: score += 1
-        
-    rasi_dist = (b_rasi - g_rasi) if (b_rasi >= g_rasi) else (b_rasi + 12 - g_rasi)
-    rasi_dist += 1
-    rasi_match = rasi_dist > 6 or b_rasi == g_rasi
-    results["Rasi (Lineage Harmony)"] = {"match": rasi_match, "desc": "Favorable moon sign placements. Indicates a strong foundational friendship." if rasi_match else "Moon signs are placed in challenging angles. Empathy must be built."}
-    if rasi_match: score += 1
-        
-    results["Yoni (Physical Chemistry)"] = {"match": True, "desc": "Generally harmonious physical connection and mutual attraction."}
-    results["Rasyadhipati (Lord Friendship)"] = {"match": True, "desc": "Lords of the Moon signs are neutral/friendly, aiding communication."}
-    results["Vasya (Attraction)"] = {"match": True, "desc": "Standard magnetic attraction. The physical bond is stable."}
-    score += 3
-    return score, results
-
-# --- UI LAYOUT ---
 st.title(":material/favorite: Matchmaking Engine")
 st.markdown("Professional Vedic compatibility using precision Swiss Ephemeris math and AI analysis.")
 st.divider()
@@ -156,10 +98,8 @@ with col_g:
 st.divider()
 calc_btn = st.button("Calculate Compatibility with AI Oracle", type="primary", use_container_width=True)
 
-# --- EXECUTION ENGINE ---
 if calc_btn:
-    if not b_name or not b_loc or not g_name or not g_loc:
-        st.error("Please ensure all Name and City fields are filled out for both partners!")
+    if not b_name or not b_loc or not g_name or not g_loc: st.error("Please ensure all Name and City fields are filled out for both partners!")
     else:
         with st.spinner("Calculating exact coordinates & relationship matrix..."):
             b_lat, b_lon, b_tz = get_location_coordinates(b_loc)
@@ -171,7 +111,6 @@ if calc_btn:
             st.markdown("### 🔭 Astronomical Profile")
             r_c1, r_c2 = st.columns(2)
             
-            # Show translated names based on toggle
             b_lagna = ZODIAC_TA.get(b_data['Lagna_Idx'], "") if LANG == "Tamil" else b_data['Lagna']
             b_rasi = ZODIAC_TA.get(b_data['Rasi_Idx'], "") if LANG == "Tamil" else b_data['Rasi']
             g_lagna = ZODIAC_TA.get(g_data['Lagna_Idx'], "") if LANG == "Tamil" else g_data['Lagna']
@@ -207,7 +146,6 @@ if calc_btn:
                 for k, v in unmatched_items.items(): st.markdown(f"<div style='background-color: #fff9f9; padding: 12px; border-radius: 6px; margin-bottom: 10px; border-left: 3px solid #e74c3c;'><strong style='color: #991b1b;'>{k}</strong><div style='font-size: 13px;'>{v['desc']}</div></div>", unsafe_allow_html=True)
 
             st.divider()
-
             API_KEY = st.secrets.get("GEMINI_API_KEY", "")
             if not API_KEY:
                 try:
@@ -215,8 +153,7 @@ if calc_btn:
                     API_KEY = GEMINI_API_KEY
                 except: pass
 
-            if not API_KEY:
-                st.error("API Key missing! Add it to Streamlit Secrets to generate AI insights.")
+            if not API_KEY: st.error("API Key missing! Add it to Streamlit Secrets to generate AI insights.")
             else:
                 st.markdown("### 💬 Deep AI Relationship Oracle")
                 with st.spinner("The AI Astrologer is compiling a personalized consultation..."):
@@ -226,9 +163,9 @@ if calc_btn:
                         unmatch_list = ", ".join(list(unmatched_items.keys()))
                         
                         prompt = f"""
-                        You are an elite Vedic Astrologer analyzing the compatibility between {b_name} and {g_name} who are {rel_status}.
+                        You are an elite Vedic Astrologer analyzing compatibility between {b_name} and {g_name} who are {rel_status}.
                         Traditional Score: {score}/10. Aligned: {match_list}. Unmatched: {unmatch_list}.
-                        Write a deep, structured analysis using these EXACT headers. If the interface language is Tamil, reply in full Tamil. Language requested: {LANG}.
+                        Write a deep analysis using these EXACT headers. If language is Tamil, reply in full Tamil. Language requested: {LANG}.
                         
                         ### 🧠 Psychological Dynamic
                         (2-sentence intro, then 2 bullet points on strengths and friction)
@@ -240,7 +177,6 @@ if calc_btn:
                         (2-sentence intro, then 2 bullet points on how to use their strengths to overcome their weaknesses)
                         """
                         
-                        # --- BULLETPROOF AI FIX ---
                         available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
                         target_model = available_models[0] if available_models else 'gemini-1.5-flash'
                         for m in available_models:
@@ -248,8 +184,5 @@ if calc_btn:
                             elif '1.5-pro' in m or '1.0-pro' in m: target_model = m
                         
                         model = genai.GenerativeModel(target_model)
-                        response = model.generate_content(prompt)
-                        st.markdown(response.text)
-                            
-                    except Exception as e:
-                        st.error(f"AI Generation Failed. Details: {e}")
+                        st.markdown(model.generate_content(prompt).text)
+                    except Exception as e: st.error(f"AI Generation Failed. Details: {e}")
