@@ -11,10 +11,12 @@ from astro_engine import (
     determine_house, get_dignity, calculate_sav_score, get_nakshatra_details, scan_yogas,
     analyze_career_professional, analyze_education, analyze_health, analyze_love_marriage,
     generate_annual_forecast, get_transit_data_advanced, analyze_karmic_axis, get_house_strength_analysis,
-    get_micro_transits, generate_mahadasha_table, generate_current_next_bhukti, 
-    t_p, ZODIAC_TA, ZODIAC
+    generate_mahadasha_table, generate_current_next_bhukti, 
+    t_p, t_p_eng, ZODIAC_TA, ZODIAC
 )
 from report_generator import get_south_indian_chart_html
+from database import TAMIL_NAMES, identity_db, RASI_RULERS
+from tamil_lang import TAMIL_IDENTITY_DB
 
 # SECURE API SETUP
 API_KEY = st.secrets.get("GEMINI_API_KEY", "")
@@ -126,7 +128,9 @@ if st.session_state.report_generated:
             h = (r1 - lagna_rasi + 1) if (r1 - lagna_rasi + 1) > 0 else (r1 - lagna_rasi + 1) + 12
             dig = get_dignity(p, r1)
             status = "VARGOTTAMA" if r1 == p_d9[p] else "ROYAL" if dig == "Exalted" else "WEAK" if dig == "Neecha" else "Avg"
-            p_name = t_p.get(p, p) if LANG == "Tamil" else p
+            
+            # Use strict t_p_eng for English, t_p for Tamil
+            p_name = t_p.get(p, p) if LANG == "Tamil" else t_p_eng.get(p, p)
             master_table.append({"Planet": p_name, "Rasi": ZODIAC_TA.get(r1, "") if LANG=="Tamil" else ZODIAC[r1], "House": h, "Bhava": bhava_h, "Dignity": dig, "Status": status})
 
         # KETU INTEGRATION
@@ -154,6 +158,9 @@ if st.session_state.report_generated:
         fc = generate_annual_forecast(moon_rasi, sav_scores, f_year, current_age, lang=LANG)
         t_data = get_transit_data_advanced(f_year)
         
+        db_id = TAMIL_IDENTITY_DB if LANG == "Tamil" else identity_db
+        report_id_data = db_id.get(ZODIAC[lagna_rasi], list(db_id.values())[0])
+
         c_left, c_right = st.columns([3, 1])
         with c_left:
             st.subheader(f"Analysis for {name_in}" if LANG=="English" else f"ஜோதிட அறிக்கை: {name_in}")
@@ -165,6 +172,11 @@ if st.session_state.report_generated:
         t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs(tb_lbls)
 
         with t1:
+            st.subheader("Identity" if LANG == "English" else "சுயவிவரம்")
+            st.markdown(f"**{'நோக்கம்' if LANG=='Tamil' else 'Purpose'}:** {report_id_data.get('Purpose', '')}")
+            st.markdown(f"**{'குணம்' if LANG=='Tamil' else 'Personality'}:** {report_id_data.get('Personality', '')}")
+            st.divider()
+
             st.markdown(f"<h3 style='text-align: center; margin-top:20px;'>{'ராசி சக்கரம்' if LANG=='Tamil' else 'Birth Chart (Rasi)'}</h3>", unsafe_allow_html=True)
             st.markdown(get_south_indian_chart_html(p_pos, lagna_rasi, "ராசி சக்கரம்" if LANG=="Tamil" else "Rasi Chart", LANG), unsafe_allow_html=True)
             
@@ -234,7 +246,7 @@ if st.session_state.report_generated:
             st.divider()
             st.subheader("Planetary Transit Dates" if LANG == "English" else "முக்கிய கிரகப் பெயர்ச்சிகள்")
             for p_name, trans_data in t_data.items():
-                trans_name = t_p.get(p_name, p_name) if LANG == "Tamil" else p_name
+                trans_name = t_p.get(p_name, p_name) if LANG == "Tamil" else t_p_eng.get(p_name, p_name)
                 r_from = ZODIAC_TA.get(trans_data['Rasi'], "") if LANG == "Tamil" else ZODIAC[trans_data['Rasi']]
                 r_to = ZODIAC_TA.get(trans_data['NextSignIdx'], "") if LANG == "Tamil" else ZODIAC[trans_data['NextSignIdx']]
                 st.markdown(f"**{trans_name}:** {r_from} ➔ {r_to} ({trans_data['NextDate']})")
@@ -253,7 +265,9 @@ if st.session_state.report_generated:
                 st.markdown(f"**{p['Type']}: {p['Phase']}**\n> {p['Dates']}\n\n{p['Text']}")
                 st.divider()
 
-            # TIMELINE ALIGNMENT FIX
+            # TIMELINE ALIGNMENT FIX & RESTORED COLORS
+            planet_colors = {"Suriyan": "#d35400", "Chandran": "#95a5a6", "Sevvai": "#c0392b", "Budhan": "#27ae60", "Guru": "#f39c12", "Sukran": "#8e44ad", "Sani": "#2c3e50", "Rahu": "#34495e", "Ketu": "#7f8c8d", "சூரியன்": "#d35400", "சந்திரன்": "#95a5a6", "செவ்வாய்": "#c0392b", "புதன்": "#27ae60", "குரு": "#f39c12", "சுக்கிரன்": "#8e44ad", "சனி": "#2c3e50", "ராகு": "#34495e", "கேது": "#7f8c8d"}
+            
             dasha_names, start_years, durations = [], [], []
             for row in mahadasha_data:
                 dasha_names.append(row['Mahadasha'])
@@ -264,7 +278,8 @@ if st.session_state.report_generated:
             fig_timeline = go.Figure()
             fig_timeline.add_trace(go.Bar(
                 y=['Life Path']*len(dasha_names), x=durations, base=start_years, name="Mahadashas", orientation='h',
-                text=dasha_names, textposition='inside', textangle=0, insidetextfont=dict(color='white', size=14)
+                text=dasha_names, textposition='inside', textangle=0, insidetextfont=dict(color='white', size=14),
+                marker=dict(color=[planet_colors.get(d, '#333') for d in dasha_names]) # COLORS RESTORED
             ))
             # Forces Timeline to anchor exactly on the Birth Year on the left
             fig_timeline.update_layout(
@@ -273,6 +288,19 @@ if st.session_state.report_generated:
                 yaxis=dict(showticklabels=False), showlegend=False
             )
             st.plotly_chart(fig_timeline, use_container_width=True)
+            
+            # RESTORED RICH HTML TABLE
+            h_age = "வயது" if LANG == "Tamil" else "Age"
+            h_yrs = "ஆண்டுகள்" if LANG == "Tamil" else "Years"
+            h_md = "மகா தசை" if LANG == "Tamil" else "Mahadasha"
+            h_pred = "கணிப்பு" if LANG == "Tamil" else "Context & Prediction"
+
+            md_table_html = f"<table style='width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 14px; margin-top: 20px;'><tr style='border-bottom: 2px solid #ddd; background-color: #fdfdfd;'><th style='padding: 10px 8px; text-align: left; width: 10%;'>{h_age}</th><th style='padding: 10px 8px; text-align: left; width: 10%;'>{h_yrs}</th><th style='padding: 10px 8px; text-align: left; width: 15%;'>{h_md}</th><th style='padding: 10px 8px; text-align: left; width: 65%;'>{h_pred}</th></tr>"
+            for row in mahadasha_data:
+                s_year, e_year = row['Years'].split(' - ')
+                md_table_html += f"<tr style='border-bottom: 1px solid #eee;'><td style='padding: 10px 8px; vertical-align: top;'>{row['Age (From-To)']}</td><td style='padding: 10px 8px; vertical-align: top;'>{s_year}<br>{e_year}</td><td style='padding: 10px 8px; vertical-align: top; color: {planet_colors.get(row['Mahadasha'], '#333')};'><b>{row['Mahadasha']}</b></td><td style='padding: 10px 8px; vertical-align: top;'>{row['Prediction']}</td></tr>"
+            md_table_html += "</table>"
+            st.markdown(md_table_html, unsafe_allow_html=True)
 
         with t8:
             st.subheader("💬 Ask the AI Astrologer" if LANG == "English" else "💬 AI ஜோதிடரிடம் கேளுங்கள்")
