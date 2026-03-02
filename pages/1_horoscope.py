@@ -5,12 +5,13 @@ import google.generativeai as genai
 from supabase import create_client
 import plotly.graph_objects as go
 
-# --- IMPORT OUR NEW CUSTOM MODULES ---
+# --- IMPORTS FROM RESTORED ENGINE ---
 from astro_engine import (
     get_location_coordinates, get_utc_offset, get_bhava_chalit, get_navamsa_chart, get_dasamsa_chart,
     determine_house, get_dignity, calculate_sav_score, get_nakshatra_details, scan_yogas,
     analyze_career_professional, analyze_education, analyze_health, analyze_love_marriage,
     generate_annual_forecast, get_transit_data_advanced, analyze_karmic_axis, get_house_strength_analysis,
+    get_micro_transits, generate_mahadasha_table, generate_current_next_bhukti, 
     t_p, ZODIAC_TA, ZODIAC
 )
 from report_generator import get_south_indian_chart_html
@@ -90,6 +91,7 @@ with st.sidebar:
         if not name_in or not city: st.error("Please enter a Name and City!")
         else: st.session_state.report_generated = True
 
+# --- EXECUTION ---
 if st.session_state.report_generated:
     with st.spinner("Calculating exact astronomical data..." if LANG=="English" else "ஜாதகம் கணிக்கப்படுகிறது..."):
         swe.set_sid_mode(swe.SIDM_LAHIRI)
@@ -123,14 +125,11 @@ if st.session_state.report_generated:
             bhava_placements[p] = bhava_h 
             h = (r1 - lagna_rasi + 1) if (r1 - lagna_rasi + 1) > 0 else (r1 - lagna_rasi + 1) + 12
             dig = get_dignity(p, r1)
-            status = "Avg"
-            if r1 == p_d9[p]: status = "VARGOTTAMA"
-            elif dig == "Exalted": status = "ROYAL"
-            elif dig == "Neecha": status = "WEAK"
+            status = "VARGOTTAMA" if r1 == p_d9[p] else "ROYAL" if dig == "Exalted" else "WEAK" if dig == "Neecha" else "Avg"
             p_name = t_p.get(p, p) if LANG == "Tamil" else p
             master_table.append({"Planet": p_name, "Rasi": ZODIAC_TA.get(r1, "") if LANG=="Tamil" else ZODIAC[r1], "House": h, "Bhava": bhava_h, "Dignity": dig, "Status": status})
 
-        # KETU FIX (Explicitly calculated and added)
+        # KETU INTEGRATION
         ketu_lon = (p_lon_absolute["Rahu"] + 180) % 360
         p_lon_absolute["Ketu"] = ketu_lon
         p_pos["Ketu"] = int(ketu_lon/30) + 1
@@ -243,12 +242,18 @@ if st.session_state.report_generated:
         with t7:
             st.subheader("Life Chapters (Timeline)" if LANG == "English" else "மகா தசை விவரங்கள் (காலக்கோடு)")
             
-            # --- TIMELINE ALIGNMENT FIX ---
-            # Using the exact year of birth to ground the graph to the left side
-            import ast # Used safely to parse if needed, but we calculate normally
-            from astro_engine import generate_mahadasha_table
             mahadasha_data = generate_mahadasha_table(moon_res[0], datetime.combine(dob_in, tob_in), lang=LANG)
+            phases, pd_info = generate_current_next_bhukti(moon_res[0], datetime.combine(dob_in, tob_in), bhava_placements, lang=LANG)
             
+            if pd_info:
+                st.markdown(f"#### {'IMMEDIATE FOCUS' if LANG=='English' else 'நடப்பு தசா புக்தி'}")
+                st.markdown(f"**{pd_info['Start']} to {pd_info['End']}**: {pd_info['PD']} ({pd_info['MD']} / {pd_info['AD']})")
+                st.divider()
+            for p in phases:
+                st.markdown(f"**{p['Type']}: {p['Phase']}**\n> {p['Dates']}\n\n{p['Text']}")
+                st.divider()
+
+            # TIMELINE ALIGNMENT FIX
             dasha_names, start_years, durations = [], [], []
             for row in mahadasha_data:
                 dasha_names.append(row['Mahadasha'])
@@ -261,10 +266,10 @@ if st.session_state.report_generated:
                 y=['Life Path']*len(dasha_names), x=durations, base=start_years, name="Mahadashas", orientation='h',
                 text=dasha_names, textposition='inside', textangle=0, insidetextfont=dict(color='white', size=14)
             ))
-            # Force the x-axis to strictly span from Birth Year to Birth Year + 120
+            # Forces Timeline to anchor exactly on the Birth Year on the left
             fig_timeline.update_layout(
                 barmode='stack', height=150, margin=dict(l=0, r=0, t=10, b=20), 
-                xaxis=dict(range=[start_years[0], start_years[0]+100], tickformat="d"), 
+                xaxis=dict(range=[start_years[0], start_years[0]+120], tickformat="d"), 
                 yaxis=dict(showticklabels=False), showlegend=False
             )
             st.plotly_chart(fig_timeline, use_container_width=True)
@@ -289,7 +294,7 @@ if st.session_state.report_generated:
                                     genai.configure(api_key=API_KEY)
                                     chart_context = f"Ascendant {ZODIAC[lagna_rasi]}, Moon {ZODIAC[moon_rasi]}. Planets: {p_pos}."
                                     
-                                    # --- BULLETPROOF AI FIX ---
+                                    # BULLETPROOF AI FIX
                                     available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
                                     target_model = available_models[0] if available_models else 'gemini-1.5-flash'
                                     for m in available_models:
