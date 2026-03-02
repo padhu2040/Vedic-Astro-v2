@@ -269,8 +269,8 @@ def scan_yogas(p_pos, lagna_rasi, lang="English"):
                 })
 
     # Fixed house lord calculation using consistent modular arithmetic
-    lord_9 = RASI_RULERS[((lagna_rasi + 7) % 12)]   # 9th house lord (0-indexed offset = 8, but RASI_RULERS is 0-indexed)
-    lord_10 = RASI_RULERS[((lagna_rasi + 8) % 12)]  # 10th house lord
+    lord_9 = RASI_RULERS[(lagna_rasi + 8) % 12 or 12]  # 9th house lord (0-indexed offset = 8, but RASI_RULERS is 0-indexed)
+    lord_10 = RASI_RULERS[(lagna_rasi + 9) % 12 or 12]  # 10th house lord
     if p_pos.get(lord_9) == p_pos.get(lord_10) and lord_9 != lord_10:
         if lang == "Tamil":
             yogas.append({
@@ -304,7 +304,7 @@ def scan_yogas(p_pos, lagna_rasi, lang="English"):
 
 def analyze_education(p_pos, lagna_rasi, lang="English"):
     analysis = []
-    lord_5 = RASI_RULERS[(lagna_rasi + 3) % 12]  # 5th house lord (consistent 0-indexed)
+    lord_5 = RASI_RULERS[(lagna_rasi + 3) % 12 or 12]  # 5th house lord (consistent 0-indexed)
     mercury_dig = get_dignity("Mercury", p_pos["Mercury"])
 
     if lang == "Tamil":
@@ -346,9 +346,9 @@ def analyze_education(p_pos, lagna_rasi, lang="English"):
 
 def analyze_health(p_pos, lagna_rasi, lang="English"):
     analysis = []
-    lagna_lord = RASI_RULERS[(lagna_rasi - 1) % 12]
+    lagna_lord = RASI_RULERS[(lagna_rasi - 1) % 12 or 12]
     ll_dig = get_dignity(lagna_lord, p_pos.get(lagna_lord, lagna_rasi))
-    lord_6 = RASI_RULERS[(lagna_rasi + 4) % 12]  # 6th house lord
+    lord_6 = RASI_RULERS[(lagna_rasi + 4) % 12 or 12]  # 6th house lord
 
     if lang == "Tamil":
         analysis.append("#### அடிப்படை உடல் வலிமை")
@@ -389,8 +389,8 @@ def analyze_health(p_pos, lagna_rasi, lang="English"):
 
 def analyze_love_marriage(d1_lagna, d9_lagna, p_d9, p_d1, lang="English"):
     analysis = []
-    lord_5 = RASI_RULERS[(d1_lagna + 3) % 12]
-    d9_7th_lord = RASI_RULERS[(d9_lagna + 5) % 12]
+    lord_5 = RASI_RULERS[(d1_lagna + 3) % 12 or 12]
+    d9_7th_lord = RASI_RULERS[(d9_lagna + 5) % 12 or 12]
 
     if lang == "Tamil":
         analysis.append("#### காதல் மற்றும் திருமண வாழ்க்கை")
@@ -448,7 +448,7 @@ def analyze_career_professional(p_pos, d10_lagna, lagna_rasi, sav_scores, bhava_
         analysis.append("#### நடுத்தர வயது வியூகம் (48+ வயது)")
         if sav_scores[9] > 28: analysis.append("உங்கள் தொழில் ஸ்தானம் மிகவும் வலுவாக உள்ளது. நீங்கள் தற்போது இருக்கும் துறையிலேயே முழு கவனத்தையும் செலுத்தி ஒரு மாபெரும் சாம்ராஜ்யத்தை உருவாக்கலாம். துறை மாற வேண்டாம்.")
         else: analysis.append("தொழில் ஸ்தானம் சற்று பலவீனமாக உள்ளதால், நீங்கள் நேரடியாக உழைப்பதை விட, மற்றவர்களுக்கு ஆலோசனை வழங்குதல் மற்றும் வழிகாட்டுதல் மூலமாகவே அதிக வெற்றியைப் பெறுவீர்கள். 11-ஆம் வீட்டின் (நெட்வொர்க்) உதவியைப் பயன்படுத்துங்கள்.")
-        d10_lord = RASI_RULERS[(d10_lagna + 8) % 12]
+        d10_lord = RASI_RULERS[(d10_lagna + 8) % 12 or 12]
         role, traits = "பொது மேலாண்மை", "தலைமைத்துவம்"
         if d10_lord == "Mars": role, traits = "பொறியியல், செயல்பாடு, ரியல் எஸ்டேட்", "தீர்க்கமான முடிவுகள்"
         elif d10_lord == "Mercury": role, traits = "தரவு பகுப்பாய்வு, நிதி, வணிகம்", "கூர்மையான பகுப்பாய்வு"
@@ -471,7 +471,7 @@ def analyze_career_professional(p_pos, d10_lagna, lagna_rasi, sav_scores, bhava_
         if sav_scores[9] > 28: analysis.append("Legacy Building: Your Career House is structurally strong. The next decade is purely about cementing your reputation. Do not switch fields; double down entirely on your established expertise.")
         else: analysis.append("Strategic Pivot: Your Career House requires support. Rely heavily on the 11th House (Network) or 9th House (Advisory) to maintain your status. Shift your role from 'Doing' to 'Guiding'.")
         analysis.append("#### The CEO Engine (Dasamsa D10)")
-        d10_lord = RASI_RULERS[(d10_lagna + 8) % 12]
+        d10_lord = RASI_RULERS[(d10_lagna + 8) % 12 or 12]
         role, traits = "General Management", "Leadership"
         if d10_lord == "Mars": role, traits = "Engineering, Operations, Real Estate", "Decisiveness"
         elif d10_lord == "Mercury": role, traits = "Data Science, Finance, Commerce", "Analysis"
@@ -495,8 +495,8 @@ def get_transit_positions(f_year):
 
 def generate_annual_forecast(moon_rasi, sav_scores, f_year, age, lang="English"):
     transits = get_transit_positions(f_year)
-    sat_dist = (transits["Saturn"] - moon_rasi) % 12 + 1
-    jup_dist = (transits["Jupiter"] - moon_rasi) % 12 + 1
+    sat_dist = (transits["Saturn"] - moon_rasi)  + 1
+    jup_dist = (transits["Jupiter"] - moon_rasi)  + 1
     career_score = sav_scores[9]
     wealth_score = sav_scores[1]
     fc = {}
@@ -934,7 +934,7 @@ def generate_html_report(name_in, p_pos, p_d9, lagna_rasi, moon_rasi, sav_scores
     score_html = "<table class='bar-chart'>"
     for i in range(12):
         house_num = i + 1
-        score = sav_scores[(lagna_rasi - 1 + i) % 12]
+        score = sav_scores[(lagna_rasi - 1 + i) ]
         bar_w = int((score / 45) * 100)
         color_class = "high" if score >= 30 else "low" if score < 25 else ""
         lbl = "பாவம்" if lang == "Tamil" else "H"
@@ -1169,7 +1169,7 @@ if st.session_state.report_generated:
             p_d10[p] = get_dasamsa_chart(res[0])
             bhava_h = determine_house(res[0], bhava_cusps)
             bhava_placements[p] = bhava_h
-            h = (r1 - lagna_rasi) % 12 + 1
+            h = (r1 - lagna_rasi)  + 1
             dig = get_dignity(p, r1)
             status = "Avg"
             if r1 == p_d9[p]:
@@ -1213,7 +1213,7 @@ if st.session_state.report_generated:
         fc = generate_annual_forecast(moon_rasi, sav_scores, f_year, current_age, lang=LANG)
 
         t_data = get_transit_data_advanced(f_year)
-        sat_h = (t_data['Saturn']['Rasi'] - moon_rasi) % 12 + 1
+        sat_h = (t_data['Saturn']['Rasi'] - moon_rasi)  + 1
 
         def _z(idx):
             z = ZODIAC_TA if LANG == "Tamil" else ZODIAC
@@ -1227,11 +1227,11 @@ if st.session_state.report_generated:
         if LANG == "Tamil":
             sat_txt = f"தற்போதைய நிலை: {_z(t_data['Saturn']['Rasi'])} லிருந்து {_z(t_data['Saturn']['NextSignIdx'])} க்கு {t_data['Saturn']['NextDate']} அன்று பெயர்ச்சி.\nவிளைவு: {sat_h}-ஆம் வீட்டில் சஞ்சரிப்பது குறிப்பிட்ட கர்ம பலன்களைத் தரும்."
             jup_txt = f"தற்போதைய நிலை: {_z(t_data['Jupiter']['Rasi'])} லிருந்து {_z(t_data['Jupiter']['NextSignIdx'])} க்கு {t_data['Jupiter']['NextDate']} அன்று பெயர்ச்சி.\nவிளைவு: செல்வம் மற்றும் ஞானம் அதிகரிக்கும்."
-            rahu_txt = f"தற்போதைய அச்சு: ராகு {_z(t_data['Rahu']['Rasi'])} / கேது {_z((t_data['Rahu']['Rasi'] + 5) % 12 + 1)}\nவிளைவு: ராகு ஆசையை உருவாக்குவார், கேது பற்றின்மையை உருவாக்குவார்."
+            rahu_txt = f"தற்போதைய அச்சு: ராகு {_z(t_data['Rahu']['Rasi'])} / கேது {_z((t_data['Rahu']['Rasi'] + 5)  + 1)}\nவிளைவு: ராகு ஆசையை உருவாக்குவார், கேது பற்றின்மையை உருவாக்குவார்."
         else:
             sat_txt = f"Moving From: {_z(t_data['Saturn']['Rasi'])} to {_z(t_data['Saturn']['NextSignIdx'])} on {t_data['Saturn']['NextDate']}\nPsychology: You may feel a heavy weight of responsibility or a need to isolate.\nOutcome: Transiting the {sat_h}th House indicates specific karmic results."
             jup_txt = f"Moving From: {_z(t_data['Jupiter']['Rasi'])} to {_z(t_data['Jupiter']['NextSignIdx'])} on {t_data['Jupiter']['NextDate']}\nPsychology: Optimism returns. You feel supported by invisible hands.\nOutcome: Growth in wealth and wisdom."
-            rahu_txt = f"Current Axis: Rahu in {_z(t_data['Rahu']['Rasi'])} / Ketu in {_z((t_data['Rahu']['Rasi'] + 5) % 12 + 1)}\nPsychology: Rahu creates obsession where it sits, while Ketu creates detachment."
+            rahu_txt = f"Current Axis: Rahu in {_z(t_data['Rahu']['Rasi'])} / Ketu in {_z((t_data['Rahu']['Rasi'] + 5)  + 1)}\nPsychology: Rahu creates obsession where it sits, while Ketu creates detachment."
         transit_texts = [sat_txt, jup_txt, rahu_txt]
 
         micro_transits = get_micro_transits(f_year, p_lon_absolute, lang=LANG)
@@ -1324,7 +1324,7 @@ if st.session_state.report_generated:
         st.subheader("Destiny Radar" if LANG == "English" else "அஷ்டகவர்க்கம் (Destiny Radar)")
         p_lbl = "பாவம்" if LANG == "Tamil" else "H"
         cats_labels = [f"{p_lbl} {i + 1}" for i in range(12)]
-        vals = [sav_scores[(lagna_rasi - 1 + i) % 12] for i in range(12)]
+        vals = [sav_scores[(lagna_rasi - 1 + i) ] for i in range(12)]
         text_colors = ['#27ae60' if v >= 30 else '#e74c3c' if v < 25 else '#333333' for v in vals]
         fig_bar = go.Figure(data=[go.Bar(
             x=vals, y=cats_labels, orientation='h',
@@ -1341,7 +1341,7 @@ if st.session_state.report_generated:
         fig_bar.update_layout(yaxis=dict(autorange="reversed"), margin=dict(l=20, r=20, t=40, b=20), height=400)
         st.plotly_chart(fig_bar, use_container_width=True)
         c1, c2 = st.columns(2)
-        sorted_houses = sorted([(sav_scores[(lagna_rasi - 1 + i) % 12], i + 1) for i in range(12)], key=lambda x: x[0], reverse=True)
+        sorted_houses = sorted([(sav_scores[(lagna_rasi - 1 + i) ], i + 1) for i in range(12)], key=lambda x: x[0], reverse=True)
         with c1:
             st.markdown(f"<h4 style='color: #27ae60; margin-bottom: 0px;'>{'அதிக பலம் பெற்ற பாவங்கள்' if LANG=='Tamil' else 'Power Zones'}</h4>", unsafe_allow_html=True)
             for s, h in sorted_houses[:3]:
