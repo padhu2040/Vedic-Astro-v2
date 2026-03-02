@@ -892,16 +892,6 @@ def get_utc_offset(tz_str, date_obj):
 
 # --- SIDEBAR CONFIGURATION ---
 with st.sidebar:
-    # (Leave your existing sidebar code exactly as it is here!)
-
-
-
-
-
-
-
-# --- SIDEBAR CONFIGURATION ---
-with st.sidebar:
     st.markdown("### Birth Details")
     
     saved_profiles = load_profiles_from_db()
