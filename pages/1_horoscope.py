@@ -5,6 +5,7 @@ import google.generativeai as genai
 from supabase import create_client
 import plotly.graph_objects as go
 
+# --- IMPORTS ---
 from astro_engine import (
     get_location_coordinates, get_utc_offset, get_bhava_chalit, get_navamsa_chart, get_dasamsa_chart,
     determine_house, get_dignity, calculate_sav_score, get_nakshatra_details, scan_yogas,
@@ -14,9 +15,10 @@ from astro_engine import (
     t_p, t_p_eng, ZODIAC_TA, ZODIAC
 )
 from report_generator import get_south_indian_chart_html, generate_pdf_report
-from database import identity_db, RASI_RULERS
-from tamil_lang import TAMIL_IDENTITY_DB
+from database import identity_db, RASI_RULERS, lifestyle_guidance
+from tamil_lang import TAMIL_IDENTITY_DB, TAMIL_LIFESTYLE
 
+# --- SECURE API SETUP ---
 API_KEY = st.secrets.get("GEMINI_API_KEY", "")
 if not API_KEY:
     try:
@@ -52,10 +54,12 @@ def load_profiles_from_db():
         except: pass
     return profiles
 
+# --- UI HEADER ---
 st.title(":material/account_circle: Deep Horoscope Engine")
 st.markdown("Generate a complete, personalized Vedic astrological profile.")
 st.divider()
 
+# --- SIDEBAR ---
 with st.sidebar:
     st.markdown("### ⚙️ Engine Settings")
     LANG = st.radio("Language / மொழி", ["English", "Tamil"], horizontal=True)
@@ -91,6 +95,7 @@ with st.sidebar:
         if not name_in or not city: st.error("Please enter a Name and City!")
         else: st.session_state.report_generated = True
 
+# --- MAIN EXECUTION ---
 if st.session_state.report_generated:
     with st.spinner("Calculating exact astronomical data..." if LANG=="English" else "ஜாதகம் கணிக்கப்படுகிறது..."):
         swe.set_sid_mode(swe.SIDM_LAHIRI)
@@ -125,6 +130,7 @@ if st.session_state.report_generated:
             h = (r1 - lagna_rasi + 1) if (r1 - lagna_rasi + 1) > 0 else (r1 - lagna_rasi + 1) + 12
             dig = get_dignity(p, r1)
             status = "VARGOTTAMA" if r1 == p_d9[p] else "ROYAL" if dig == "Exalted" else "WEAK" if dig == "Neecha" else "Avg"
+            
             p_name = t_p.get(p, p) if LANG == "Tamil" else t_p_eng.get(p, p)
             master_table.append({"Planet": p_name, "Rasi": ZODIAC_TA.get(r1, "") if LANG=="Tamil" else ZODIAC[r1], "House": h, "Bhava": bhava_h, "Dignity": dig, "Status": status})
 
@@ -145,6 +151,7 @@ if st.session_state.report_generated:
         sav_scores = calculate_sav_score(p_pos, lagna_rasi)
         nak, lord = get_nakshatra_details(moon_res[0])
         
+        # --- BUILD ALL DEEP TEXT FOR UI AND PDF ---
         karmic_txt = analyze_karmic_axis(p_pos, lagna_rasi, lang=LANG)
         yogas = scan_yogas(p_pos, lagna_rasi, lang=LANG)
         career_txt = analyze_career_professional(p_pos, d10_lagna, lagna_rasi, sav_scores, bhava_placements, lang=LANG)
@@ -154,10 +161,23 @@ if st.session_state.report_generated:
         fc = generate_annual_forecast(moon_rasi, sav_scores, f_year, current_age, lang=LANG)
         t_data = get_transit_data_advanced(f_year)
         micro_transits = get_micro_transits(f_year, p_lon_absolute, lang=LANG)
+        mahadasha_data = generate_mahadasha_table(moon_res[0], datetime.combine(dob_in, tob_in), lang=LANG)
+        phases, pd_info = generate_current_next_bhukti(moon_res[0], datetime.combine(dob_in, tob_in), bhava_placements, lang=LANG)
+        
+        # Structure the transit texts correctly for the PDF
+        transit_texts = []
+        for p_name, trans_data in t_data.items():
+            trans_name = t_p.get(p_name, p_name) if LANG == "Tamil" else t_p_eng.get(p_name, p_name)
+            r_from = ZODIAC_TA.get(trans_data['Rasi'], "") if LANG == "Tamil" else ZODIAC[trans_data['Rasi']]
+            r_to = ZODIAC_TA.get(trans_data['NextSignIdx'], "") if LANG == "Tamil" else ZODIAC[trans_data['NextSignIdx']]
+            transit_texts.append(f"**{trans_name}:** {r_from} ➔ {r_to} ({trans_data['NextDate']})")
         
         db_id = TAMIL_IDENTITY_DB if LANG == "Tamil" else identity_db
         report_id_data = db_id.get(ZODIAC[lagna_rasi], list(db_id.values())[0])
+        db_life = TAMIL_LIFESTYLE if LANG == "Tamil" else lifestyle_guidance
+        guide = db_life.get(RASI_RULERS.get(moon_rasi, "Moon"), {})
 
+        # --- TOP INFO SECTION ---
         c_left, c_right = st.columns([3, 1])
         l_name = ZODIAC_TA.get(lagna_rasi, "") if LANG == "Tamil" else ZODIAC[lagna_rasi]
         m_name = ZODIAC_TA.get(moon_rasi, "") if LANG == "Tamil" else ZODIAC[moon_rasi]
@@ -167,11 +187,28 @@ if st.session_state.report_generated:
             st.markdown(f"> **{'லக்னம்' if LANG=='Tamil' else 'Lagna'}:** {l_name} | **{'ராசி' if LANG=='Tamil' else 'Moon'}:** {m_name} | **{'நட்சத்திரம்' if LANG=='Tamil' else 'Star'}:** {nak}")
         
         with c_right:
-            pdf_bytes = generate_pdf_report(name_in, p_pos, p_d9, lagna_rasi, sav_scores, career_txt, edu_txt, health_txt, love_txt, report_id_data, l_name, m_name, nak, yogas, fc, micro_transits, [], [], {}, {}, [], lang=LANG)
+            # THIS CALL NOW PASSES ALL THE FULLY CALCULATED DATA TO THE PDF ENGINE
+            pdf_bytes = generate_pdf_report(
+                name_in=name_in, p_pos=p_pos, p_d9=p_d9, lagna_rasi=lagna_rasi, sav_scores=sav_scores, 
+                career_txt=career_txt, edu_txt=edu_txt, health_txt=health_txt, love_txt=love_txt, 
+                karmic_txt=karmic_txt, id_data=report_id_data, lagna_str=l_name, moon_str=m_name, 
+                star_str=nak, yogas=yogas, fc=fc, micro_transits=micro_transits, 
+                mahadasha_data=mahadasha_data, phases=phases, pd_info=pd_info, guide=guide, 
+                transit_texts=transit_texts, lang=LANG
+            )
+            
             if isinstance(pdf_bytes, bytes):
-                st.download_button(label="📄 Download PDF Report" if LANG=="English" else "📄 ஜாதகத்தை பதிவிறக்க", data=pdf_bytes, file_name=f"{name_in}_Astro_Report.pdf", mime="application/pdf", type="primary")
-            else: st.error("PDF Engine not installed.")
+                st.download_button(
+                    label="📄 Download PDF Report" if LANG=="English" else "📄 ஜாதகத்தை பதிவிறக்க", 
+                    data=pdf_bytes, 
+                    file_name=f"{name_in}_Astro_Report.pdf", 
+                    mime="application/pdf",
+                    type="primary"
+                )
+            else:
+                st.error("PDF Engine not yet installed. Generating HTML backup instead...")
 
+        # --- UI TABS ---
         tb_lbls = ["Profile", "Scorecard", "Work & Intellect", "Love & Health", "Yogas", "Forecast", "Roadmap", "💬 Oracle"] if LANG == "English" else ["சுயவிவரம்", "அஷ்டகவர்க்கம்", "தொழில்", "திருமணம் & ஆரோக்கியம்", "யோகங்கள்", "ஆண்டு பலன்கள்", "தசா புக்தி", "💬 ஜோதிடர்"]
         t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs(tb_lbls)
 
@@ -186,7 +223,8 @@ if st.session_state.report_generated:
             
             headers = ["கிரகம்", "ராசி", "பாவம்", "பலம்", "நிலை"] if LANG == "Tamil" else ["Planet", "Rasi", "House", "Dignity", "Status"]
             table_md = f"<table style='width: 80%; margin: 30px auto; border-collapse: collapse; font-family: sans-serif; font-size: 15px; text-align: center;'><tr style='background-color: #f8f9fa; border-bottom: 2px solid #ccc;'><th style='padding: 12px 8px;'>{headers[0]}</th><th style='padding: 12px 8px;'>{headers[1]}</th><th style='padding: 12px 8px;'>{headers[2]}</th><th style='padding: 12px 8px;'>{headers[3]}</th><th style='padding: 12px 8px;'>{headers[4]}</th></tr>"
-            for row in master_table: table_md += f"<tr style='border-bottom: 1px solid #eee;'><td style='padding: 12px 8px;'><b>{row['Planet']}</b></td><td style='padding: 12px 8px;'>{row['Rasi']}</td><td style='padding: 12px 8px;'>{row['House']}</td><td style='padding: 12px 8px;'>{row['Dignity']}</td><td style='padding: 12px 8px;'>{row['Status']}</td></tr>"
+            for row in master_table:
+                table_md += f"<tr style='border-bottom: 1px solid #eee;'><td style='padding: 12px 8px;'><b>{row['Planet']}</b></td><td style='padding: 12px 8px;'>{row['Rasi']}</td><td style='padding: 12px 8px;'>{row['House']}</td><td style='padding: 12px 8px;'>{row['Dignity']}</td><td style='padding: 12px 8px;'>{row['Status']}</td></tr>"
             table_md += "</table>"
             st.markdown(table_md, unsafe_allow_html=True)
 
@@ -246,18 +284,10 @@ if st.session_state.report_generated:
             
             st.divider()
             st.subheader("Planetary Transit Dates" if LANG == "English" else "முக்கிய கிரகப் பெயர்ச்சிகள்")
-            for p_name, trans_data in t_data.items():
-                trans_name = t_p.get(p_name, p_name) if LANG == "Tamil" else t_p_eng.get(p_name, p_name)
-                r_from = ZODIAC_TA.get(trans_data['Rasi'], "") if LANG == "Tamil" else ZODIAC[trans_data['Rasi']]
-                r_to = ZODIAC_TA.get(trans_data['NextSignIdx'], "") if LANG == "Tamil" else ZODIAC[trans_data['NextSignIdx']]
-                st.markdown(f"**{trans_name}:** {r_from} ➔ {r_to} ({trans_data['NextDate']})")
+            for txt in transit_texts: st.markdown(txt)
 
         with t7:
             st.subheader("Life Chapters (Timeline)" if LANG == "English" else "மகா தசை விவரங்கள் (காலக்கோடு)")
-            
-            mahadasha_data = generate_mahadasha_table(moon_res[0], datetime.combine(dob_in, tob_in), lang=LANG)
-            phases, pd_info = generate_current_next_bhukti(moon_res[0], datetime.combine(dob_in, tob_in), bhava_placements, lang=LANG)
-            
             if pd_info:
                 st.markdown(f"#### {'IMMEDIATE FOCUS' if LANG=='English' else 'நடப்பு தசா புக்தி'}")
                 st.markdown(f"**{pd_info['Start']} to {pd_info['End']}**: {pd_info['PD']} ({pd_info['MD']} / {pd_info['AD']})")
