@@ -1,11 +1,9 @@
 streamlit
-pyswisseph
-plotly
+swisseph
 geopy
 timezonefinder
 pytz
-uharfbuzz
 google-generativeai
 supabase
-weasyprint
-fpdf2
+plotly
+xhtml2pdf
