@@ -191,7 +191,7 @@ if st.session_state.report_generated:
                 career_txt=career_txt, edu_txt=edu_txt, health_txt=health_txt, love_txt=love_txt, 
                 karmic_txt=karmic_txt, id_data=report_id_data, lagna_str=l_name, moon_str=m_name, 
                 star_str=nak, yogas=yogas, fc=fc, micro_transits=micro_transits, 
-                mahadasha_data=mahadasha_data, phases=phases, pd_info=pd_info, guide=guide, 
+                mahadasha_data=mahadasha_data, master_table=master_table, phases=phases, pd_info=pd_info, guide=guide, 
                 transit_texts=transit_texts, lang=LANG
             )
             
