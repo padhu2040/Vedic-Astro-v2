@@ -7,5 +7,5 @@ pytz
 uharfbuzz
 google-generativeai
 supabase
-pdfkit
+weasyprint
 fpdf2
