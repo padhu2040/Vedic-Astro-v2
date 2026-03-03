@@ -6,4 +6,4 @@ pytz
 google-generativeai
 supabase
 plotly
-xhtml2pdf
+weasyprint
