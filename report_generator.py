@@ -22,16 +22,18 @@ def get_south_indian_chart_html(p_pos, lagna_rasi, title, lang="English"):
         
     def cell(idx):
         is_lagna = (idx == lagna_rasi)
-        # xhtml2pdf requires strict solid hex colors
-        bg_color = "#fef0f0" if is_lagna else "#fafafa"
-        style = f"border: 1px solid #bdc3c7; width: 25%; height: 100px; vertical-align: top; padding: 4px; background-color: {bg_color};"
-        
-        return f"<td style='{style}'><div style='font-size:10px; color:#7f8c8d; text-align:left; margin-bottom:4px;'>{get_z(idx)} ({idx})</div><div style='text-align:center;'>{g[idx]}</div></td>"
+        # xhtml2pdf requires strict inline styling and explicit HTML attributes
+        bg_color = "#fef0f0" if is_lagna else "#ffffff"
+        return f"<td width='25%' valign='top' style='border: 1px solid #333; padding: 5px; background-color: {bg_color}; height: 90px;'><div style='font-size:10px; color:#7f8c8d; margin-bottom: 4px;'>{get_z(idx)} ({idx})</div><div style='text-align:center; font-size:12px; line-height: 1.2;'>{g[idx]}</div></td>"
 
     return f"""
-    <table style='width: 100%; border-collapse: collapse; font-size: 12px; border: 2px solid #333;'>
+    <table cellpadding='0' cellspacing='0' style='width: 100%; border-collapse: collapse; border: 2px solid #333;'>
         <tr>{cell(12)}{cell(1)}{cell(2)}{cell(3)}</tr>
-        <tr>{cell(11)}<td colspan='2' rowspan='2' align='center' valign='middle' style='border: none; font-weight: bold; font-size: 16px; color:#2c3e50;'>{title}</td>{cell(4)}</tr>
+        <tr>
+            {cell(11)}
+            <td colspan='2' rowspan='2' align='center' valign='middle' style='border: none; font-weight: bold; font-size: 16px; color:#2c3e50; background-color: #ffffff;'>{title}</td>
+            {cell(4)}
+        </tr>
         <tr>{cell(10)}{cell(5)}</tr>
         <tr>{cell(9)}{cell(8)}{cell(7)}{cell(6)}</tr>
     </table>
@@ -39,19 +41,25 @@ def get_south_indian_chart_html(p_pos, lagna_rasi, title, lang="English"):
 
 def generate_pdf_report(name_in, p_pos, p_d9, lagna_rasi, sav_scores, career_txt, edu_txt, health_txt, love_txt, karmic_txt, id_data, lagna_str, moon_str, star_str, yogas, fc, micro_transits, mahadasha_data, phases, pd_info, guide, transit_texts, lang="English"):
     
+    # Safe Markdown to HTML parser for xhtml2pdf
+    def md_to_html(text):
+        text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text) # Bold
+        text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', text)     # Italics
+        return text
+
     def format_section(text_list):
         out = ""
         for line in text_list:
+            line = line.strip()
+            if not line: continue
+            
             if line.startswith("#### "): 
                 out += f"<h4>{line.replace('#### ', '')}</h4>"
             elif line.startswith("> "): 
-                parsed_quote = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', line.replace('> ', ''))
-                parsed_quote = re.sub(r'\*(.*?)\*', r'<i>\1</i>', parsed_quote)
-                out += f"<div style='background-color:#fdfae6; border-left:4px solid #f1c40f; padding:8px; margin:8px 0; font-size:12px;'>{parsed_quote}</div>"
+                clean_quote = md_to_html(line.replace('> ', ''))
+                out += f"<div style='background-color:#fdfae6; border-left:4px solid #f1c40f; padding:8px; margin:8px 0; font-size:12px;'>{clean_quote}</div>"
             else: 
-                html_line = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', line)
-                html_line = re.sub(r'\*(.*?)\*', r'<i>\1</i>', html_line)
-                out += f"<p>{html_line}</p>"
+                out += f"<p>{md_to_html(line)}</p>"
         return out
 
     h_title = f"ஜோதிட அறிக்கை: {name_in}" if lang == "Tamil" else f"Vedic Astrology Premium Report: {name_in}"
@@ -107,19 +115,23 @@ def generate_pdf_report(name_in, p_pos, p_d9, lagna_rasi, sav_scores, career_txt
         <h2>{"7. யோகங்கள் (Wealth Combinations)" if lang == "Tamil" else "7. Wealth & Power Yogas"}</h2>
     """
     
+    # Safe Yoga rendering
     for y in yogas: 
-        html += f"<h4>{y['Name']} ({y['Type']})</h4><p>{re.sub(r'\\*\\*(.*?)\\*\\*', r'<b>\1</b>', y['Description'])}</p>"
+        html += f"<h4>{y['Name']} ({y['Type']})</h4><p>{md_to_html(y['Description'])}</p>"
 
+    # Safe Forecast rendering
     html += f"<h2>{'8. வருடாந்திர கணிப்பு (Annual Forecast)' if lang == 'Tamil' else '8. Annual Forecast'}</h2>"
     for cat, data in fc.items():
-        parsed_desc = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', data[0])
+        parsed_desc = md_to_html(data[0])
         rem_lbl = "பரிகாரம்" if lang == "Tamil" else "Remedy"
         html += f"<h4>{cat}</h4><p>{parsed_desc}</p><div style='background-color:#fdfae6; border-left:4px solid #f1c40f; padding:6px; margin:3px 0;'><b>{rem_lbl}:</b> {data[1]}</div>"
 
+    # Safe Transits rendering
     html += f"<h2>{'9. முக்கிய கிரகப் பெயர்ச்சிகள் (Transits)' if lang == 'Tamil' else '9. Planetary Transits'}</h2>"
     for txt in transit_texts: 
-        html += f"<p>{re.sub(r'\\*\\*(.*?)\\*\\*', r'<b>\1</b>', txt)}</p>"
+        html += f"<p>{md_to_html(txt)}</p>"
 
+    # Restored Roadmap Table
     age_lbl = "வயது" if lang == "Tamil" else "Age"
     yr_lbl = "ஆண்டுகள்" if lang == "Tamil" else "Years"
     md_lbl = "மகா தசை" if lang == "Tamil" else "Mahadasha"
@@ -128,16 +140,21 @@ def generate_pdf_report(name_in, p_pos, p_d9, lagna_rasi, sav_scores, career_txt
     html += f"""
         <pdf:nextpage />
         <h2>{"10. தசா புக்தி (Strategic Roadmap)" if lang == "Tamil" else "10. Strategic Roadmap"}</h2>
-        <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
-            <tr style="background-color: #f0f3f4;"><th style="padding: 6px; text-align:left;">{age_lbl}</th><th style="padding: 6px; text-align:left;">{yr_lbl}</th><th style="padding: 6px; text-align:left;">{md_lbl}</th><th style="padding: 6px; text-align:left;">{pred_lbl}</th></tr>
+        <table cellpadding="4" style="width: 100%; border-collapse: collapse; font-size: 11px;">
+            <tr style="background-color: #f0f3f4;">
+                <th style="border-bottom: 1px solid #333; text-align:left; width: 12%;">{age_lbl}</th>
+                <th style="border-bottom: 1px solid #333; text-align:left; width: 15%;">{yr_lbl}</th>
+                <th style="border-bottom: 1px solid #333; text-align:left; width: 15%;">{md_lbl}</th>
+                <th style="border-bottom: 1px solid #333; text-align:left; width: 58%;">{pred_lbl}</th>
+            </tr>
     """
     for row in mahadasha_data:
-        html += f"<tr><td style='padding: 6px; border-bottom: 1px solid #eee;'>{row['Age (From-To)']}</td><td style='padding: 6px; border-bottom: 1px solid #eee;'>{row['Years']}</td><td style='padding: 6px; border-bottom: 1px solid #eee;'><b>{row['Mahadasha']}</b></td><td style='padding: 6px; border-bottom: 1px solid #eee;'>{row['Prediction']}</td></tr>"
+        html += f"<tr><td style='border-bottom: 1px solid #eee;' valign='top'>{row['Age (From-To)']}</td><td style='border-bottom: 1px solid #eee;' valign='top'>{row['Years'].replace(' - ', '<br/>')}</td><td style='border-bottom: 1px solid #eee;' valign='top'><b>{row['Mahadasha']}</b></td><td style='border-bottom: 1px solid #eee;' valign='top'>{row['Prediction']}</td></tr>"
     html += "</table>"
 
     html += f"<div class='footer'>{'வேத ஜோதிட என்ஜின் மூலம் உருவாக்கப்பட்டது' if lang == 'Tamil' else 'Generated by Vedic Astro AI Engine'}</div></body></html>"
     
-    # --- 100% PURE PYTHON PDF GENERATION ---
+    # Generate PDF
     result = io.BytesIO()
     try:
         pisa_status = pisa.CreatePDF(io.StringIO(html), dest=result)
