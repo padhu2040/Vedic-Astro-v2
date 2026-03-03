@@ -1,7 +1,7 @@
 import re
 from weasyprint import HTML
 from database import ZODIAC
-from astro_engine import ZODIAC_TA, t_p_eng
+from astro_engine import ZODIAC_TA, t_p_eng, get_house_strength_analysis
 
 def get_south_indian_chart_html(p_pos, lagna_rasi, title, lang="English"):
     g = {i: [] for i in range(1, 13)}
@@ -19,14 +19,12 @@ def get_south_indian_chart_html(p_pos, lagna_rasi, title, lang="English"):
         
     def cell(idx):
         is_lagna = (idx == lagna_rasi)
-        # Cleaner, safer gradient rendering for WeasyPrint
         lagna_gradient = "background: linear-gradient(135deg, transparent 49%, rgba(231,76,60,0.3) 49.5%, rgba(231,76,60,0.3) 50.5%, transparent 51%), #fdfdfa;"
         standard_bg = "background-color: #fafafa;"
         style = f"border: 1px solid #bdc3c7; width: 25%; height: 110px; vertical-align: top; padding: 6px; box-sizing: border-box; "
         style += lagna_gradient if is_lagna else standard_bg
         return f"<td style='{style}'><div style='font-size:11px; color:#7f8c8d; text-align:left; margin-bottom:4px;'>{get_z(idx)} ({idx})</div>{g[idx]}</td>"
 
-    # We wrap the chart in 'page-break-inside: avoid;' so it never tears across pages
     return f"""
     <div style='page-break-inside: avoid; text-align: center; margin: 15px 0;'>
         <table style='width: 450px; margin: 0 auto; table-layout: fixed; border-collapse: collapse; text-align: center; font-size: 14px; background-color: #ffffff; border: 2px solid #333;'>
@@ -38,9 +36,10 @@ def get_south_indian_chart_html(p_pos, lagna_rasi, title, lang="English"):
     </div>
     """
 
-def generate_pdf_report(name_in, p_pos, p_d9, lagna_rasi, sav_scores, career_txt, edu_txt, health_txt, love_txt, karmic_txt, id_data, lagna_str, moon_str, star_str, yogas, fc, micro_transits, mahadasha_data, phases, pd_info, guide, transit_texts, lang="English"):
+def generate_pdf_report(name_in, p_pos, p_d9, lagna_rasi, sav_scores, career_txt, edu_txt, health_txt, love_txt, karmic_txt, id_data, lagna_str, moon_str, star_str, yogas, fc, micro_transits, mahadasha_data, master_table, phases, pd_info, guide, transit_texts, lang="English"):
     
     def md_to_html(text):
+        text = text.replace('\n', '<br>')
         text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text) 
         text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', text)     
         return text
@@ -64,14 +63,30 @@ def generate_pdf_report(name_in, p_pos, p_d9, lagna_rasi, sav_scores, career_txt
     d9_lagna_idx = p_d9.get("Lagna", 1)
     chart2 = get_south_indian_chart_html(p_d9, d9_lagna_idx, "நவாம்சம்" if lang == "Tamil" else "Navamsa", lang)
 
-    # Added page-break protections to the Bar Chart
+    # 1. ADD THE PLANET TABLE
+    t_headers = ["கிரகம்", "ராசி", "பாவம்", "பலம்", "நிலை"] if lang == "Tamil" else ["Planet", "Rasi", "House", "Dignity", "Status"]
+    master_table_html = f"<div style='page-break-inside: avoid;'><table style='width: 100%; margin: 15px 0; border-collapse: collapse; font-size: 12px; text-align: center;'><tr style='background-color: #f0f3f4; border-bottom: 2px solid #ccc;'><th style='padding: 6px;'>{t_headers[0]}</th><th style='padding: 6px;'>{t_headers[1]}</th><th style='padding: 6px;'>{t_headers[2]}</th><th style='padding: 6px;'>{t_headers[3]}</th><th style='padding: 6px;'>{t_headers[4]}</th></tr>"
+    for row in master_table:
+        master_table_html += f"<tr style='border-bottom: 1px solid #eee;'><td style='padding: 6px;'><b>{row['Planet']}</b></td><td style='padding: 6px;'>{row['Rasi']}</td><td style='padding: 6px;'>{row['House']}</td><td style='padding: 6px;'>{row['Dignity']}</td><td style='padding: 6px;'>{row['Status']}</td></tr>"
+    master_table_html += "</table></div>"
+
+    # 2. ADD POWER & CHALLENGE ZONES
     score_html = "<div style='page-break-inside: avoid;'><table class='bar-chart'>"
     for i in range(12):
         score = sav_scores[(lagna_rasi - 1 + i) % 12]
         color = "#27ae60" if score >= 30 else "#e74c3c" if score < 25 else "#95a5a6"
         bar_w = int((score / 45) * 100)
         score_html += f"<tr><td style='width: 15%;'><b>H {i+1}</b></td><td style='width: 75%;'><div class='bar' style='background-color: {color}; width: {bar_w}%;'></div></td><td style='width: 10%; text-align: right;'><b>{score}</b></td></tr>"
-    score_html += "</table></div>"
+    score_html += "</table>"
+    
+    sorted_houses = sorted([(sav_scores[(lagna_rasi-1+i)%12], i+1) for i in range(12)], key=lambda x: x[0], reverse=True)
+    zones_html = "<table style='width:100%; margin-top:15px; border-collapse: collapse;'><tr><td style='width:50%; vertical-align:top; padding-right:10px;'>"
+    zones_html += f"<h4 style='color: #27ae60; margin-top:0;'>{'Top Power Zones' if lang=='English' else 'அதிக பலம் பெற்ற பாவங்கள்'}</h4>"
+    for s, h in sorted_houses[:3]: zones_html += f"<div style='margin-bottom:8px; font-size:12px;'>{md_to_html(get_house_strength_analysis(h, s, lang))}</div>"
+    zones_html += "</td><td style='width:50%; vertical-align:top; padding-left:10px; border-left: 1px solid #eee;'>"
+    zones_html += f"<h4 style='color: #e74c3c; margin-top:0;'>{'Top Challenge Zones' if lang=='English' else 'கவனம் தேவைப்படும் பாவங்கள்'}</h4>"
+    for s, h in sorted_houses[-3:]: zones_html += f"<div style='margin-bottom:8px; font-size:12px;'>{md_to_html(get_house_strength_analysis(h, s, lang))}</div>"
+    zones_html += "</td></tr></table></div>"
 
     html = f"""
     <!DOCTYPE html><html><head><meta charset="utf-8"><title>{h_title}</title>
@@ -99,10 +114,15 @@ def generate_pdf_report(name_in, p_pos, p_d9, lagna_rasi, sav_scores, career_txt
         
         <h2>{"1. சுயவிவரம் (Identity)" if lang == "Tamil" else "1. Identity"}</h2>
         <p><b>Purpose:</b> {id_data.get('Purpose', '')}</p>
+        <p><b>Personality:</b> {id_data.get('Personality', '')}</p>
         
-        <h2>{"2. ராசி சக்கரம் (Rasi Chart)" if lang == "Tamil" else "2. Rasi Chart"}</h2>{chart1}
+        <h2>{"2. ராசி சக்கரம் (Rasi Chart & Placements)" if lang == "Tamil" else "2. Rasi Chart & Placements"}</h2>
+        {chart1}
+        {master_table_html}
         
-        <h2>{"3. அஷ்டகவர்க்கம் (Destiny Radar)" if lang == "Tamil" else "3. Destiny Radar"}</h2>{score_html}
+        <h2>{"3. அஷ்டகவர்க்கம் (Destiny Radar)" if lang == "Tamil" else "3. Destiny Radar"}</h2>
+        {score_html}
+        {zones_html}
         
         <div class="page-break"></div>
         
@@ -125,7 +145,6 @@ def generate_pdf_report(name_in, p_pos, p_d9, lagna_rasi, sav_scores, career_txt
         <h2>{"7. யோகங்கள் (Wealth Combinations)" if lang == "Tamil" else "7. Wealth & Power Yogas"}</h2>
     """
     
-    # Wrap each Yoga in a block so the title and description don't split across pages
     for y in yogas: 
         html += f"<div style='page-break-inside: avoid;'><h4>{y['Name']} ({y['Type']})</h4><p>{md_to_html(y['Description'])}</p></div>"
 
@@ -140,19 +159,40 @@ def generate_pdf_report(name_in, p_pos, p_d9, lagna_rasi, sav_scores, career_txt
         html += f"<p>{md_to_html(txt)}</p>"
     html += "</div>"
 
+    # 3. ADD PHASE TEXT & TIMELINE BAR CHART
+    html += f"<div class='page-break'></div><h2>{'10. தசா புக்தி (Strategic Roadmap)' if lang == 'Tamil' else '10. Strategic Roadmap'}</h2>"
+    
+    if pd_info:
+        html += f"<h4>{'IMMEDIATE FOCUS' if lang=='English' else 'நடப்பு தசா புக்தி'}</h4>"
+        html += f"<p><b>{pd_info['Start']} to {pd_info['End']}</b>: {pd_info['PD']} ({pd_info['MD']} / {pd_info['AD']})</p><hr style='border:0; border-top:1px dashed #eee; margin:10px 0;'>"
+    
+    for p in phases:
+        html += f"<div style='margin-bottom: 12px;'><h4>{p['Type']}: {p['Phase']}</h4><p style='margin-top:2px;'><i>{p['Dates']}</i><br/>{md_to_html(p['Text'])}</p></div>"
+
+    planet_colors = {"Suriyan": "#d35400", "Chandran": "#95a5a6", "Sevvai": "#c0392b", "Budhan": "#27ae60", "Guru": "#f39c12", "Sukran": "#8e44ad", "Sani": "#2c3e50", "Rahu": "#34495e", "Ketu": "#7f8c8d", "சூரியன்": "#d35400", "சந்திரன்": "#95a5a6", "செவ்வாய்": "#c0392b", "புதன்": "#27ae60", "குரு": "#f39c12", "சுக்கிரன்": "#8e44ad", "சனி": "#2c3e50", "ராகு": "#34495e", "கேது": "#7f8c8d"}
+    
+    timeline_html = "<div style='width: 100%; height: 24px; border-radius: 4px; overflow: hidden; margin: 15px 0; background-color: #eee;'>"
+    for row in mahadasha_data:
+        s_year, e_year = map(int, row['Years'].split(' - '))
+        duration = e_year - s_year
+        width_pct = (duration / 120.0) * 100
+        color = planet_colors.get(row['Mahadasha'], '#333')
+        name = row['Mahadasha'][:2] if width_pct < 6 else row['Mahadasha']
+        timeline_html += f"<div style='float: left; width: {width_pct}%; height: 100%; background-color: {color}; color: white; text-align: center; line-height: 24px; font-size: 10px; font-weight: bold; overflow: hidden; box-sizing: border-box; border-right: 1px solid rgba(255,255,255,0.2);'>{name}</div>"
+    timeline_html += "<div style='clear: both;'></div></div>"
+    html += timeline_html
+
     age_lbl = "வயது" if lang == "Tamil" else "Age"
     yr_lbl = "ஆண்டுகள்" if lang == "Tamil" else "Years"
     md_lbl = "மகா தசை" if lang == "Tamil" else "Mahadasha"
     pred_lbl = "கணிப்பு" if lang == "Tamil" else "Context & Prediction"
     
     html += f"""
-        <div class="page-break"></div>
-        <h2>{"10. தசா புக்தி (Strategic Roadmap)" if lang == "Tamil" else "10. Strategic Roadmap"}</h2>
         <table class="timeline">
             <tr><th width="12%">{age_lbl}</th><th width="14%">{yr_lbl}</th><th width="16%">{md_lbl}</th><th width="58%">{pred_lbl}</th></tr>
     """
     for row in mahadasha_data:
-        html += f"<tr><td>{row['Age (From-To)']}</td><td>{row['Years'].replace(' - ', '<br>')}</td><td><b>{row['Mahadasha']}</b></td><td>{row['Prediction']}</td></tr>"
+        html += f"<tr><td>{row['Age (From-To)']}</td><td>{row['Years'].replace(' - ', '<br>')}</td><td><b style='color: {planet_colors.get(row['Mahadasha'], '#333')};'>{row['Mahadasha']}</b></td><td>{row['Prediction']}</td></tr>"
     html += "</table>"
 
     html += f"<div class='footer'>{'வேத ஜோதிட என்ஜின் மூலம் உருவாக்கப்பட்டது' if lang == 'Tamil' else 'Generated by Vedic Astro AI Engine'}</div></body></html>"
