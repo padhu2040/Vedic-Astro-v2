@@ -19,15 +19,17 @@ def get_south_indian_chart_html(p_pos, lagna_rasi, title, lang="English"):
         
     def cell(idx):
         is_lagna = (idx == lagna_rasi)
-        lagna_gradient = "background: linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 49.2%, rgba(231,76,60,0.3) 49.5%, rgba(231,76,60,0.3) 50.5%, rgba(255,255,255,0) 50.8%, rgba(255,255,255,0) 100%), #fdfdfa;"
+        # Cleaner, safer gradient rendering for WeasyPrint
+        lagna_gradient = "background: linear-gradient(135deg, transparent 49%, rgba(231,76,60,0.3) 49.5%, rgba(231,76,60,0.3) 50.5%, transparent 51%), #fdfdfa;"
         standard_bg = "background-color: #fafafa;"
-        style = f"border: 1px solid #bdc3c7; width: 25%; height: 115px; min-height: 115px; max-height: 115px; vertical-align: top; padding: 6px; overflow: hidden; box-sizing: border-box; "
+        style = f"border: 1px solid #bdc3c7; width: 25%; height: 110px; vertical-align: top; padding: 6px; box-sizing: border-box; "
         style += lagna_gradient if is_lagna else standard_bg
         return f"<td style='{style}'><div style='font-size:11px; color:#7f8c8d; text-align:left; margin-bottom:4px;'>{get_z(idx)} ({idx})</div>{g[idx]}</td>"
 
+    # We wrap the chart in 'page-break-inside: avoid;' so it never tears across pages
     return f"""
-    <div style='max-width: 450px; margin: auto; font-family: sans-serif;'>
-        <table style='width: 100%; table-layout: fixed; border-collapse: collapse; text-align: center; font-size: 14px; background-color: #ffffff; border: 2px solid #333; box-shadow: 0 4px 8px rgba(0,0,0,0.05);'>
+    <div style='page-break-inside: avoid; text-align: center; margin: 15px 0;'>
+        <table style='width: 450px; margin: 0 auto; table-layout: fixed; border-collapse: collapse; text-align: center; font-size: 14px; background-color: #ffffff; border: 2px solid #333;'>
             <tr>{cell(12)}{cell(1)}{cell(2)}{cell(3)}</tr>
             <tr>{cell(11)}<td colspan='2' rowspan='2' style='border: none; vertical-align: middle; font-weight: bold; font-size: 16px; color:#2c3e50; background-color: #ffffff;'>{title}</td>{cell(4)}</tr>
             <tr>{cell(10)}{cell(5)}</tr>
@@ -38,22 +40,23 @@ def get_south_indian_chart_html(p_pos, lagna_rasi, title, lang="English"):
 
 def generate_pdf_report(name_in, p_pos, p_d9, lagna_rasi, sav_scores, career_txt, edu_txt, health_txt, love_txt, karmic_txt, id_data, lagna_str, moon_str, star_str, yogas, fc, micro_transits, mahadasha_data, phases, pd_info, guide, transit_texts, lang="English"):
     
-    # Safely format text outside of f-strings
     def md_to_html(text):
-        text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text)
-        text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', text)
+        text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text) 
+        text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', text)     
         return text
 
     def format_section(text_list):
         out = ""
         for line in text_list:
-            if line.startswith("#### "): out += f"<h4>{line.replace('#### ', '')}</h4>"
+            line = line.strip()
+            if not line: continue
+            if line.startswith("#### "): 
+                out += f"<h4>{line.replace('#### ', '')}</h4>"
             elif line.startswith("> "): 
                 parsed_quote = md_to_html(line.replace('> ', ''))
-                out += f"<blockquote style='background:#fdfae6; border-left:4px solid #f1c40f; padding:10px; margin:10px 0; font-size:13px;'>{parsed_quote}</blockquote>"
+                out += f"<blockquote>{parsed_quote}</blockquote>"
             else: 
-                html_line = md_to_html(line)
-                out += f"<p>{html_line}</p>"
+                out += f"<p>{md_to_html(line)}</p>"
         return out
 
     h_title = f"ஜோதிட அறிக்கை: {name_in}" if lang == "Tamil" else f"Vedic Astrology Premium Report: {name_in}"
@@ -61,35 +64,38 @@ def generate_pdf_report(name_in, p_pos, p_d9, lagna_rasi, sav_scores, career_txt
     d9_lagna_idx = p_d9.get("Lagna", 1)
     chart2 = get_south_indian_chart_html(p_d9, d9_lagna_idx, "நவாம்சம்" if lang == "Tamil" else "Navamsa", lang)
 
-    score_html = "<table class='bar-chart'>"
+    # Added page-break protections to the Bar Chart
+    score_html = "<div style='page-break-inside: avoid;'><table class='bar-chart'>"
     for i in range(12):
         score = sav_scores[(lagna_rasi - 1 + i) % 12]
-        color_class = "high" if score >= 30 else "low" if score < 25 else ""
-        score_html += f"<tr><td width='15%'><b>H {i+1}</b></td><td width='75%'><div class='bar {color_class}' style='width: {int((score/45)*100)}%;'></div></td><td width='10%'><b>{score}</b></td></tr>"
-    score_html += "</table>"
+        color = "#27ae60" if score >= 30 else "#e74c3c" if score < 25 else "#95a5a6"
+        bar_w = int((score / 45) * 100)
+        score_html += f"<tr><td style='width: 15%;'><b>H {i+1}</b></td><td style='width: 75%;'><div class='bar' style='background-color: {color}; width: {bar_w}%;'></div></td><td style='width: 10%; text-align: right;'><b>{score}</b></td></tr>"
+    score_html += "</table></div>"
 
     html = f"""
     <!DOCTYPE html><html><head><meta charset="utf-8"><title>{h_title}</title>
     <style>
-        @page {{ size: A4; margin: 15mm; }}
-        body {{ font-family: Helvetica, Arial, sans-serif; color: #333; line-height: 1.5; }}
-        h1 {{ text-align: center; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 24px; }}
-        h2 {{ color: #2980b9; margin-top: 25px; border-bottom: 1px solid #eee; padding-bottom: 5px; font-size: 18px; page-break-after: avoid; }}
-        h4 {{ color: #2c3e50; margin-top: 15px; margin-bottom: 5px; font-size: 14px; }}
-        p {{ margin-top: 5px; font-size: 13px; text-align: justify; color: #444; }}
-        .bar-chart {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }}
+        @page {{ size: A4; margin: 20mm; }}
+        body {{ font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; line-height: 1.5; font-size: 13px; }}
+        h1 {{ text-align: center; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 22px; margin-bottom: 5px; }}
+        .subtitle {{ text-align: center; font-size: 13px; color: #7f8c8d; margin-bottom: 20px; }}
+        h2 {{ color: #2980b9; margin-top: 25px; border-bottom: 1px solid #eee; padding-bottom: 5px; font-size: 16px; page-break-after: avoid; }}
+        h4 {{ color: #2c3e50; margin-top: 15px; margin-bottom: 4px; font-size: 14px; page-break-after: avoid; }}
+        p {{ margin-top: 5px; margin-bottom: 8px; text-align: justify; color: #444; }}
+        .bar-chart {{ width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }}
         .bar-chart td {{ padding: 6px 0; border-bottom: 1px dashed #eee; vertical-align: middle; }}
-        .bar {{ background-color: #95a5a6; height: 16px; border-radius: 3px; }}
-        .bar.high {{ background-color: #27ae60; }}
-        .bar.low {{ background-color: #e74c3c; }}
+        .bar {{ height: 16px; border-radius: 3px; }}
         .page-break {{ page-break-before: always; }}
-        table.timeline {{ width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; page-break-inside: auto; }}
-        table.timeline th, table.timeline td {{ padding: 8px; text-align: left; border-bottom: 1px solid #ddd; vertical-align: top; }}
+        table.timeline {{ width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }}
+        table.timeline th, table.timeline td {{ padding: 10px; text-align: left; border-bottom: 1px solid #ddd; vertical-align: top; }}
+        table.timeline tr {{ page-break-inside: avoid; }}
         table.timeline th {{ background-color: #f0f3f4; color: #2c3e50; font-weight: bold; }}
-        .footer {{ text-align: center; font-size: 11px; color: #95a5a6; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px; }}
+        blockquote {{ background: #fdfae6; border-left: 4px solid #f1c40f; padding: 10px 15px; margin: 10px 0; font-size: 12.5px; page-break-inside: avoid; }}
+        .footer {{ text-align: center; font-size: 11px; color: #95a5a6; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px; page-break-inside: avoid; }}
     </style></head><body>
         <h1>{h_title}</h1>
-        <p style="text-align:center; font-size:14px;"><b>Lagna:</b> {lagna_str} | <b>Moon:</b> {moon_str} | <b>Star:</b> {star_str}</p>
+        <div class="subtitle"><b>Lagna:</b> {lagna_str} | <b>Moon:</b> {moon_str} | <b>Star:</b> {star_str}</div>
         
         <h2>{"1. சுயவிவரம் (Identity)" if lang == "Tamil" else "1. Identity"}</h2>
         <p><b>Purpose:</b> {id_data.get('Purpose', '')}</p>
@@ -108,7 +114,7 @@ def generate_pdf_report(name_in, p_pos, p_d9, lagna_rasi, sav_scores, career_txt
         {format_section(karmic_txt)}
         
         <h2>{"5. நவாம்சம் மற்றும் திருமணம் (Marriage)" if lang == "Tamil" else "5. Navamsa & Marriage"}</h2>
-        <div style="margin-bottom: 15px;">{chart2}</div>
+        {chart2}
         {format_section(love_txt)}
         
         <h2>{"6. ஆரோக்கியம் (Health & Vitality)" if lang == "Tamil" else "6. Health & Vitality"}</h2>
@@ -119,20 +125,20 @@ def generate_pdf_report(name_in, p_pos, p_d9, lagna_rasi, sav_scores, career_txt
         <h2>{"7. யோகங்கள் (Wealth Combinations)" if lang == "Tamil" else "7. Wealth & Power Yogas"}</h2>
     """
     
+    # Wrap each Yoga in a block so the title and description don't split across pages
     for y in yogas: 
-        clean_desc = md_to_html(y['Description'])
-        html += f"<h4>{y['Name']} ({y['Type']})</h4><p>{clean_desc}</p>"
+        html += f"<div style='page-break-inside: avoid;'><h4>{y['Name']} ({y['Type']})</h4><p>{md_to_html(y['Description'])}</p></div>"
 
     html += f"<h2>{'8. வருடாந்திர கணிப்பு (Annual Forecast)' if lang == 'Tamil' else '8. Annual Forecast'}</h2>"
     for cat, data in fc.items():
         parsed_desc = md_to_html(data[0])
         rem_lbl = "பரிகாரம்" if lang == "Tamil" else "Remedy"
-        html += f"<h4>{cat}</h4><p>{parsed_desc}</p><blockquote style='background:#fdfae6; border-left:4px solid #f1c40f; padding:8px 12px; margin:5px 0; font-size:13px;'><b>{rem_lbl}:</b> {data[1]}</blockquote>"
+        html += f"<div style='page-break-inside: avoid;'><h4>{cat}</h4><p>{parsed_desc}</p><blockquote><b>{rem_lbl}:</b> {data[1]}</blockquote></div>"
 
-    html += f"<h2>{'9. முக்கிய கிரகப் பெயர்ச்சிகள் (Transits)' if lang == 'Tamil' else '9. Planetary Transits'}</h2>"
+    html += f"<div style='page-break-inside: avoid;'><h2>{'9. முக்கிய கிரகப் பெயர்ச்சிகள் (Transits)' if lang == 'Tamil' else '9. Planetary Transits'}</h2>"
     for txt in transit_texts: 
-        clean_txt = md_to_html(txt)
-        html += f"<p>{clean_txt}</p>"
+        html += f"<p>{md_to_html(txt)}</p>"
+    html += "</div>"
 
     age_lbl = "வயது" if lang == "Tamil" else "Age"
     yr_lbl = "ஆண்டுகள்" if lang == "Tamil" else "Years"
@@ -143,10 +149,10 @@ def generate_pdf_report(name_in, p_pos, p_d9, lagna_rasi, sav_scores, career_txt
         <div class="page-break"></div>
         <h2>{"10. தசா புக்தி (Strategic Roadmap)" if lang == "Tamil" else "10. Strategic Roadmap"}</h2>
         <table class="timeline">
-            <tr><th width="12%">{age_lbl}</th><th width="13%">{yr_lbl}</th><th width="15%">{md_lbl}</th><th width="60%">{pred_lbl}</th></tr>
+            <tr><th width="12%">{age_lbl}</th><th width="14%">{yr_lbl}</th><th width="16%">{md_lbl}</th><th width="58%">{pred_lbl}</th></tr>
     """
     for row in mahadasha_data:
-        html += f"<tr><td>{row['Age (From-To)']}</td><td>{row['Years']}</td><td><b>{row['Mahadasha']}</b></td><td>{row['Prediction']}</td></tr>"
+        html += f"<tr><td>{row['Age (From-To)']}</td><td>{row['Years'].replace(' - ', '<br>')}</td><td><b>{row['Mahadasha']}</b></td><td>{row['Prediction']}</td></tr>"
     html += "</table>"
 
     html += f"<div class='footer'>{'வேத ஜோதிட என்ஜின் மூலம் உருவாக்கப்பட்டது' if lang == 'Tamil' else 'Generated by Vedic Astro AI Engine'}</div></body></html>"
