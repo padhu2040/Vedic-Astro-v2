@@ -38,17 +38,21 @@ def get_south_indian_chart_html(p_pos, lagna_rasi, title, lang="English"):
 
 def generate_pdf_report(name_in, p_pos, p_d9, lagna_rasi, sav_scores, career_txt, edu_txt, health_txt, love_txt, karmic_txt, id_data, lagna_str, moon_str, star_str, yogas, fc, micro_transits, mahadasha_data, phases, pd_info, guide, transit_texts, lang="English"):
     
+    # Safely format text outside of f-strings
+    def md_to_html(text):
+        text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text)
+        text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', text)
+        return text
+
     def format_section(text_list):
         out = ""
         for line in text_list:
             if line.startswith("#### "): out += f"<h4>{line.replace('#### ', '')}</h4>"
             elif line.startswith("> "): 
-                parsed_quote = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', line.replace('> ', ''))
-                parsed_quote = re.sub(r'\*(.*?)\*', r'<i>\1</i>', parsed_quote)
+                parsed_quote = md_to_html(line.replace('> ', ''))
                 out += f"<blockquote style='background:#fdfae6; border-left:4px solid #f1c40f; padding:10px; margin:10px 0; font-size:13px;'>{parsed_quote}</blockquote>"
             else: 
-                html_line = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', line)
-                html_line = re.sub(r'\*(.*?)\*', r'<i>\1</i>', html_line)
+                html_line = md_to_html(line)
                 out += f"<p>{html_line}</p>"
         return out
 
@@ -116,17 +120,19 @@ def generate_pdf_report(name_in, p_pos, p_d9, lagna_rasi, sav_scores, career_txt
     """
     
     for y in yogas: 
-        html += f"<h4>{y['Name']} ({y['Type']})</h4><p>{re.sub(r'\\*\\*(.*?)\\*\\*', r'<b>\1</b>', y['Description'])}</p>"
+        clean_desc = md_to_html(y['Description'])
+        html += f"<h4>{y['Name']} ({y['Type']})</h4><p>{clean_desc}</p>"
 
     html += f"<h2>{'8. வருடாந்திர கணிப்பு (Annual Forecast)' if lang == 'Tamil' else '8. Annual Forecast'}</h2>"
     for cat, data in fc.items():
-        parsed_desc = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', data[0])
+        parsed_desc = md_to_html(data[0])
         rem_lbl = "பரிகாரம்" if lang == "Tamil" else "Remedy"
         html += f"<h4>{cat}</h4><p>{parsed_desc}</p><blockquote style='background:#fdfae6; border-left:4px solid #f1c40f; padding:8px 12px; margin:5px 0; font-size:13px;'><b>{rem_lbl}:</b> {data[1]}</blockquote>"
 
     html += f"<h2>{'9. முக்கிய கிரகப் பெயர்ச்சிகள் (Transits)' if lang == 'Tamil' else '9. Planetary Transits'}</h2>"
     for txt in transit_texts: 
-        html += f"<p>{re.sub(r'\\*\\*(.*?)\\*\\*', r'<b>\1</b>', txt)}</p>"
+        clean_txt = md_to_html(txt)
+        html += f"<p>{clean_txt}</p>"
 
     age_lbl = "வயது" if lang == "Tamil" else "Age"
     yr_lbl = "ஆண்டுகள்" if lang == "Tamil" else "Years"
