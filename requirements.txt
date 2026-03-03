@@ -6,5 +6,4 @@ pytz
 google-generativeai
 supabase
 plotly
-xhtml2pdf==0.2.11
-reportlab==4.1.0
+xhtml2pdf
