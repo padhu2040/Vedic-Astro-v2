@@ -151,7 +151,7 @@ if st.session_state.report_generated:
         sav_scores = calculate_sav_score(p_pos, lagna_rasi)
         nak, lord = get_nakshatra_details(moon_res[0])
         
-        # --- DEEP TEXT ANALYSIS ---
+        # --- BUILD ALL DEEP TEXT FOR UI AND PDF ---
         karmic_txt = analyze_karmic_axis(p_pos, lagna_rasi, lang=LANG)
         yogas = scan_yogas(p_pos, lagna_rasi, lang=LANG)
         career_txt = analyze_career_professional(p_pos, d10_lagna, lagna_rasi, sav_scores, bhava_placements, lang=LANG)
@@ -164,7 +164,6 @@ if st.session_state.report_generated:
         mahadasha_data = generate_mahadasha_table(moon_res[0], datetime.combine(dob_in, tob_in), lang=LANG)
         phases, pd_info = generate_current_next_bhukti(moon_res[0], datetime.combine(dob_in, tob_in), bhava_placements, lang=LANG)
         
-        # Structure the transit texts correctly for the PDF
         transit_texts = []
         for p_name, trans_data in t_data.items():
             trans_name = t_p.get(p_name, p_name) if LANG == "Tamil" else t_p_eng.get(p_name, p_name)
@@ -187,7 +186,6 @@ if st.session_state.report_generated:
             st.markdown(f"> **{'லக்னம்' if LANG=='Tamil' else 'Lagna'}:** {l_name} | **{'ராசி' if LANG=='Tamil' else 'Moon'}:** {m_name} | **{'நட்சத்திரம்' if LANG=='Tamil' else 'Star'}:** {nak}")
         
         with c_right:
-            # THIS CALL HANDLES THE PURE PYTHON PDF ERROR SAFELY
             pdf_bytes, pdf_error = generate_pdf_report(
                 name_in=name_in, p_pos=p_pos, p_d9=p_d9, lagna_rasi=lagna_rasi, sav_scores=sav_scores, 
                 career_txt=career_txt, edu_txt=edu_txt, health_txt=health_txt, love_txt=love_txt, 
