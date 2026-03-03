@@ -5,7 +5,7 @@ import google.generativeai as genai
 from supabase import create_client
 import plotly.graph_objects as go
 
-# --- IMPORTS ---
+# --- IMPORTS FROM OUR CUSTOM ENGINES ---
 from astro_engine import (
     get_location_coordinates, get_utc_offset, get_bhava_chalit, get_navamsa_chart, get_dasamsa_chart,
     determine_house, get_dignity, calculate_sav_score, get_nakshatra_details, scan_yogas,
@@ -151,7 +151,7 @@ if st.session_state.report_generated:
         sav_scores = calculate_sav_score(p_pos, lagna_rasi)
         nak, lord = get_nakshatra_details(moon_res[0])
         
-        # --- BUILD ALL DEEP TEXT FOR UI AND PDF ---
+        # --- DEEP TEXT ANALYSIS ---
         karmic_txt = analyze_karmic_axis(p_pos, lagna_rasi, lang=LANG)
         yogas = scan_yogas(p_pos, lagna_rasi, lang=LANG)
         career_txt = analyze_career_professional(p_pos, d10_lagna, lagna_rasi, sav_scores, bhava_placements, lang=LANG)
@@ -187,8 +187,8 @@ if st.session_state.report_generated:
             st.markdown(f"> **{'லக்னம்' if LANG=='Tamil' else 'Lagna'}:** {l_name} | **{'ராசி' if LANG=='Tamil' else 'Moon'}:** {m_name} | **{'நட்சத்திரம்' if LANG=='Tamil' else 'Star'}:** {nak}")
         
         with c_right:
-            # THIS CALL NOW PASSES ALL THE FULLY CALCULATED DATA TO THE PDF ENGINE
-            pdf_bytes = generate_pdf_report(
+            # THIS CALL HANDLES THE PURE PYTHON PDF ERROR SAFELY
+            pdf_bytes, pdf_error = generate_pdf_report(
                 name_in=name_in, p_pos=p_pos, p_d9=p_d9, lagna_rasi=lagna_rasi, sav_scores=sav_scores, 
                 career_txt=career_txt, edu_txt=edu_txt, health_txt=health_txt, love_txt=love_txt, 
                 karmic_txt=karmic_txt, id_data=report_id_data, lagna_str=l_name, moon_str=m_name, 
@@ -197,7 +197,7 @@ if st.session_state.report_generated:
                 transit_texts=transit_texts, lang=LANG
             )
             
-            if isinstance(pdf_bytes, bytes):
+            if pdf_bytes:
                 st.download_button(
                     label="📄 Download PDF Report" if LANG=="English" else "📄 ஜாதகத்தை பதிவிறக்க", 
                     data=pdf_bytes, 
@@ -206,7 +206,7 @@ if st.session_state.report_generated:
                     type="primary"
                 )
             else:
-                st.error("PDF Engine not yet installed. Generating HTML backup instead...")
+                st.error(f"⚠️ PDF generation failed. Details: {pdf_error}")
 
         # --- UI TABS ---
         tb_lbls = ["Profile", "Scorecard", "Work & Intellect", "Love & Health", "Yogas", "Forecast", "Roadmap", "💬 Oracle"] if LANG == "English" else ["சுயவிவரம்", "அஷ்டகவர்க்கம்", "தொழில்", "திருமணம் & ஆரோக்கியம்", "யோகங்கள்", "ஆண்டு பலன்கள்", "தசா புக்தி", "💬 ஜோதிடர்"]
@@ -288,6 +288,7 @@ if st.session_state.report_generated:
 
         with t7:
             st.subheader("Life Chapters (Timeline)" if LANG == "English" else "மகா தசை விவரங்கள் (காலக்கோடு)")
+            
             if pd_info:
                 st.markdown(f"#### {'IMMEDIATE FOCUS' if LANG=='English' else 'நடப்பு தசா புக்தி'}")
                 st.markdown(f"**{pd_info['Start']} to {pd_info['End']}**: {pd_info['PD']} ({pd_info['MD']} / {pd_info['AD']})")
