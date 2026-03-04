@@ -54,59 +54,75 @@ def load_profiles_from_db():
         except: pass
     return profiles
 
-# --- MBTI PERSONA GENERATOR ALGORITHM ---
+# --- 360 DEGREE MBTI & EXECUTIVE PERSONA ENGINE ---
 def generate_360_mbti_persona(p_pos, lagna_rasi, sav_scores):
-    # 1. Calculate MBTI Sliders based on Elemental Balance
-    fire_air = [1,3,5,7,9,11] # Action / Outward
-    earth_water = [2,4,6,8,10,12] # Receptive / Inward
-    
-    extro_count = sum(1 for p, r in p_pos.items() if r in fire_air)
-    intro_count = sum(1 for p, r in p_pos.items() if r in earth_water)
-    total_p = extro_count + intro_count
-    extro_pct = int((extro_count / total_p) * 100) if total_p > 0 else 50
-    
-    intuitive_signs = [1,4,5,8,9,12]
-    int_count = sum(1 for p, r in p_pos.items() if r in intuitive_signs)
-    int_pct = int((int_count / total_p) * 100) if total_p > 0 else 50
+    # 1. E vs I
+    fire_air = [1, 3, 5, 7, 9, 11]
+    extro_score = sum(1 for p, r in p_pos.items() if r in fire_air)
+    extro_pct = int((extro_score / len(p_pos)) * 100) if len(p_pos) > 0 else 50
+    letter_1 = "E" if extro_pct >= 50 else "I"
 
+    # 2. S vs N
+    earth_signs = [2, 6, 10]
+    sens_score = sum(1.5 for p, r in p_pos.items() if r in earth_signs)
+    if p_pos.get("Saturn") in earth_signs: sens_score += 1
+    sens_pct = int((sens_score / len(p_pos)) * 100)
+    int_pct = 100 - sens_pct
+    letter_2 = "S" if sens_pct > 50 else "N"
+
+    # 3. T vs F
     think_pct = 50
-    if p_pos.get("Moon", 1) in [4,8,12]: think_pct -= 15
-    if p_pos.get("Mercury", 1) in [3,6,7,11]: think_pct += 15
+    if p_pos.get("Moon", 1) in [4, 8, 12]: think_pct -= 15 
+    if p_pos.get("Venus", 1) in [4, 8, 12]: think_pct -= 10
+    if p_pos.get("Mercury", 1) in [3, 6, 7, 11]: think_pct += 15 
+    if p_pos.get("Saturn", 1) in [3, 6, 7, 10, 11]: think_pct += 10
     think_pct = max(10, min(90, think_pct))
+    letter_3 = "T" if think_pct >= 50 else "F"
 
-    fixed_signs = [2,5,8,11]
-    judging_count = sum(1 for p, r in p_pos.items() if r in fixed_signs)
-    judging_pct = min(90, max(10, int((judging_count / 4.0) * 100)))
+    # 4. J vs P
+    mutable_signs = [3, 6, 9, 12]
+    perceiving_score = sum(1 for p, r in p_pos.items() if r in mutable_signs)
+    perceiving_pct = int((perceiving_score / len(p_pos)) * 100)
+    judging_pct = 100 - perceiving_pct
+    letter_4 = "P" if perceiving_pct > 50 else "J"
 
-    # 2. Determine Archetype Title
-    archetypes = {
-        1: "The Trailblazer (Bold, Independent, Direct)",
-        2: "The Builder (Reliable, Sensual, Enduring)",
-        3: "The Catalyst (Curious, Adaptable, Articulate)",
-        4: "The Nurturer (Empathetic, Protective, Intuitive)",
-        5: "The Commander (Charismatic, Authoritative, Proud)",
-        6: "The Analyst (Meticulous, Service-Oriented, Practical)",
-        7: "The Diplomat (Harmonious, Aesthetic, Fair)",
-        8: "The Strategist (Intense, Transformative, Secretive)",
-        9: "The Visionary (Philosophical, Restless, Optimistic)",
-        10: "The Executive (Disciplined, Ambitious, Structured)",
-        11: "The Innovator (Unconventional, Humanitarian, Objective)",
-        12: "The Mystic (Compassionate, Artistic, Ethereal)"
+    mbti_code = f"{letter_1}{letter_2}{letter_3}{letter_4}"
+
+    # THE 16 TYPES: 360-DEGREE 2ND PERSON DESCRIPTIONS
+    mbti_profiles = {
+        "INTJ": {"title": "The Architect", "desc": "You are a strategic, fiercely independent visionary. You approach life as a giant chessboard, always planning several moves ahead. You thrive on turning complex theories into actionable, high-level systems."},
+        "INTP": {"title": "The Logician", "desc": "You are an innovative and deeply analytical thinker. You draw energy from unraveling the underlying principles of the universe, preferring abstract concepts and relentless intellectual exploration over mundane routines."},
+        "ENTJ": {"title": "The Commander", "desc": "You are a bold, authoritative, and fiercely driven leader. You naturally see inefficiency and instantly know how to organize people and systems to achieve massive, overarching goals."},
+        "ENTP": {"title": "The Debater", "desc": "You are a quick-witted, audacious intellectual. You love playing devil's advocate, tearing apart traditional systems, and brainstorming highly unconventional solutions to complex problems."},
+        "INFJ": {"title": "The Advocate", "desc": "You are a quiet, mystical, and deeply inspiring force. You possess a profound intuition about human nature and dedicate your life to realizing a highly idealized vision of the future."},
+        "INFP": {"title": "The Mediator", "desc": "You are a poetic, altruistic, and deeply empathetic soul. You are driven by an unshakeable set of inner values and seek harmony, authentic self-expression, and meaningful connections."},
+        "ENFJ": {"title": "The Protagonist", "desc": "You are a charismatic, deeply empathetic, and natural-born leader. You possess an uncanny ability to inspire those around you, drawing energy from helping others reach their ultimate potential."},
+        "ENFP": {"title": "The Campaigner", "desc": "You are an enthusiastic, wildly creative, and sociable spirit. You see life as a massive web of interconnected possibilities and thrive when you are free to explore new ideas and deep relationships."},
+        "ISTJ": {"title": "The Logistician", "desc": "You are the backbone of society—practical, fact-minded, and fiercely reliable. You operate with unwavering logic and take pride in executing your duties perfectly, step by calculated step."},
+        "ISFJ": {"title": "The Defender", "desc": "You are a deeply dedicated, warm, and highly observant protector. You draw energy from maintaining stability, honoring traditions, and quietly ensuring the people you care about are safe and secure."},
+        "ESTJ": {"title": "The Executive", "desc": "You are an unsurpassed manager of people and processes. You value tradition, order, and dignity, bringing people together to execute projects efficiently and strictly by the book."},
+        "ESFJ": {"title": "The Consul", "desc": "You are an extraordinarily caring, social, and community-minded leader. You draw immense energy from orchestrating harmony in your environment and ensuring everyone feels supported and valued."},
+        "ISTP": {"title": "The Virtuoso", "desc": "You are a bold, practical, and highly adaptable master of your environment. You learn by doing, tearing things apart, and figuring out how they work with cool, detached logic."},
+        "ISFP": {"title": "The Adventurer", "desc": "You are a flexible, charming, and highly aesthetic creator. You live totally in the present moment, using your rich inner emotional world to push the boundaries of conventional expression."},
+        "ESTP": {"title": "The Entrepreneur", "desc": "You are a smart, energetic, and thrill-seeking operator. You do not just read the manual—you jump straight into the action, fixing problems on the fly and navigating risks with unmatched charm."},
+        "ESFP": {"title": "The Entertainer", "desc": "You are spontaneous, highly energetic, and deeply observant. Life is a stage to you, and you draw immense energy from engaging with your environment and bringing joy to the people around you."}
     }
     
-    # 3. Dynamic 360 Summaries based on SAV Points
+    # PROFESSIONAL FOCUS
     corp_score = sav_scores[(lagna_rasi - 1 + 5) % 12]
     biz_score = sav_scores[(lagna_rasi - 1 + 6) % 12]
-    
-    prof_text = "You possess a natural entrepreneurial spirit. You are built for equity, independent ventures, and leveraging strategic partnerships over standard employment." if biz_score > corp_score else "You have a massive competitive advantage in structured corporate environments. You easily out-work rivals and thrive in complex hierarchies."
-    edu_text = "You possess a highly absorbent intellect. You learn exceptionally fast and do well in structured academic environments or complex technical certifications." if sav_scores[(lagna_rasi - 1 + 4) % 12] >= 28 else "You are an experiential learner. Traditional classroom memorization may bore you. You master subjects by doing, building, and applying concepts in the real world."
-    fam_text = "You draw immense power from a stable home life. Your private domestic space is your fortress, and you invest heavily in maintaining family harmony." if sav_scores[(lagna_rasi - 1 + 3) % 12] >= 28 else "You are fiercely independent. Your sense of 'home' is tied to your ambitions rather than a physical place. You require relationships that respect your need for space."
+    prof_text = "Professionally, you possess a natural entrepreneurial spirit. You are built for equity, independent ventures, and leveraging strategic partnerships over standard employment." if biz_score > corp_score else "Professionally, you have a massive competitive advantage in structured corporate environments. You easily out-work rivals and thrive in complex hierarchies."
+
+    profile = mbti_profiles.get(mbti_code, {"title": "The Strategist", "desc": "You are a highly analytical and adaptable individual."})
 
     return {
-        "title": archetypes.get(lagna_rasi, "The Architect"),
+        "code": mbti_code,
+        "title": profile["title"],
+        "desc": profile["desc"],
         "extro_pct": extro_pct, "int_pct": int_pct, "think_pct": think_pct, "judging_pct": judging_pct,
-        "prof_text": prof_text, "edu_text": edu_text, "fam_text": fam_text
+        "prof_text": prof_text
     }
+
 
 # --- UI HEADER ---
 st.title(":material/account_circle: Deep Horoscope Engine")
@@ -142,7 +158,6 @@ with st.sidebar:
     lat_val, lon_val, tz_val = 13.0827, 80.2707, "Asia/Kolkata" 
     if city:
         lat_val, lon_val, tz_val = get_location_coordinates(city)
-        st.markdown(f"<span style='font-size:12px; color:gray;'>Resolved: {lat_val:.2f}, {lon_val:.2f} ({tz_val})</span>", unsafe_allow_html=True)
     
     calc_btn = st.button("Generate Report", type="primary", use_container_width=True)
     if calc_btn:
@@ -188,24 +203,21 @@ if st.session_state.report_generated:
             p_name = t_p.get(p, p) if LANG == "Tamil" else t_p_eng.get(p, p)
             master_table.append({"Planet": p_name, "Rasi": ZODIAC_TA.get(r1, "") if LANG=="Tamil" else ZODIAC[r1], "House": h, "Bhava": bhava_h, "Dignity": dig, "Status": status})
 
-        # EXPLICIT KETU INTEGRATION
+        # KETU INTEGRATION
         ketu_lon = (p_lon_absolute["Rahu"] + 180) % 360
         p_lon_absolute["Ketu"] = ketu_lon
         p_pos["Ketu"] = int(ketu_lon/30) + 1
         p_d9["Ketu"] = get_navamsa_chart(ketu_lon)
         bhava_placements["Ketu"] = determine_house(ketu_lon, bhava_cusps)
         k_h = (p_pos["Ketu"] - lagna_rasi + 1) if (p_pos["Ketu"] - lagna_rasi + 1) > 0 else (p_pos["Ketu"] - lagna_rasi + 1) + 12
-        k_dig = get_dignity("Ketu", p_pos["Ketu"])
-        k_status = "VARGOTTAMA" if p_pos["Ketu"] == p_d9["Ketu"] else "ROYAL" if k_dig == "Exalted" else "WEAK" if k_dig == "Neecha" else "Avg"
-        k_name = t_p.get("Ketu", "Ketu") if LANG == "Tamil" else t_p_eng.get("Ketu", "Ketu")
-        master_table.append({"Planet": k_name, "Rasi": ZODIAC_TA.get(p_pos["Ketu"], "") if LANG=="Tamil" else ZODIAC[p_pos["Ketu"]], "House": k_h, "Bhava": bhava_placements["Ketu"], "Dignity": k_dig, "Status": k_status})
+        master_table.append({"Planet": "Ketu" if LANG=="English" else "கேது", "Rasi": ZODIAC[p_pos["Ketu"]], "House": k_h, "Bhava": bhava_placements["Ketu"], "Dignity": get_dignity("Ketu", p_pos["Ketu"]), "Status": "Avg"})
 
         p_pos["Lagna"] = lagna_rasi
         p_d9["Lagna"] = d9_lagna
         sav_scores = calculate_sav_score(p_pos, lagna_rasi)
         nak, lord = get_nakshatra_details(moon_res[0])
         
-        # --- BUILD ALL DEEP TEXT FOR UI AND PDF ---
+        # UI DATA
         karmic_txt = analyze_karmic_axis(p_pos, lagna_rasi, lang=LANG)
         yogas = scan_yogas(p_pos, lagna_rasi, lang=LANG)
         career_txt = analyze_career_professional(p_pos, d10_lagna, lagna_rasi, sav_scores, bhava_placements, lang=LANG)
@@ -213,22 +225,18 @@ if st.session_state.report_generated:
         health_txt = analyze_health(p_pos, lagna_rasi, lang=LANG)
         love_txt = analyze_love_marriage(lagna_rasi, d9_lagna, p_d9, p_pos, lang=LANG)
         fc = generate_annual_forecast(moon_rasi, sav_scores, f_year, current_age, lang=LANG)
-        t_data = get_transit_data_advanced(f_year)
         micro_transits = get_micro_transits(f_year, p_lon_absolute, lang=LANG)
         mahadasha_data = generate_mahadasha_table(moon_res[0], datetime.combine(dob_in, tob_in), lang=LANG)
         phases, pd_info = generate_current_next_bhukti(moon_res[0], datetime.combine(dob_in, tob_in), bhava_placements, lang=LANG)
         
-        transit_texts = []
-        for p_name, trans_data in t_data.items():
-            trans_name = t_p.get(p_name, p_name) if LANG == "Tamil" else t_p_eng.get(p_name, p_name)
-            r_from = ZODIAC_TA.get(trans_data['Rasi'], "") if LANG == "Tamil" else ZODIAC[trans_data['Rasi']]
-            r_to = ZODIAC_TA.get(trans_data['NextSignIdx'], "") if LANG == "Tamil" else ZODIAC[trans_data['NextSignIdx']]
-            transit_texts.append(f"**{trans_name}:** {r_from} ➔ {r_to} ({trans_data['NextDate']})")
-        
+        t_data = get_transit_data_advanced(f_year)
+        transit_texts = [f"**{p}:** {d['Rasi']} ➔ {d['NextSignIdx']} ({d['NextDate']})" for p, d in t_data.items()]
+
         db_id = TAMIL_IDENTITY_DB if LANG == "Tamil" else identity_db
         report_id_data = db_id.get(ZODIAC[lagna_rasi], list(db_id.values())[0])
         guide = TAMIL_LIFESTYLE.get(RASI_RULERS.get(moon_rasi, "Moon"), {}) if LANG == "Tamil" else lifestyle_guidance.get(RASI_RULERS.get(moon_rasi, "Moon"), {})
 
+        # MBTI ENGINE CALL
         mbti_data = generate_360_mbti_persona(p_pos, lagna_rasi, sav_scores)
 
         # --- TOP INFO SECTION ---
@@ -249,41 +257,37 @@ if st.session_state.report_generated:
                 mahadasha_data=mahadasha_data, master_table=master_table, phases=phases, pd_info=pd_info, guide=guide, 
                 transit_texts=transit_texts, lang=LANG
             )
-            
             if pdf_bytes:
                 st.download_button(label="📄 Download PDF Report" if LANG=="English" else "📄 ஜாதகத்தை பதிவிறக்க", data=pdf_bytes, file_name=f"{name_in}_Astro_Report.pdf", mime="application/pdf", type="primary")
-            else:
-                st.error(f"⚠️ PDF generation failed. Details: {pdf_error}")
 
         # --- UI TABS ---
-        tb_lbls = ["360° Persona", "Profile & Placements", "Destiny Radar", "Work & Intellect", "Love & Health", "Yogas & Forecast", "Roadmap", "💬 Oracle"] if LANG == "English" else ["360° ஆளுமை", "சுயவிவரம் & கிரகங்கள்", "அஷ்டகவர்க்கம்", "தொழில்", "திருமணம் & ஆரோக்கியம்", "யோகங்கள்", "தசா புக்தி", "💬 ஜோதிடர்"]
+        tb_lbls = ["360° Persona", "Profile & Placements", "Destiny Radar", "Work & Intellect", "Love & Health", "Yogas & Forecast", "Roadmap", "💬 Oracle"] if LANG == "English" else ["360° ஆளுமை", "சுயவிவரம்", "அஷ்டகவர்க்கம்", "தொழில்", "திருமணம்", "யோகங்கள்", "தசா புக்தி", "💬 ஜோதிடர்"]
         t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs(tb_lbls)
 
         with t1:
-            st.markdown(f"<h2 style='text-align: center; color: #2c3e50; font-size: 32px; margin-bottom: 5px;'>{mbti_data['title']}</h2>", unsafe_allow_html=True)
+            st.markdown(f"<h2 style='text-align: center; color: #2c3e50; font-size: 32px; margin-bottom: 5px;'>{mbti_data['code']} — {mbti_data['title']}</h2>", unsafe_allow_html=True)
             st.markdown(f"<p style='text-align: center; color: #7f8c8d; font-size: 16px; margin-top: 0;'>Your core psychological operating system.</p><hr>", unsafe_allow_html=True)
             
             c_img, c_sliders = st.columns([1, 1.2])
             
             with c_img:
-                st.markdown("### 🏢 Professional Focus")
-                st.info(mbti_data['prof_text'])
-                st.markdown("### 🧠 Intellect & Studies")
-                st.success(mbti_data['edu_text'])
-                st.markdown("### 🏡 Family & Boundaries")
-                st.warning(mbti_data['fam_text'])
+                # Nano Banana style flat avatar dynamically fetched based on MBTI code
+                st.image(f"https://api.dicebear.com/7.x/notionists/svg?seed={mbti_data['code']}&backgroundColor=fdfdfa", use_container_width=True)
+                
+                st.markdown("### 🧬 The Core Matrix")
+                st.info(mbti_data['desc'])
+                st.success(mbti_data['prof_text'])
 
             with c_sliders:
-                # Custom HTML/CSS to render the 16Personalities style progress bars
-                def draw_mbti_bar(title, subtitle, left_lbl, right_lbl, pct_left, color_hex):
+                def draw_mbti_bar(title, energy_txt, left_lbl, right_lbl, pct_left, color_hex):
                     pct_right = 100 - pct_left
                     active_left = color_hex if pct_left >= 50 else "#e0e0e0"
                     active_right = color_hex if pct_right > 50 else "#e0e0e0"
                     return f"""
                     <div style="margin-bottom: 25px; font-family: sans-serif;">
-                        <div style="text-align: center; margin-bottom: 12px;">
+                        <div style="text-align: center; margin-bottom: 8px;">
                             <div style="font-size: 16px; font-weight: bold; color: #333;">{title}</div>
-                            <div style="font-size: 12px; color: #888;">{subtitle}</div>
+                            <div style="font-size: 13px; color: #666; font-style: italic; margin-top: 4px;">{energy_txt}</div>
                         </div>
                         <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; color: #555; margin-bottom: 6px;">
                             <span style="color: {active_left};">{pct_left}% {left_lbl}</span>
@@ -296,17 +300,18 @@ if st.session_state.report_generated:
                     </div>
                     """
                 
-                st.markdown(draw_mbti_bar("Mind", "This trait determines how we interact with our environment.", "EXTRAVERTED", "INTROVERTED", mbti_data['extro_pct'], "#4faca6"), unsafe_allow_html=True)
-                st.markdown(draw_mbti_bar("Energy", "This trait shows where we direct our mental energy.", "INTUITIVE", "OBSERVANT", mbti_data['int_pct'], "#e2a74c"), unsafe_allow_html=True)
-                st.markdown(draw_mbti_bar("Nature", "This trait determines how we make decisions and cope with emotions.", "THINKING", "FEELING", mbti_data['think_pct'], "#5fb48f"), unsafe_allow_html=True)
-                st.markdown(draw_mbti_bar("Tactics", "This trait reflects our approach to work, planning and decision-making.", "JUDGING", "PROSPECTING", mbti_data['judging_pct'], "#b88baf"), unsafe_allow_html=True)
+                # Dynamic "You draw energy from..." text
+                e_txt = "You draw energy from the external environment and social interaction." if mbti_data['extro_pct'] >= 50 else "You draw energy from your inner world of ideas and quiet reflection."
+                s_txt = "You process information through tangible facts, details, and present reality." if (100 - mbti_data['int_pct']) > 50 else "You process information through patterns, future possibilities, and abstract concepts."
+                t_txt = "You make decisions based on objective logic, structure, and impersonal analysis." if mbti_data['think_pct'] >= 50 else "You make decisions based on personal values, empathy, and social harmony."
+                j_txt = "You approach life with structure, planning, and a desire for closure." if mbti_data['judging_pct'] >= 50 else "You approach life with flexibility, adaptability, and keeping your options open."
+                
+                st.markdown(draw_mbti_bar("Energy Orientation", e_txt, "EXTRAVERTED", "INTROVERTED", mbti_data['extro_pct'], "#4faca6"), unsafe_allow_html=True)
+                st.markdown(draw_mbti_bar("Information Processing", s_txt, "SENSING", "INTUITIVE", 100 - mbti_data['int_pct'], "#e2a74c"), unsafe_allow_html=True)
+                st.markdown(draw_mbti_bar("Decision Making", t_txt, "THINKING", "FEELING", mbti_data['think_pct'], "#5fb48f"), unsafe_allow_html=True)
+                st.markdown(draw_mbti_bar("World Structure", j_txt, "JUDGING", "PERCEIVING", mbti_data['judging_pct'], "#b88baf"), unsafe_allow_html=True)
 
         with t2:
-            st.subheader("Identity & Personality" if LANG == "English" else "சுயவிவரம்")
-            st.markdown(f"**{'Purpose' if LANG=='English' else 'நோக்கம்'}:** {report_id_data.get('Purpose', '')}")
-            st.markdown(f"**{'Personality' if LANG=='English' else 'குணம்'}:** {report_id_data.get('Personality', '')}")
-            st.divider()
-
             st.markdown(f"<h3 style='text-align: center; margin-top:20px;'>{'Birth Chart (Rasi)' if LANG=='English' else 'ராசி சக்கரம்'}</h3>", unsafe_allow_html=True)
             st.markdown(get_south_indian_chart_html(p_pos, lagna_rasi, "ராசி சக்கரம்" if LANG=="Tamil" else "Rasi Chart", LANG), unsafe_allow_html=True)
             
@@ -318,7 +323,6 @@ if st.session_state.report_generated:
             st.markdown(table_md, unsafe_allow_html=True)
 
         with t3:
-            st.subheader("Destiny Radar (Ashtakavarga)" if LANG == "English" else "அஷ்டகவர்க்கம் (Destiny Radar)")
             p_lbl = "பாவம்" if LANG == "Tamil" else "H"
             cats_labels = [f"{p_lbl} {i+1}" for i in range(12)]
             vals = [sav_scores[(lagna_rasi-1+i)%12] for i in range(12)]
@@ -328,7 +332,6 @@ if st.session_state.report_generated:
             fig_bar.update_layout(yaxis=dict(autorange="reversed"), margin=dict(l=20, r=20, t=40, b=20), height=400)
             st.plotly_chart(fig_bar, use_container_width=True)
             
-            st.divider()
             c1, c2 = st.columns(2)
             sorted_houses = sorted([(sav_scores[(lagna_rasi-1+i)%12], i+1) for i in range(12)], key=lambda x: x[0], reverse=True)
             with c1:
@@ -339,54 +342,34 @@ if st.session_state.report_generated:
                 for s, h in sorted_houses[-3:]: st.markdown(get_house_strength_analysis(h, s, LANG))
 
         with t4:
-            st.subheader("Education & Intellect" if LANG == "English" else "கல்வி மற்றும் அறிவு")
             for line in edu_txt: st.markdown(line)
             st.divider()
-            st.subheader("Career Strategy & True Authority" if LANG == "English" else "தொழில் மற்றும் அதிகாரம்")
             for line in career_txt: st.markdown(line)
             st.divider()
             for line in karmic_txt: st.markdown(line)
 
         with t5:
-            st.markdown(f"<h3 style='text-align: center; margin-top:20px;'>{'நவாம்ச சக்கரம் (Navamsa)' if LANG=='Tamil' else 'Destiny Chart (Navamsa)'}</h3>", unsafe_allow_html=True)
             st.markdown(get_south_indian_chart_html(p_d9, d9_lagna, "நவாம்சம்" if LANG=="Tamil" else "Navamsa", LANG), unsafe_allow_html=True)
             st.divider()
-            st.subheader("Love & Marriage" if LANG == "English" else "காதல் மற்றும் திருமணம்")
             for line in love_txt: st.markdown(line)
             st.divider()
-            st.subheader("Health & Vitality" if LANG == "English" else "ஆரோக்கியம்")
             for line in health_txt: st.markdown(line)
 
         with t6:
-            st.subheader("Wealth & Power Combinations" if LANG == "English" else "முக்கிய யோகங்கள்")
             for y in yogas:
-                st.markdown(f"#### {y['Name']}")
-                st.markdown(f"> **{'Focus' if LANG=='English' else 'பலன்'}:** {y['Type']}")
-                st.markdown(y['Description'])
-            
+                st.markdown(f"#### {y['Name']}\n> **Type:** {y['Type']}\n\n{y['Description']}")
             st.divider()
-            st.subheader(f"Annual Forecast {f_year}" if LANG == "English" else f"{f_year} ஆண்டு பலன்கள்")
             for cat, data in fc.items():
-                st.markdown(f"#### {cat}")
-                st.markdown(data[0])
-                st.markdown(f"> **{'Remedy' if LANG=='English' else 'பரிகாரம்'}:** {data[1]}")
-            
+                st.markdown(f"#### {cat}\n{data[0]}\n> **Remedy:** {data[1]}")
             st.divider()
-            st.subheader("Planetary Transit Dates" if LANG == "English" else "முக்கிய கிரகப் பெயர்ச்சிகள்")
             for txt in transit_texts: st.markdown(txt)
 
         with t7:
-            st.subheader("Life Chapters (Timeline)" if LANG == "English" else "மகா தசை விவரங்கள் (காலக்கோடு)")
             if pd_info:
                 st.markdown(f"#### {'IMMEDIATE FOCUS' if LANG=='English' else 'நடப்பு தசா புக்தி'}")
                 st.markdown(f"**{pd_info['Start']} to {pd_info['End']}**: {pd_info['PD']} ({pd_info['MD']} / {pd_info['AD']})")
-                st.divider()
-            for p in phases:
-                st.markdown(f"**{p['Type']}: {p['Phase']}**\n> {p['Dates']}\n\n{p['Text']}")
-                st.divider()
-
-            planet_colors = {"Suriyan": "#d35400", "Chandran": "#95a5a6", "Sevvai": "#c0392b", "Budhan": "#27ae60", "Guru": "#f39c12", "Sukran": "#8e44ad", "Sani": "#2c3e50", "Rahu": "#34495e", "Ketu": "#7f8c8d", "சூரியன்": "#d35400", "சந்திரன்": "#95a5a6", "செவ்வாய்": "#c0392b", "புதன்": "#27ae60", "குரு": "#f39c12", "சுக்கிரன்": "#8e44ad", "சனி": "#2c3e50", "ராகு": "#34495e", "கேது": "#7f8c8d"}
             
+            planet_colors = {"Suriyan": "#d35400", "Chandran": "#95a5a6", "Sevvai": "#c0392b", "Budhan": "#27ae60", "Guru": "#f39c12", "Sukran": "#8e44ad", "Sani": "#2c3e50", "Rahu": "#34495e", "Ketu": "#7f8c8d"}
             dasha_names, start_years, durations = [], [], []
             for row in mahadasha_data:
                 dasha_names.append(row['Mahadasha'])
@@ -400,19 +383,10 @@ if st.session_state.report_generated:
                 text=dasha_names, textposition='inside', textangle=0, insidetextfont=dict(color='white', size=14),
                 marker=dict(color=[planet_colors.get(d, '#333') for d in dasha_names])
             ))
-            fig_timeline.update_layout(
-                barmode='stack', height=150, margin=dict(l=0, r=0, t=10, b=20), 
-                xaxis=dict(range=[start_years[0], start_years[0]+120], tickformat="d"), 
-                yaxis=dict(showticklabels=False), showlegend=False
-            )
+            fig_timeline.update_layout(barmode='stack', height=150, margin=dict(l=0, r=0, t=10, b=20), xaxis=dict(range=[start_years[0], start_years[0]+120], tickformat="d"), yaxis=dict(showticklabels=False), showlegend=False)
             st.plotly_chart(fig_timeline, use_container_width=True)
-            
-            h_age = "வயது" if LANG == "Tamil" else "Age"
-            h_yrs = "ஆண்டுகள்" if LANG == "Tamil" else "Years"
-            h_md = "மகா தசை" if LANG == "Tamil" else "Mahadasha"
-            h_pred = "கணிப்பு" if LANG == "Tamil" else "Context & Prediction"
 
-            md_table_html = f"<table style='width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 14px; margin-top: 20px;'><tr style='border-bottom: 2px solid #ddd; background-color: #fdfdfd;'><th style='padding: 10px 8px; text-align: left; width: 10%;'>{h_age}</th><th style='padding: 10px 8px; text-align: left; width: 10%;'>{h_yrs}</th><th style='padding: 10px 8px; text-align: left; width: 15%;'>{h_md}</th><th style='padding: 10px 8px; text-align: left; width: 65%;'>{h_pred}</th></tr>"
+            md_table_html = f"<table style='width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 14px; margin-top: 20px;'><tr style='border-bottom: 2px solid #ddd; background-color: #fdfdfd;'><th style='padding: 10px 8px; text-align: left; width: 10%;'>Age</th><th style='padding: 10px 8px; text-align: left; width: 10%;'>Years</th><th style='padding: 10px 8px; text-align: left; width: 15%;'>Mahadasha</th><th style='padding: 10px 8px; text-align: left; width: 65%;'>Context & Prediction</th></tr>"
             for row in mahadasha_data:
                 s_year, e_year = row['Years'].split(' - ')
                 md_table_html += f"<tr style='border-bottom: 1px solid #eee;'><td style='padding: 10px 8px; vertical-align: top;'>{row['Age (From-To)']}</td><td style='padding: 10px 8px; vertical-align: top;'>{s_year}<br>{e_year}</td><td style='padding: 10px 8px; vertical-align: top; color: {planet_colors.get(row['Mahadasha'], '#333')};'><b>{row['Mahadasha']}</b></td><td style='padding: 10px 8px; vertical-align: top;'>{row['Prediction']}</td></tr>"
@@ -421,38 +395,21 @@ if st.session_state.report_generated:
 
         with t8:
             st.subheader("💬 Ask the AI Astrologer" if LANG == "English" else "💬 AI ஜோதிடரிடம் கேளுங்கள்")
-            st.info("I am an AI trained on your exact astrological coordinates." if LANG == "English" else "உங்கள் பிறந்த ஜாதகத்தை நான் படித்துவிட்டேன். கேள்விகளைக் கேட்கலாம்.")
             chat_container = st.container()
             with chat_container:
                 for msg in st.session_state.messages:
                     with st.chat_message(msg["role"]): st.markdown(msg["content"])
 
             if prompt_input := st.chat_input("Ask a question..."):
-                if not API_KEY: st.error("API Key missing! Please add your Gemini key.")
-                else:
-                    st.session_state.messages.append({"role": "user", "content": prompt_input})
-                    with chat_container:
-                        with st.chat_message("user"): st.markdown(prompt_input)
-                        with st.chat_message("assistant"):
-                            with st.spinner("Consulting the Oracle..." if LANG=="English" else "கணிக்கப்படுகிறது..."):
-                                try:
-                                    genai.configure(api_key=API_KEY)
-                                    chart_context = f"Ascendant {ZODIAC[lagna_rasi]}, Moon {ZODIAC[moon_rasi]}. Planets: {p_pos}."
-                                    
-                                    available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-                                    target_model = available_models[0] if available_models else 'gemini-1.5-flash'
-                                    for m in available_models:
-                                        if 'gemini-1.5-flash' in m: target_model = m; break
-                                        elif '1.5-pro' in m or '1.0-pro' in m: target_model = m
-                                    
-                                    model = genai.GenerativeModel(target_model)
-                                    response = model.generate_content(f"You are a Vedic Astrologer. Data: {chart_context}. User says: {prompt_input}")
-                                    st.markdown(response.text)
-                                    st.session_state.messages.append({"role": "assistant", "content": response.text})
-                                except Exception as e: st.error(f"AI Generation Failed: {e}")
-                    st.rerun()
-
-        if st.session_state.messages:
-            if st.button("🗑️ Clear Chat History"):
-                st.session_state.messages = []
+                st.session_state.messages.append({"role": "user", "content": prompt_input})
+                with chat_container:
+                    with st.chat_message("user"): st.markdown(prompt_input)
+                    with st.chat_message("assistant"):
+                        try:
+                            genai.configure(api_key=API_KEY)
+                            model = genai.GenerativeModel('gemini-1.5-flash')
+                            response = model.generate_content(f"Data: Lagna {ZODIAC[lagna_rasi]}, Moon {ZODIAC[moon_rasi]}. User says: {prompt_input}")
+                            st.markdown(response.text)
+                            st.session_state.messages.append({"role": "assistant", "content": response.text})
+                        except Exception as e: st.error(f"Failed: {e}")
                 st.rerun()
