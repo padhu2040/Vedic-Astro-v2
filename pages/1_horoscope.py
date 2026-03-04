@@ -54,6 +54,60 @@ def load_profiles_from_db():
         except: pass
     return profiles
 
+# --- MBTI PERSONA GENERATOR ALGORITHM ---
+def generate_360_mbti_persona(p_pos, lagna_rasi, sav_scores):
+    # 1. Calculate MBTI Sliders based on Elemental Balance
+    fire_air = [1,3,5,7,9,11] # Action / Outward
+    earth_water = [2,4,6,8,10,12] # Receptive / Inward
+    
+    extro_count = sum(1 for p, r in p_pos.items() if r in fire_air)
+    intro_count = sum(1 for p, r in p_pos.items() if r in earth_water)
+    total_p = extro_count + intro_count
+    extro_pct = int((extro_count / total_p) * 100) if total_p > 0 else 50
+    
+    intuitive_signs = [1,4,5,8,9,12]
+    int_count = sum(1 for p, r in p_pos.items() if r in intuitive_signs)
+    int_pct = int((int_count / total_p) * 100) if total_p > 0 else 50
+
+    think_pct = 50
+    if p_pos.get("Moon", 1) in [4,8,12]: think_pct -= 15
+    if p_pos.get("Mercury", 1) in [3,6,7,11]: think_pct += 15
+    think_pct = max(10, min(90, think_pct))
+
+    fixed_signs = [2,5,8,11]
+    judging_count = sum(1 for p, r in p_pos.items() if r in fixed_signs)
+    judging_pct = min(90, max(10, int((judging_count / 4.0) * 100)))
+
+    # 2. Determine Archetype Title
+    archetypes = {
+        1: "The Trailblazer (Bold, Independent, Direct)",
+        2: "The Builder (Reliable, Sensual, Enduring)",
+        3: "The Catalyst (Curious, Adaptable, Articulate)",
+        4: "The Nurturer (Empathetic, Protective, Intuitive)",
+        5: "The Commander (Charismatic, Authoritative, Proud)",
+        6: "The Analyst (Meticulous, Service-Oriented, Practical)",
+        7: "The Diplomat (Harmonious, Aesthetic, Fair)",
+        8: "The Strategist (Intense, Transformative, Secretive)",
+        9: "The Visionary (Philosophical, Restless, Optimistic)",
+        10: "The Executive (Disciplined, Ambitious, Structured)",
+        11: "The Innovator (Unconventional, Humanitarian, Objective)",
+        12: "The Mystic (Compassionate, Artistic, Ethereal)"
+    }
+    
+    # 3. Dynamic 360 Summaries based on SAV Points
+    corp_score = sav_scores[(lagna_rasi - 1 + 5) % 12]
+    biz_score = sav_scores[(lagna_rasi - 1 + 6) % 12]
+    
+    prof_text = "You possess a natural entrepreneurial spirit. You are built for equity, independent ventures, and leveraging strategic partnerships over standard employment." if biz_score > corp_score else "You have a massive competitive advantage in structured corporate environments. You easily out-work rivals and thrive in complex hierarchies."
+    edu_text = "You possess a highly absorbent intellect. You learn exceptionally fast and do well in structured academic environments or complex technical certifications." if sav_scores[(lagna_rasi - 1 + 4) % 12] >= 28 else "You are an experiential learner. Traditional classroom memorization may bore you. You master subjects by doing, building, and applying concepts in the real world."
+    fam_text = "You draw immense power from a stable home life. Your private domestic space is your fortress, and you invest heavily in maintaining family harmony." if sav_scores[(lagna_rasi - 1 + 3) % 12] >= 28 else "You are fiercely independent. Your sense of 'home' is tied to your ambitions rather than a physical place. You require relationships that respect your need for space."
+
+    return {
+        "title": archetypes.get(lagna_rasi, "The Architect"),
+        "extro_pct": extro_pct, "int_pct": int_pct, "think_pct": think_pct, "judging_pct": judging_pct,
+        "prof_text": prof_text, "edu_text": edu_text, "fam_text": fam_text
+    }
+
 # --- UI HEADER ---
 st.title(":material/account_circle: Deep Horoscope Engine")
 st.markdown("Generate a complete, personalized Vedic astrological profile.")
@@ -173,8 +227,9 @@ if st.session_state.report_generated:
         
         db_id = TAMIL_IDENTITY_DB if LANG == "Tamil" else identity_db
         report_id_data = db_id.get(ZODIAC[lagna_rasi], list(db_id.values())[0])
-        db_life = TAMIL_LIFESTYLE if LANG == "Tamil" else lifestyle_guidance
-        guide = db_life.get(RASI_RULERS.get(moon_rasi, "Moon"), {})
+        guide = TAMIL_LIFESTYLE.get(RASI_RULERS.get(moon_rasi, "Moon"), {}) if LANG == "Tamil" else lifestyle_guidance.get(RASI_RULERS.get(moon_rasi, "Moon"), {})
+
+        mbti_data = generate_360_mbti_persona(p_pos, lagna_rasi, sav_scores)
 
         # --- TOP INFO SECTION ---
         c_left, c_right = st.columns([3, 1])
@@ -196,27 +251,63 @@ if st.session_state.report_generated:
             )
             
             if pdf_bytes:
-                st.download_button(
-                    label="📄 Download PDF Report" if LANG=="English" else "📄 ஜாதகத்தை பதிவிறக்க", 
-                    data=pdf_bytes, 
-                    file_name=f"{name_in}_Astro_Report.pdf", 
-                    mime="application/pdf",
-                    type="primary"
-                )
+                st.download_button(label="📄 Download PDF Report" if LANG=="English" else "📄 ஜாதகத்தை பதிவிறக்க", data=pdf_bytes, file_name=f"{name_in}_Astro_Report.pdf", mime="application/pdf", type="primary")
             else:
                 st.error(f"⚠️ PDF generation failed. Details: {pdf_error}")
 
         # --- UI TABS ---
-        tb_lbls = ["Profile", "Scorecard", "Work & Intellect", "Love & Health", "Yogas", "Forecast", "Roadmap", "💬 Oracle"] if LANG == "English" else ["சுயவிவரம்", "அஷ்டகவர்க்கம்", "தொழில்", "திருமணம் & ஆரோக்கியம்", "யோகங்கள்", "ஆண்டு பலன்கள்", "தசா புக்தி", "💬 ஜோதிடர்"]
+        tb_lbls = ["360° Persona", "Profile & Placements", "Destiny Radar", "Work & Intellect", "Love & Health", "Yogas & Forecast", "Roadmap", "💬 Oracle"] if LANG == "English" else ["360° ஆளுமை", "சுயவிவரம் & கிரகங்கள்", "அஷ்டகவர்க்கம்", "தொழில்", "திருமணம் & ஆரோக்கியம்", "யோகங்கள்", "தசா புக்தி", "💬 ஜோதிடர்"]
         t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs(tb_lbls)
 
         with t1:
-            st.subheader("Identity" if LANG == "English" else "சுயவிவரம்")
-            st.markdown(f"**{'நோக்கம்' if LANG=='Tamil' else 'Purpose'}:** {report_id_data.get('Purpose', '')}")
-            st.markdown(f"**{'குணம்' if LANG=='Tamil' else 'Personality'}:** {report_id_data.get('Personality', '')}")
+            st.markdown(f"<h2 style='text-align: center; color: #2c3e50; font-size: 32px; margin-bottom: 5px;'>{mbti_data['title']}</h2>", unsafe_allow_html=True)
+            st.markdown(f"<p style='text-align: center; color: #7f8c8d; font-size: 16px; margin-top: 0;'>Your core psychological operating system.</p><hr>", unsafe_allow_html=True)
+            
+            c_img, c_sliders = st.columns([1, 1.2])
+            
+            with c_img:
+                st.markdown("### 🏢 Professional Focus")
+                st.info(mbti_data['prof_text'])
+                st.markdown("### 🧠 Intellect & Studies")
+                st.success(mbti_data['edu_text'])
+                st.markdown("### 🏡 Family & Boundaries")
+                st.warning(mbti_data['fam_text'])
+
+            with c_sliders:
+                # Custom HTML/CSS to render the 16Personalities style progress bars
+                def draw_mbti_bar(title, subtitle, left_lbl, right_lbl, pct_left, color_hex):
+                    pct_right = 100 - pct_left
+                    active_left = color_hex if pct_left >= 50 else "#e0e0e0"
+                    active_right = color_hex if pct_right > 50 else "#e0e0e0"
+                    return f"""
+                    <div style="margin-bottom: 25px; font-family: sans-serif;">
+                        <div style="text-align: center; margin-bottom: 12px;">
+                            <div style="font-size: 16px; font-weight: bold; color: #333;">{title}</div>
+                            <div style="font-size: 12px; color: #888;">{subtitle}</div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; color: #555; margin-bottom: 6px;">
+                            <span style="color: {active_left};">{pct_left}% {left_lbl}</span>
+                            <span style="color: {active_right};">{right_lbl} {pct_right}%</span>
+                        </div>
+                        <div style="width: 100%; height: 12px; display: flex; overflow: hidden; gap: 4px;">
+                            <div style="width: {pct_left}%; background-color: {active_left}; border-radius: 6px 0 0 6px;"></div>
+                            <div style="width: {pct_right}%; background-color: {active_right}; border-radius: 0 6px 6px 0;"></div>
+                        </div>
+                    </div>
+                    """
+                
+                st.markdown(draw_mbti_bar("Mind", "This trait determines how we interact with our environment.", "EXTRAVERTED", "INTROVERTED", mbti_data['extro_pct'], "#4faca6"), unsafe_allow_html=True)
+                st.markdown(draw_mbti_bar("Energy", "This trait shows where we direct our mental energy.", "INTUITIVE", "OBSERVANT", mbti_data['int_pct'], "#e2a74c"), unsafe_allow_html=True)
+                st.markdown(draw_mbti_bar("Nature", "This trait determines how we make decisions and cope with emotions.", "THINKING", "FEELING", mbti_data['think_pct'], "#5fb48f"), unsafe_allow_html=True)
+                st.markdown(draw_mbti_bar("Tactics", "This trait reflects our approach to work, planning and decision-making.", "JUDGING", "PROSPECTING", mbti_data['judging_pct'], "#b88baf"), unsafe_allow_html=True)
+
+        with t2:
+            st.subheader("Identity & Personality" if LANG == "English" else "சுயவிவரம்")
+            st.markdown(f"**{'Purpose' if LANG=='English' else 'நோக்கம்'}:** {report_id_data.get('Purpose', '')}")
+            st.markdown(f"**{'Personality' if LANG=='English' else 'குணம்'}:** {report_id_data.get('Personality', '')}")
             st.divider()
 
-            st.markdown(f"<h3 style='text-align: center; margin-top:20px;'>{'ராசி சக்கரம்' if LANG=='Tamil' else 'Birth Chart (Rasi)'}</h3>", unsafe_allow_html=True)
+            st.markdown(f"<h3 style='text-align: center; margin-top:20px;'>{'Birth Chart (Rasi)' if LANG=='English' else 'ராசி சக்கரம்'}</h3>", unsafe_allow_html=True)
             st.markdown(get_south_indian_chart_html(p_pos, lagna_rasi, "ராசி சக்கரம்" if LANG=="Tamil" else "Rasi Chart", LANG), unsafe_allow_html=True)
             
             headers = ["கிரகம்", "ராசி", "பாவம்", "பலம்", "நிலை"] if LANG == "Tamil" else ["Planet", "Rasi", "House", "Dignity", "Status"]
@@ -226,7 +317,7 @@ if st.session_state.report_generated:
             table_md += "</table>"
             st.markdown(table_md, unsafe_allow_html=True)
 
-        with t2:
+        with t3:
             st.subheader("Destiny Radar (Ashtakavarga)" if LANG == "English" else "அஷ்டகவர்க்கம் (Destiny Radar)")
             p_lbl = "பாவம்" if LANG == "Tamil" else "H"
             cats_labels = [f"{p_lbl} {i+1}" for i in range(12)]
@@ -247,7 +338,7 @@ if st.session_state.report_generated:
                 st.markdown(f"<h4 style='color: #e74c3c; margin-bottom: 10px;'>{'கவனம் தேவைப்படும் பாவங்கள்' if LANG=='Tamil' else 'Top Challenge Zones'}</h4>", unsafe_allow_html=True)
                 for s, h in sorted_houses[-3:]: st.markdown(get_house_strength_analysis(h, s, LANG))
 
-        with t3:
+        with t4:
             st.subheader("Education & Intellect" if LANG == "English" else "கல்வி மற்றும் அறிவு")
             for line in edu_txt: st.markdown(line)
             st.divider()
@@ -256,7 +347,7 @@ if st.session_state.report_generated:
             st.divider()
             for line in karmic_txt: st.markdown(line)
 
-        with t4:
+        with t5:
             st.markdown(f"<h3 style='text-align: center; margin-top:20px;'>{'நவாம்ச சக்கரம் (Navamsa)' if LANG=='Tamil' else 'Destiny Chart (Navamsa)'}</h3>", unsafe_allow_html=True)
             st.markdown(get_south_indian_chart_html(p_d9, d9_lagna, "நவாம்சம்" if LANG=="Tamil" else "Navamsa", LANG), unsafe_allow_html=True)
             st.divider()
@@ -266,14 +357,14 @@ if st.session_state.report_generated:
             st.subheader("Health & Vitality" if LANG == "English" else "ஆரோக்கியம்")
             for line in health_txt: st.markdown(line)
 
-        with t5:
+        with t6:
             st.subheader("Wealth & Power Combinations" if LANG == "English" else "முக்கிய யோகங்கள்")
             for y in yogas:
                 st.markdown(f"#### {y['Name']}")
                 st.markdown(f"> **{'Focus' if LANG=='English' else 'பலன்'}:** {y['Type']}")
                 st.markdown(y['Description'])
-
-        with t6:
+            
+            st.divider()
             st.subheader(f"Annual Forecast {f_year}" if LANG == "English" else f"{f_year} ஆண்டு பலன்கள்")
             for cat, data in fc.items():
                 st.markdown(f"#### {cat}")
@@ -286,7 +377,6 @@ if st.session_state.report_generated:
 
         with t7:
             st.subheader("Life Chapters (Timeline)" if LANG == "English" else "மகா தசை விவரங்கள் (காலக்கோடு)")
-            
             if pd_info:
                 st.markdown(f"#### {'IMMEDIATE FOCUS' if LANG=='English' else 'நடப்பு தசா புக்தி'}")
                 st.markdown(f"**{pd_info['Start']} to {pd_info['End']}**: {pd_info['PD']} ({pd_info['MD']} / {pd_info['AD']})")
