@@ -448,3 +448,72 @@ def calculate_10_porutham(b_nak, g_nak, b_rasi, g_rasi, b_name, g_name):
     results["Vasya (Attraction)"] = {"match": True, "desc": "Standard magnetic attraction."}
     score += 3
     return score, results
+
+def generate_360_persona(lagna_rasi, moon_rasi, sav_scores, p_pos, bhava_placements, lang="English"):
+    persona = {}
+    
+    # 1. CORE ARCHETYPE TITLES (Simha Lagna + Dhanu Moon example = "The Visionary Commander")
+    # This is a sample matrix. You can expand these titles in the future.
+    archetypes = {
+        (5, 9): "The Visionary Commander (Strategic, Inspiring, Uncompromising)",
+        (12, 7): "The Diplomatic Mystic (Empathetic, Imaginative, Harmonious)"
+    }
+    # Fallback if specific combo isn't defined yet
+    default_title = "The Strategic Architect (Analytical, Driven, Independent)"
+    persona['Archetype'] = archetypes.get((lagna_rasi, moon_rasi), default_title)
+
+    # 2. CALCULATE CAREER PATH (Corporate vs Business)
+    h6_score = sav_scores[(lagna_rasi - 1 + 5) % 12] # Corporate/Service
+    h7_score = sav_scores[(lagna_rasi - 1 + 6) % 12] # Business/Partners
+    h10_score = sav_scores[(lagna_rasi - 1 + 9) % 12] # Leadership
+    
+    career_profile = ""
+    if h10_score >= 30:
+        career_profile += "**The Executive Setup:** You are wired for the top of the pyramid. You operate best when given total autonomy and a team to direct. "
+    if h6_score > h7_score:
+        career_profile += "**Corporate Path:** You have a massive competitive advantage in structured corporate environments. You easily out-work rivals and thrive in complex hierarchies."
+    else:
+        career_profile += "**Business Path:** You possess an entrepreneurial spirit. You are built for equity, independent ventures, and leveraging strategic partnerships over standard employment."
+    persona['Professional'] = career_profile
+
+    # 3. CALCULATE INTELLECT & STUDIES
+    h5_score = sav_scores[(lagna_rasi - 1 + 4) % 12]
+    if h5_score >= 28:
+        persona['Studies'] = "You possess a highly absorbent intellect. You learn exceptionally fast and do well in structured academic environments or complex technical certifications."
+    else:
+        persona['Studies'] = "You are an experiential learner. Traditional classroom memorization may bore you. You master subjects by doing, building, and applying concepts in the real world."
+
+    # 4. CALCULATE RELATIONSHIPS & FAMILY
+    h4_score = sav_scores[(lagna_rasi - 1 + 3) % 12]
+    if h4_score >= 28:
+        persona['Relationships'] = "You draw immense power from a stable home life. Your private domestic space is your fortress, and you invest heavily in maintaining family harmony."
+    else:
+        persona['Relationships'] = "You are fiercely independent. Your sense of 'home' is tied to your ambitions rather than a physical place. In relationships, you require a partner who respects your need for space and continuous growth."
+
+    # 5. SUPERPOWERS & SHADOW (Based on top and bottom SAV scores)
+    sorted_houses = sorted([(sav_scores[(lagna_rasi-1+i)%12], i+1) for i in range(12)], key=lambda x: x[0], reverse=True)
+    top_house = sorted_houses[0][1]
+    bottom_house = sorted_houses[-1][1]
+    
+    superpower_map = {
+        1: "Magnetic presence and physical vitality.", 2: "Financial compounding and persuasive speech.", 
+        3: "Fearless execution and risk-taking.", 4: "Emotional intelligence and asset building.",
+        5: "Creative genius and rapid problem solving.", 6: "Crushing obstacles and outlasting competition.",
+        7: "Mastery of negotiation and human psychology.", 8: "Crisis management and uncovering hidden truths.",
+        9: "High-level strategic wisdom and natural luck.", 10: "Commanding authority and industry leadership.",
+        11: "Building massive networks and scaling profits.", 12: "Global vision and deep spiritual intuition."
+    }
+    
+    shadow_map = {
+        1: "Can struggle with self-doubt or burnout.", 2: "Prone to fluctuating finances if undisciplined.", 
+        3: "May hesitate to take necessary leaps of faith.", 4: "Can experience inner restlessness or domestic friction.",
+        5: "Over-analyzes decisions; struggles to delegate.", 6: "Avoids direct confrontation; easily stressed by rivals.",
+        7: "Attracts imbalanced partnerships or codependency.", 8: "Fears sudden changes; resists necessary transformations.",
+        9: "Can become dogmatic or rigid in personal beliefs.", 10: "Struggles to find consistent career recognition.",
+        11: "Networks may drain energy rather than provide ROI.", 12: "Prone to burnout from poor boundary setting."
+    }
+    
+    persona['Strengths'] = superpower_map.get(top_house, "Adaptable and resilient.")
+    persona['Shadow'] = shadow_map.get(bottom_house, "Requires conscious self-reflection.")
+
+    return persona
