@@ -4,6 +4,7 @@ from datetime import datetime, time
 import google.generativeai as genai
 from supabase import create_client
 import plotly.graph_objects as go
+import urllib.parse
 
 # --- IMPORTS FROM OUR CUSTOM ENGINES ---
 from astro_engine import (
@@ -264,52 +265,73 @@ if st.session_state.report_generated:
         tb_lbls = ["360° Persona", "Profile & Placements", "Destiny Radar", "Work & Intellect", "Love & Health", "Yogas & Forecast", "Roadmap", "💬 Oracle"] if LANG == "English" else ["360° ஆளுமை", "சுயவிவரம்", "அஷ்டகவர்க்கம்", "தொழில்", "திருமணம்", "யோகங்கள்", "தசா புக்தி", "💬 ஜோதிடர்"]
         t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs(tb_lbls)
 
+        # --- TAB 1: THE MONOCHROME MBTI PERSONA ---
         with t1:
-            st.markdown(f"<h2 style='text-align: center; color: #2c3e50; font-size: 32px; margin-bottom: 5px;'>{mbti_data['code']} — {mbti_data['title']}</h2>", unsafe_allow_html=True)
-            st.markdown(f"<p style='text-align: center; color: #7f8c8d; font-size: 16px; margin-top: 0;'>Your core psychological operating system.</p><hr>", unsafe_allow_html=True)
+            e_txt = "You draw energy from the external environment and social interaction." if mbti_data['extro_pct'] >= 50 else "You draw energy from your inner world of ideas and quiet reflection."
+            s_txt = "You process information through tangible facts, details, and present reality." if (100 - mbti_data['int_pct']) > 50 else "You process information through patterns, future possibilities, and abstract concepts."
+            t_txt = "You make decisions based on objective logic, structure, and impersonal analysis." if mbti_data['think_pct'] >= 50 else "You make decisions based on personal values, empathy, and social harmony."
+            j_txt = "You approach life with structure, planning, and a desire for closure." if mbti_data['judging_pct'] >= 50 else "You approach life with flexibility, adaptability, and keeping your options open."
             
-            c_img, c_sliders = st.columns([1, 1.2])
+            # Dynamic Devdutt Pattanaik-style line drawing generation
+            encoded_prompt = urllib.parse.quote(f"simple continuous line drawing illustration devdutt pattanaik style indian mythological positive {mbti_data['code']} personality minimalist soft cream background")
+            img_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=800&height=300&nologo=true"
             
-            with c_img:
-                # Nano Banana style flat avatar dynamically fetched based on MBTI code
-                st.image(f"https://api.dicebear.com/7.x/notionists/svg?seed={mbti_data['code']}&backgroundColor=fdfdfa", use_container_width=True)
-                
-                st.markdown("### 🧬 The Core Matrix")
-                st.info(mbti_data['desc'])
-                st.success(mbti_data['prof_text'])
-
-            with c_sliders:
-                def draw_mbti_bar(title, energy_txt, left_lbl, right_lbl, pct_left, color_hex):
-                    pct_right = 100 - pct_left
-                    active_left = color_hex if pct_left >= 50 else "#e0e0e0"
-                    active_right = color_hex if pct_right > 50 else "#e0e0e0"
-                    return f"""
-                    <div style="margin-bottom: 25px; font-family: sans-serif;">
-                        <div style="text-align: center; margin-bottom: 8px;">
-                            <div style="font-size: 16px; font-weight: bold; color: #333;">{title}</div>
-                            <div style="font-size: 13px; color: #666; font-style: italic; margin-top: 4px;">{energy_txt}</div>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; color: #555; margin-bottom: 6px;">
-                            <span style="color: {active_left};">{pct_left}% {left_lbl}</span>
-                            <span style="color: {active_right};">{right_lbl} {pct_right}%</span>
-                        </div>
-                        <div style="width: 100%; height: 12px; display: flex; overflow: hidden; gap: 4px;">
-                            <div style="width: {pct_left}%; background-color: {active_left}; border-radius: 6px 0 0 6px;"></div>
-                            <div style="width: {pct_right}%; background-color: {active_right}; border-radius: 0 6px 6px 0;"></div>
-                        </div>
+            def draw_mbti_bar_html(title, energy_txt, left_lbl, right_lbl, pct_left):
+                pct_right = 100 - pct_left
+                active_left = "#2c3e50" if pct_left >= 50 else "#dcdcdc"
+                active_right = "#2c3e50" if pct_right > 50 else "#dcdcdc"
+                return f"""
+                <div style="margin-bottom: 25px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+                    <div style="text-align: center; margin-bottom: 8px;">
+                        <div style="font-size: 16px; font-weight: bold; color: #111;">{title}</div>
+                        <div style="font-size: 13px; color: #555; font-style: italic; margin-top: 4px;">{energy_txt}</div>
                     </div>
-                    """
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; color: #555; margin-bottom: 6px;">
+                        <span style="color: {active_left};">{pct_left}% {left_lbl}</span>
+                        <span style="color: {active_right};">{right_lbl} {pct_right}%</span>
+                    </div>
+                    <div style="width: 100%; height: 10px; display: flex; overflow: hidden; gap: 4px;">
+                        <div style="width: {pct_left}%; background-color: {active_left}; border-radius: 5px 0 0 5px;"></div>
+                        <div style="width: {pct_right}%; background-color: {active_right}; border-radius: 0 5px 5px 0;"></div>
+                    </div>
+                </div>
+                """
+            
+            mbti_html = f"""
+            <div style="background-color: #FDFBF7; padding: 40px; border-radius: 12px; border: 1px solid #EBE6DC; color: #333; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
                 
-                # Dynamic "You draw energy from..." text
-                e_txt = "You draw energy from the external environment and social interaction." if mbti_data['extro_pct'] >= 50 else "You draw energy from your inner world of ideas and quiet reflection."
-                s_txt = "You process information through tangible facts, details, and present reality." if (100 - mbti_data['int_pct']) > 50 else "You process information through patterns, future possibilities, and abstract concepts."
-                t_txt = "You make decisions based on objective logic, structure, and impersonal analysis." if mbti_data['think_pct'] >= 50 else "You make decisions based on personal values, empathy, and social harmony."
-                j_txt = "You approach life with structure, planning, and a desire for closure." if mbti_data['judging_pct'] >= 50 else "You approach life with flexibility, adaptability, and keeping your options open."
+                <div style="text-align: center; margin-bottom: 25px;">
+                    <img src="{img_url}" style="width: 100%; max-width: 700px; border-radius: 8px; border: 1px solid #EBE6DC; object-fit: cover;" alt="Persona Illustration"/>
+                </div>
                 
-                st.markdown(draw_mbti_bar("Energy Orientation", e_txt, "EXTRAVERTED", "INTROVERTED", mbti_data['extro_pct'], "#4faca6"), unsafe_allow_html=True)
-                st.markdown(draw_mbti_bar("Information Processing", s_txt, "SENSING", "INTUITIVE", 100 - mbti_data['int_pct'], "#e2a74c"), unsafe_allow_html=True)
-                st.markdown(draw_mbti_bar("Decision Making", t_txt, "THINKING", "FEELING", mbti_data['think_pct'], "#5fb48f"), unsafe_allow_html=True)
-                st.markdown(draw_mbti_bar("World Structure", j_txt, "JUDGING", "PERCEIVING", mbti_data['judging_pct'], "#b88baf"), unsafe_allow_html=True)
+                <h2 style="text-align: center; color: #111; font-size: 34px; margin-bottom: 5px; font-weight: 800;">{mbti_data['code']} — {mbti_data['title']}</h2>
+                <p style="text-align: center; color: #666; font-size: 16px; margin-top: 0; font-style: italic;">Your core psychological operating system.</p>
+                
+                <hr style="border: 0; border-top: 1px solid #EBE6DC; margin: 30px 0;">
+                
+                <div style="display: flex; gap: 40px; margin-bottom: 30px;">
+                    <div style="flex: 1;">
+                        <h3 style="color: #111; margin-top: 0; border-bottom: 2px solid #2c3e50; padding-bottom: 5px; display: inline-block; font-size: 18px;">The Core Identity</h3>
+                        <p style="line-height: 1.6; font-size: 15px; color: #444;">{mbti_data['desc']}</p>
+                    </div>
+                    <div style="flex: 1;">
+                        <h3 style="color: #111; margin-top: 0; border-bottom: 2px solid #2c3e50; padding-bottom: 5px; display: inline-block; font-size: 18px;">Professional Focus</h3>
+                        <p style="line-height: 1.6; font-size: 15px; color: #444;">{mbti_data['prof_text']}</p>
+                    </div>
+                </div>
+                
+                <hr style="border: 0; border-top: 1px solid #EBE6DC; margin: 30px 0;">
+                
+                <h3 style="text-align: center; color: #111; margin-bottom: 30px; font-size: 20px;">Cognitive Sliders</h3>
+                <div style="max-width: 650px; margin: 0 auto;">
+                    {draw_mbti_bar_html("Energy Orientation", e_txt, "EXTRAVERTED", "INTROVERTED", mbti_data['extro_pct'])}
+                    {draw_mbti_bar_html("Information Processing", s_txt, "SENSING", "INTUITIVE", 100 - mbti_data['int_pct'])}
+                    {draw_mbti_bar_html("Decision Making", t_txt, "THINKING", "FEELING", mbti_data['think_pct'])}
+                    {draw_mbti_bar_html("World Structure", j_txt, "JUDGING", "PERCEIVING", mbti_data['judging_pct'])}
+                </div>
+            </div>
+            """
+            st.markdown(mbti_html, unsafe_allow_html=True)
 
         with t2:
             st.markdown(f"<h3 style='text-align: center; margin-top:20px;'>{'Birth Chart (Rasi)' if LANG=='English' else 'ராசி சக்கரம்'}</h3>", unsafe_allow_html=True)
