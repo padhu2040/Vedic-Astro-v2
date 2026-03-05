@@ -186,7 +186,6 @@ def get_enneagram_data(p_lon_absolute):
     growth_planet = vd_map.get(ak, {}).get("growth", "Jupiter")
     stress_planet = vd_map.get(ak, {}).get("stress", "Saturn")
     
-    # 2nd Person Coaching with explicit Tamil/English names and elaborated traits
     g_p_name = t_p_eng.get(growth_planet, growth_planet)
     s_p_name = t_p_eng.get(stress_planet, stress_planet)
     ak_name = t_p_eng.get(ak, ak)
@@ -449,7 +448,6 @@ if st.session_state.report_generated:
                     formatted.append(line)
                 return "".join(formatted)
             
-            # Dynamic Colors for Grid Visual
             en_planet_colors = {
                 "Sun": "#d35400", "Moon": "#95a5a6", "Mars": "#c0392b", 
                 "Mercury": "#27ae60", "Jupiter": "#f39c12", "Venus": "#8e44ad", 
@@ -484,44 +482,36 @@ if st.session_state.report_generated:
 </div>
 """
             
-            # The Full Executive Playbook HTML completely flush-left
             playbook_html = f"""
 <div style="padding: 10px 0; color: #333; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
-
 <h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 1: The Operating System</h2>
-
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
-    <div style="background: #fff; border: 1px solid #eaeaea; border-top: 4px solid {core_color}; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
-        <div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Atmakaraka:</b> Core Driver</div>
-        <div style="font-size: 18px; font-weight: bold; color: {core_color}; margin-bottom: 10px;">{ennea_data['ak_planet']} ({ennea_data['ak_type']})</div>
-        <div style="font-size: 14px; color: #444; line-height: 1.5;">{ennea_data['ak_coaching']}</div>
-    </div>
-    
-    <div style="background: #fff; border: 1px solid #eaeaea; border-top: 4px solid {wing_color}; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
-        <div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Amatyakaraka:</b> Execution Wing</div>
-        <div style="font-size: 18px; font-weight: bold; color: {wing_color}; margin-bottom: 10px;">{ennea_data['amk_planet']}</div>
-        <div style="font-size: 14px; color: #444; line-height: 1.5;">{ennea_data['amk_coaching']}</div>
-    </div>
-    
-    <div style="background: #f9fbf9; border: 1px solid #eaeaea; border-left: 4px solid #27ae60; padding: 20px; border-radius: 8px;">
-        <div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Ucha:</b> Growth Path</div>
-        <div style="font-size: 16px; font-weight: bold; color: #27ae60; margin-bottom: 10px;">{ennea_data['growth_planet']}</div>
-        <div style="font-size: 14px; color: #444; line-height: 1.5;">{ennea_data['growth_coaching']}</div>
-    </div>
-
-    <div style="background: #fdfaf9; border: 1px solid #eaeaea; border-left: 4px solid #e74c3c; padding: 20px; border-radius: 8px;">
-        <div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Neecha:</b> Stress Path</div>
-        <div style="font-size: 16px; font-weight: bold; color: #c0392b; margin-bottom: 10px;">{ennea_data['stress_planet']}</div>
-        <div style="font-size: 14px; color: #444; line-height: 1.5;">{ennea_data['stress_coaching']}</div>
-    </div>
+<div style="background: #fff; border: 1px solid #eaeaea; border-top: 4px solid {core_color}; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+<div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Atmakaraka:</b> Core Driver</div>
+<div style="font-size: 18px; font-weight: bold; color: {core_color}; margin-bottom: 10px;">{ennea_data['ak_planet']} ({ennea_data['ak_type']})</div>
+<div style="font-size: 14px; color: #444; line-height: 1.5;">{ennea_data['ak_coaching']}</div>
 </div>
-
+<div style="background: #fff; border: 1px solid #eaeaea; border-top: 4px solid {wing_color}; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+<div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Amatyakaraka:</b> Execution Wing</div>
+<div style="font-size: 18px; font-weight: bold; color: {wing_color}; margin-bottom: 10px;">{ennea_data['amk_planet']}</div>
+<div style="font-size: 14px; color: #444; line-height: 1.5;">{ennea_data['amk_coaching']}</div>
+</div>
+<div style="background: #f9fbf9; border: 1px solid #eaeaea; border-left: 4px solid #27ae60; padding: 20px; border-radius: 8px;">
+<div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Ucha:</b> Growth Path</div>
+<div style="font-size: 16px; font-weight: bold; color: #27ae60; margin-bottom: 10px;">{ennea_data['growth_planet']}</div>
+<div style="font-size: 14px; color: #444; line-height: 1.5;">{ennea_data['growth_coaching']}</div>
+</div>
+<div style="background: #fdfaf9; border: 1px solid #eaeaea; border-left: 4px solid #e74c3c; padding: 20px; border-radius: 8px;">
+<div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Neecha:</b> Stress Path</div>
+<div style="font-size: 16px; font-weight: bold; color: #c0392b; margin-bottom: 10px;">{ennea_data['stress_planet']}</div>
+<div style="font-size: 14px; color: #444; line-height: 1.5;">{ennea_data['stress_coaching']}</div>
+</div>
+</div>
 <h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 2: The Zone of Genius</h2>
 <div style="margin-bottom: 30px;">
 {format_md(edu_txt)}
 {format_md(career_txt)}
 </div>
-
 <h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 3: The Karmic Directive</h2>
 <div style="display: flex; gap: 20px; margin-bottom: 30px;">
 <div style="flex: 1; background-color: #fafafa; border: 1px solid #eee; padding: 20px; border-radius: 6px;">
@@ -533,7 +523,6 @@ if st.session_state.report_generated:
 <p style="font-size: 14px; color: #444; margin: 0; line-height: 1.5;">This is your area of innate mastery. Specifically, this points to <b>{ketu_domain}</b>. You are already naturally gifted here, but obsessing over it will stall your career. Delegate these tasks and use them only as a foundational strength.</p>
 </div>
 </div>
-
 <h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 4: The 3 Rules for Success</h2>
 <div style="background-color: #e8f6f3; border: 1px solid #d1f2eb; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
 <ol style="margin: 0; padding-left: 20px; font-size: 15px; color: #111; line-height: 1.6;">
@@ -542,7 +531,6 @@ if st.session_state.report_generated:
 <li><b>The Ultimate Metric:</b> {coaching_rules[2]}</li>
 </ol>
 </div>
-
 <h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 5: The Cognitive Mechanics</h2>
 <p style="font-size: 14px; color: #666; margin-bottom: 25px;">While your Core Drive (Phase 1) explains <i>why</i> you act, your MBTI framework (<b>{mbti_data['code']}</b>) explains <i>how</i> your brain naturally processes data to get there.</p>
 <div style="max-width: 650px; margin: 0 auto; padding: 10px 0;">
@@ -551,7 +539,6 @@ if st.session_state.report_generated:
 {draw_mbti_bar_html("Decision Making", t_txt, "THINKING", "FEELING", mbti_data['think_pct'])}
 {draw_mbti_bar_html("World Structure", j_txt, "JUDGING", "PERCEIVING", mbti_data['judging_pct'])}
 </div>
-
 </div>
 """
             st.markdown(playbook_html, unsafe_allow_html=True)
