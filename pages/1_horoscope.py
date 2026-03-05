@@ -4,7 +4,6 @@ from datetime import datetime, time
 import google.generativeai as genai
 from supabase import create_client
 import plotly.graph_objects as go
-import urllib.parse
 
 # --- IMPORTS FROM OUR CUSTOM ENGINES ---
 from astro_engine import (
@@ -272,10 +271,6 @@ if st.session_state.report_generated:
             t_txt = "You make decisions based on objective logic, structure, and impersonal analysis." if mbti_data['think_pct'] >= 50 else "You make decisions based on personal values, empathy, and social harmony."
             j_txt = "You approach life with structure, planning, and a desire for closure." if mbti_data['judging_pct'] >= 50 else "You approach life with flexibility, adaptability, and keeping your options open."
             
-            # Dynamic Devdutt Pattanaik-style line drawing generation
-            encoded_prompt = urllib.parse.quote(f"simple continuous line drawing illustration devdutt pattanaik style indian mythological positive {mbti_data['code']} personality minimalist soft cream background")
-            img_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=800&height=300&nologo=true"
-            
             def draw_mbti_bar_html(title, energy_txt, left_lbl, right_lbl, pct_left):
                 pct_right = 100 - pct_left
                 active_left = "#2c3e50" if pct_left >= 50 else "#dcdcdc"
@@ -297,14 +292,12 @@ if st.session_state.report_generated:
 </div>
 """
             
-            # Completely flattened HTML string to bypass Markdown code blocks
+            # Flush-left, clean HTML with no background/border, Archetype first, MBTI code smaller
             mbti_html = f"""
-<div style="background-color: #FDFBF7; padding: 40px; border-radius: 12px; border: 1px solid #EBE6DC; color: #333; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
-<div style="text-align: center; margin-bottom: 25px;">
-<img src="{img_url}" style="width: 100%; max-width: 700px; border-radius: 8px; border: 1px solid #EBE6DC; object-fit: cover;" alt="Persona Illustration"/>
-</div>
-<h2 style="text-align: center; color: #111; font-size: 34px; margin-bottom: 5px; font-weight: 800;">{mbti_data['code']} — {mbti_data['title']}</h2>
-<p style="text-align: center; color: #666; font-size: 16px; margin-top: 0; font-style: italic;">Your core psychological operating system.</p>
+<div style="padding: 20px 0; color: #333; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+<h2 style="text-align: center; color: #111; font-size: 28px; margin-bottom: 4px; font-weight: 800;">{mbti_data['title']}</h2>
+<div style="text-align: center; color: #7f8c8d; font-size: 14px; font-weight: bold; letter-spacing: 2px; margin-bottom: 8px;">{mbti_data['code']}</div>
+<p style="text-align: center; color: #666; font-size: 15px; margin-top: 0; font-style: italic;">Your core psychological operating system.</p>
 <hr style="border: 0; border-top: 1px solid #EBE6DC; margin: 30px 0;">
 <div style="display: flex; gap: 40px; margin-bottom: 30px;">
 <div style="flex: 1;">
@@ -326,11 +319,6 @@ if st.session_state.report_generated:
 </div>
 </div>
 """
-            st.markdown(mbti_html, unsafe_allow_html=True)
-
-
-
-        
             st.markdown(mbti_html, unsafe_allow_html=True)
 
         with t2:
