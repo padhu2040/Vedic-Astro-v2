@@ -265,7 +265,7 @@ if st.session_state.report_generated:
         tb_lbls = ["360° Persona", "Profile & Placements", "Destiny Radar", "Work & Intellect", "Love & Health", "Yogas & Forecast", "Roadmap", "💬 Oracle"] if LANG == "English" else ["360° ஆளுமை", "சுயவிவரம்", "அஷ்டகவர்க்கம்", "தொழில்", "திருமணம்", "யோகங்கள்", "தசா புக்தி", "💬 ஜோதிடர்"]
         t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs(tb_lbls)
 
-      # --- TAB 1: THE MONOCHROME MBTI PERSONA ---
+        # --- TAB 1: THE MONOCHROME MBTI PERSONA ---
         with t1:
             e_txt = "You draw energy from the external environment and social interaction." if mbti_data['extro_pct'] >= 50 else "You draw energy from your inner world of ideas and quiet reflection."
             s_txt = "You process information through tangible facts, details, and present reality." if (100 - mbti_data['int_pct']) > 50 else "You process information through patterns, future possibilities, and abstract concepts."
@@ -280,59 +280,57 @@ if st.session_state.report_generated:
                 pct_right = 100 - pct_left
                 active_left = "#2c3e50" if pct_left >= 50 else "#dcdcdc"
                 active_right = "#2c3e50" if pct_right > 50 else "#dcdcdc"
-                # Flush-left to prevent Markdown from making it a code block
                 return f"""
 <div style="margin-bottom: 25px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
-    <div style="text-align: center; margin-bottom: 8px;">
-        <div style="font-size: 16px; font-weight: bold; color: #111;">{title}</div>
-        <div style="font-size: 13px; color: #555; font-style: italic; margin-top: 4px;">{energy_txt}</div>
-    </div>
-    <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; color: #555; margin-bottom: 6px;">
-        <span style="color: {active_left};">{pct_left}% {left_lbl}</span>
-        <span style="color: {active_right};">{right_lbl} {pct_right}%</span>
-    </div>
-    <div style="width: 100%; height: 10px; display: flex; overflow: hidden; gap: 4px;">
-        <div style="width: {pct_left}%; background-color: {active_left}; border-radius: 5px 0 0 5px;"></div>
-        <div style="width: {pct_right}%; background-color: {active_right}; border-radius: 0 5px 5px 0;"></div>
-    </div>
+<div style="text-align: center; margin-bottom: 8px;">
+<div style="font-size: 16px; font-weight: bold; color: #111;">{title}</div>
+<div style="font-size: 13px; color: #555; font-style: italic; margin-top: 4px;">{energy_txt}</div>
+</div>
+<div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; color: #555; margin-bottom: 6px;">
+<span style="color: {active_left};">{pct_left}% {left_lbl}</span>
+<span style="color: {active_right};">{right_lbl} {pct_right}%</span>
+</div>
+<div style="width: 100%; height: 10px; display: flex; overflow: hidden; gap: 4px;">
+<div style="width: {pct_left}%; background-color: {active_left}; border-radius: 5px 0 0 5px;"></div>
+<div style="width: {pct_right}%; background-color: {active_right}; border-radius: 0 5px 5px 0;"></div>
+</div>
 </div>
 """
             
-            # Flush-left string
+            # Completely flattened HTML string to bypass Markdown code blocks
             mbti_html = f"""
 <div style="background-color: #FDFBF7; padding: 40px; border-radius: 12px; border: 1px solid #EBE6DC; color: #333; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
-    
-    <div style="text-align: center; margin-bottom: 25px;">
-        <img src="{img_url}" style="width: 100%; max-width: 700px; border-radius: 8px; border: 1px solid #EBE6DC; object-fit: cover;" alt="Persona Illustration"/>
-    </div>
-    
-    <h2 style="text-align: center; color: #111; font-size: 34px; margin-bottom: 5px; font-weight: 800;">{mbti_data['code']} — {mbti_data['title']}</h2>
-    <p style="text-align: center; color: #666; font-size: 16px; margin-top: 0; font-style: italic;">Your core psychological operating system.</p>
-    
-    <hr style="border: 0; border-top: 1px solid #EBE6DC; margin: 30px 0;">
-    
-    <div style="display: flex; gap: 40px; margin-bottom: 30px;">
-        <div style="flex: 1;">
-            <h3 style="color: #111; margin-top: 0; border-bottom: 2px solid #2c3e50; padding-bottom: 5px; display: inline-block; font-size: 18px;">The Core Identity</h3>
-            <p style="line-height: 1.6; font-size: 15px; color: #444;">{mbti_data['desc']}</p>
-        </div>
-        <div style="flex: 1;">
-            <h3 style="color: #111; margin-top: 0; border-bottom: 2px solid #2c3e50; padding-bottom: 5px; display: inline-block; font-size: 18px;">Professional Focus</h3>
-            <p style="line-height: 1.6; font-size: 15px; color: #444;">{mbti_data['prof_text']}</p>
-        </div>
-    </div>
-    
-    <hr style="border: 0; border-top: 1px solid #EBE6DC; margin: 30px 0;">
-    
-    <h3 style="text-align: center; color: #111; margin-bottom: 30px; font-size: 20px;">Cognitive Sliders</h3>
-    <div style="max-width: 650px; margin: 0 auto;">
-        {draw_mbti_bar_html("Energy Orientation", e_txt, "EXTRAVERTED", "INTROVERTED", mbti_data['extro_pct'])}
-        {draw_mbti_bar_html("Information Processing", s_txt, "SENSING", "INTUITIVE", 100 - mbti_data['int_pct'])}
-        {draw_mbti_bar_html("Decision Making", t_txt, "THINKING", "FEELING", mbti_data['think_pct'])}
-        {draw_mbti_bar_html("World Structure", j_txt, "JUDGING", "PERCEIVING", mbti_data['judging_pct'])}
-    </div>
+<div style="text-align: center; margin-bottom: 25px;">
+<img src="{img_url}" style="width: 100%; max-width: 700px; border-radius: 8px; border: 1px solid #EBE6DC; object-fit: cover;" alt="Persona Illustration"/>
+</div>
+<h2 style="text-align: center; color: #111; font-size: 34px; margin-bottom: 5px; font-weight: 800;">{mbti_data['code']} — {mbti_data['title']}</h2>
+<p style="text-align: center; color: #666; font-size: 16px; margin-top: 0; font-style: italic;">Your core psychological operating system.</p>
+<hr style="border: 0; border-top: 1px solid #EBE6DC; margin: 30px 0;">
+<div style="display: flex; gap: 40px; margin-bottom: 30px;">
+<div style="flex: 1;">
+<h3 style="color: #111; margin-top: 0; border-bottom: 2px solid #2c3e50; padding-bottom: 5px; display: inline-block; font-size: 18px;">The Core Identity</h3>
+<p style="line-height: 1.6; font-size: 15px; color: #444;">{mbti_data['desc']}</p>
+</div>
+<div style="flex: 1;">
+<h3 style="color: #111; margin-top: 0; border-bottom: 2px solid #2c3e50; padding-bottom: 5px; display: inline-block; font-size: 18px;">Professional Focus</h3>
+<p style="line-height: 1.6; font-size: 15px; color: #444;">{mbti_data['prof_text']}</p>
+</div>
+</div>
+<hr style="border: 0; border-top: 1px solid #EBE6DC; margin: 30px 0;">
+<h3 style="text-align: center; color: #111; margin-bottom: 30px; font-size: 20px;">Cognitive Sliders</h3>
+<div style="max-width: 650px; margin: 0 auto;">
+{draw_mbti_bar_html("Energy Orientation", e_txt, "EXTRAVERTED", "INTROVERTED", mbti_data['extro_pct'])}
+{draw_mbti_bar_html("Information Processing", s_txt, "SENSING", "INTUITIVE", 100 - mbti_data['int_pct'])}
+{draw_mbti_bar_html("Decision Making", t_txt, "THINKING", "FEELING", mbti_data['think_pct'])}
+{draw_mbti_bar_html("World Structure", j_txt, "JUDGING", "PERCEIVING", mbti_data['judging_pct'])}
+</div>
 </div>
 """
+            st.markdown(mbti_html, unsafe_allow_html=True)
+
+
+
+        
             st.markdown(mbti_html, unsafe_allow_html=True)
 
         with t2:
