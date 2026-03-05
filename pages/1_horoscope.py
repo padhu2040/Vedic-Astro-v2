@@ -123,20 +123,45 @@ def get_enneagram_data(p_lon_absolute):
             if p in ["Rahu", "Ketu"]: deg = 30 - deg
             degrees[p] = deg
             
-    ak = max(degrees, key=degrees.get)
+    sorted_planets = sorted(degrees.items(), key=lambda x: x[1], reverse=True)
+    ak = sorted_planets[0][0]
+    amk = sorted_planets[1][0] if len(sorted_planets) > 1 else ak
     
     enneagram_map = {
-        "Saturn": ("Type 1: The Reformer", "To be good, balanced, and have integrity.", "Being corrupt, evil, or defective.", "Operates on a strict internal compass of right and wrong, constantly striving for structural perfection."),
-        "Moon": ("Type 2: The Helper", "To feel loved and needed.", "Being unwanted or unworthy of being loved.", "Draws energy from caring for others and maintaining deep emotional bonds."),
-        "Sun": ("Type 3: The Achiever", "To feel valuable, successful, and admired.", "Being worthless or failing in the eyes of others.", "Inherently driven to rise to the top and be recognized."),
-        "Ketu": ("Type 4: The Individualist", "To find themselves and their unique significance.", "Having no identity or personal significance.", "Feels fundamentally different from the rest of the world and seeks authentic self-expression."),
-        "Mercury": ("Type 5: The Investigator", "To be capable and competent.", "Being useless, helpless, or incapable.", "Withdraws into the mind to master complex subjects and understand how the universe works."),
-        "Venus": ("Type 6: The Loyalist", "To have security, support, and guidance.", "Being without support and guidance.", "Seeks security through strong, loyal partnerships and alliance-building."),
-        "Rahu": ("Type 7: The Enthusiast", "To be happy, fully engaged, and experience everything.", "Being deprived, trapped, or missing out.", "Constantly chasing the next big thrill, expanding horizons, and avoiding boredom at all costs."),
-        "Mars": ("Type 8: The Challenger", "To protect themselves and be in control of their own life.", "Being harmed or controlled by others.", "Fiercely independent, aggressively protective, and utterly unafraid of confrontation."),
-        "Jupiter": ("Type 9: The Peacemaker", "To have inner stability and peace of mind.", "Loss, fragmentation, and conflict.", "Seeks to maintain a harmonious, unified environment and diffuses tension.")
+        "Saturn": ("Type 1: The Reformer", "building structural perfection and integrity"),
+        "Moon": ("Type 2: The Helper", "creating deep emotional bonds and being loved"),
+        "Sun": ("Type 3: The Achiever", "achieving absolute success, value, and admiration"),
+        "Ketu": ("Type 4: The Individualist", "finding profound, unique personal significance"),
+        "Mercury": ("Type 5: The Investigator", "mastering complex knowledge and absolute competence"),
+        "Venus": ("Type 6: The Loyalist", "establishing unbreakable security and aligned partnerships"),
+        "Rahu": ("Type 7: The Enthusiast", "experiencing limitless freedom and boundary expansion"),
+        "Mars": ("Type 8: The Challenger", "maintaining total control and protecting autonomy"),
+        "Jupiter": ("Type 9: The Peacemaker", "sustaining internal peace, wisdom, and harmony")
     }
-    return ak, enneagram_map.get(ak, ("Type 3: The Achiever", "To feel valuable and successful.", "Failure.", "Driven to succeed."))
+    
+    # Exaltation (Growth) / Debilitation (Stress) Vedic Rulers
+    vd_map = {
+        "Sun": {"growth": "Mars", "stress": "Venus"}, "Moon": {"growth": "Venus", "stress": "Mars"},
+        "Mars": {"growth": "Saturn", "stress": "Moon"}, "Mercury": {"growth": "Mercury", "stress": "Jupiter"},
+        "Jupiter": {"growth": "Moon", "stress": "Saturn"}, "Venus": {"growth": "Jupiter", "stress": "Mercury"},
+        "Saturn": {"growth": "Venus", "stress": "Mars"}, "Rahu": {"growth": "Mercury", "stress": "Jupiter"},
+        "Ketu": {"growth": "Jupiter", "stress": "Mercury"}
+    }
+    
+    ak_type, ak_desire = enneagram_map.get(ak, ("Type 3: The Achiever", "achieving success"))
+    amk_type = enneagram_map.get(amk, ("Type 5: The Investigator", ""))[0]
+    
+    growth_planet = vd_map.get(ak, {}).get("growth", "Jupiter")
+    stress_planet = vd_map.get(ak, {}).get("stress", "Saturn")
+    growth_type = enneagram_map.get(growth_planet, ("Type 9: The Peacemaker", ""))[0]
+    stress_type = enneagram_map.get(stress_planet, ("Type 1: The Reformer", ""))[0]
+
+    return {
+        "ak_planet": ak, "ak_type": ak_type, "ak_desire": ak_desire,
+        "amk_planet": amk, "amk_type": amk_type,
+        "growth_planet": growth_planet, "growth_type": growth_type,
+        "stress_planet": stress_planet, "stress_type": stress_type
+    }
 
 def get_coaching_rules(sav_scores, lagna_rasi, current_md, ennea_desire):
     lowest_house_idx = min(range(12), key=lambda i: sav_scores[(lagna_rasi - 1 + i) % 12])
@@ -158,8 +183,8 @@ def get_coaching_rules(sav_scores, lagna_rasi, current_md, ennea_desire):
     }
     
     rule_1 = house_tips.get(lowest_house, "Maintain structural discipline.")
-    rule_2 = f"You are currently operating in a {current_md} Mahadasha phase. Align your immediate goals with the energy of this planet rather than forcing outcomes." if current_md else "Focus on mastering your current operational phase before expanding."
-    rule_3 = f"Success for you is not just financial wealth; your ultimate metric for a life well-lived is {ennea_desire.lower()}"
+    rule_2 = f"You are currently operating in a {current_md} Mahadasha phase. Align your immediate strategic goals with the energy of this planet rather than forcing outcomes." if current_md else "Focus on mastering your current operational phase before expanding."
+    rule_3 = f"Success for you is not just financial wealth; your ultimate metric for a life well-lived is {ennea_desire}."
     return [rule_1, rule_2, rule_3]
 
 
@@ -274,9 +299,9 @@ if st.session_state.report_generated:
 
         # 360 ENGINES
         mbti_data = generate_360_mbti_persona(p_pos, lagna_rasi, sav_scores)
-        ak_planet, ennea_data = get_enneagram_data(p_lon_absolute)
+        ennea_data = get_enneagram_data(p_lon_absolute)
         current_md = pd_info['MD'] if pd_info else None
-        coaching_rules = get_coaching_rules(sav_scores, lagna_rasi, current_md, ennea_data[1])
+        coaching_rules = get_coaching_rules(sav_scores, lagna_rasi, current_md, ennea_data['ak_desire'])
 
         # --- TOP INFO SECTION ---
         c_left, c_right = st.columns([3, 1])
@@ -399,14 +424,28 @@ if st.session_state.report_generated:
             
             playbook_html = f"""
 <div style="padding: 20px 0; color: #333; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+
 <h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 1: The Operating System</h2>
-<div style="background-color: #fdfdfa; border-left: 4px solid #f39c12; padding: 15px; margin-bottom: 25px;">
-<div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;">Primary Driver: {ennea_data[0]}</div>
-<div style="font-size: 14px; color: #555; margin-bottom: 8px;">{ennea_data[3]}</div>
-<ul style="margin: 0; padding-left: 20px; font-size: 14px;">
-<li><b>Core Desire (Why you act):</b> {ennea_data[1]}</li>
-<li><b>Core Saboteur (What you fear):</b> {ennea_data[2]}</li>
-</ul>
+
+<div style="background-color: #fdfdfa; border-left: 4px solid #f39c12; padding: 15px; margin-bottom: 15px;">
+<div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;">Core Driver: {ennea_data['ak_type']} ({ennea_data['ak_planet']})</div>
+<div style="font-size: 13.5px; color: #7f8c8d; margin-bottom: 8px; font-style: italic;"><b>The Atmakaraka (Soul Planet):</b> In Vedic Astrology, this is the "King" of your chart with the highest degree. It represents your soul’s deepest driver and maps directly to your core Enneagram desire.</div>
+<ul style="margin: 0; padding-left: 20px; font-size: 14.5px;"><li>Your ultimate motivation is <b>{ennea_data['ak_desire']}</b>.</li></ul>
+</div>
+
+<div style="background-color: #fcfcfc; border-left: 4px solid #3498db; padding: 15px; margin-bottom: 15px;">
+<div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;">The Wing: {ennea_data['amk_type']} ({ennea_data['amk_planet']})</div>
+<div style="font-size: 13.5px; color: #7f8c8d; margin-bottom: 8px; font-style: italic;"><b>The Amatyakaraka (Minister Planet):</b> As the planet with the second-highest degree, this executes the King's orders. It acts as your Enneagram Wing, adding a unique flavor to how you achieve your goals.</div>
+</div>
+
+<div style="background-color: #f9fbf9; border-left: 4px solid #2ecc71; padding: 15px; margin-bottom: 15px;">
+<div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;">Growth Path: Integrates to {ennea_data['growth_type']} ({ennea_data['growth_planet']})</div>
+<div style="font-size: 13.5px; color: #7f8c8d; margin-bottom: 8px; font-style: italic;"><b>Ucha (Exaltation):</b> This is the sign where your Core Planet functions at its highest frequency. This reveals your path of integration—who you become when operating at your absolute best.</div>
+</div>
+
+<div style="background-color: #fdfaf9; border-left: 4px solid #e74c3c; padding: 15px; margin-bottom: 30px;">
+<div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;">Stress Path: Disintegrates to {ennea_data['stress_type']} ({ennea_data['stress_planet']})</div>
+<div style="font-size: 13.5px; color: #7f8c8d; margin-bottom: 8px; font-style: italic;"><b>Neecha (Debilitation):</b> This is where your core planet loses power. It maps to your path of disintegration—the reactive, toxic traits you adopt under severe executive stress.</div>
 </div>
 
 <h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 2: The Zone of Genius</h2>
