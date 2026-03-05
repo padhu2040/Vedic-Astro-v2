@@ -12,7 +12,7 @@ from astro_engine import (
     get_location_coordinates, get_utc_offset, get_bhava_chalit, get_navamsa_chart, get_dasamsa_chart,
     determine_house, get_dignity, calculate_sav_score, get_nakshatra_details, scan_yogas,
     analyze_career_professional, analyze_education, analyze_health, analyze_love_marriage,
-    generate_annual_forecast, get_transit_data_advanced, analyze_karmic_axis, get_house_strength_analysis,
+    generate_annual_forecast, get_transit_data_advanced, analyze_karmic_axis,
     generate_mahadasha_table, generate_current_next_bhukti, get_micro_transits,
     t_p, t_p_eng, ZODIAC_TA, ZODIAC
 )
@@ -56,6 +56,59 @@ def load_profiles_from_db():
         except: pass
     return profiles
 
+# --- NEW: UNIQUE HOUSE STRENGTH ANALYSIS ENGINE ---
+def get_local_house_analysis(house, score, lang="English"):
+    domains = {
+        1: "Self, physical vitality, and personal brand",
+        2: "Accumulated wealth, speech, and family assets",
+        3: "Courage, short-term efforts, and networking",
+        4: "Inner peace, real estate, and foundational security",
+        5: "Creative intellect, speculation, and advisory roles",
+        6: "Daily routines, overcoming competitors, and debt management",
+        7: "Strategic partnerships, marriage, and public relations",
+        8: "Crisis management, hidden resources, and transformation",
+        9: "Long-term vision, higher learning, and natural luck",
+        10: "Career execution, public authority, and industry reputation",
+        11: "Massive scaling, professional networks, and major gains",
+        12: "Deep rest, foreign investments, and letting go of control"
+    }
+    power_advice = {
+        1: "Lean heavily into your personal charisma. You are the brand.",
+        2: "Capitalize on your communication skills and aggressively scale your assets.",
+        3: "Take calculated risks and expand your immediate network. Boldness wins here.",
+        4: "Invest in real estate or foundational infrastructure. Your inner security is your fortress.",
+        5: "Trust your creative instincts and intellectual models. Lead through guidance.",
+        6: "Tackle operational bottlenecks head-on. You will easily outlast competitors.",
+        7: "Form strategic alliances. Joint ventures will yield massive returns.",
+        8: "Do not fear sudden market shifts. You have a unique talent for profiting during crises.",
+        9: "Trust your intuition and long-term philosophy. The universe actively supports your vision.",
+        10: "Assume absolute leadership. You are built to direct and execute at the highest level.",
+        11: "Focus on scaling. Tap into large professional networks to multiply your influence.",
+        12: "Use isolation and backend strategy as a weapon. Some of your best work happens off-stage."
+    }
+    challenge_advice = {
+        1: "Guard against burnout. Do not let your ego tie your self-worth solely to your output.",
+        2: "Enforce strict financial discipline. Avoid impulsive speech that damages key alliances.",
+        3: "Do not waste energy on petty conflicts. Focus your drive on structured goals.",
+        4: "Actively protect your private time. Do not let professional stress infect your home.",
+        5: "Avoid over-analyzing. Delegate tasks instead of trying to control all creative output.",
+        6: "Build strict boundaries to avoid absorbing workplace toxicity. Prioritize health routines.",
+        7: "Do not compromise your core vision just to avoid conflict in partnerships.",
+        8: "Avoid resisting necessary structural changes. Clinging to the past will stall your growth.",
+        9: "Stay flexible. Rigid dogmatism or overly optimistic leaps of faith will backfire.",
+        10: "Practice extreme patience. True authority here requires enduring delayed gratification.",
+        11: "Audit your network. Cut out professional connections that drain energy without ROI.",
+        12: "Prioritize sleep and mental health. Do not ignore your need to disconnect and recharge."
+    }
+    
+    domain = domains.get(house, "")
+    if score >= 30:
+        advice = power_advice.get(house, "Maximize this energy.")
+        return f"**Power zone: The {house}th house ({domain}) is exceptionally strong.**<br><span style='color:#666;'><i>Harnessing guide:</i> {advice}</span><br><br>"
+    else:
+        advice = challenge_advice.get(house, "Requires strict discipline.")
+        return f"**Challenge zone: The {house}th house ({domain}) requires conscious effort.**<br><span style='color:#666;'><i>Mitigation guide:</i> {advice}</span><br><br>"
+
 # --- 360 DEGREE MBTI & ENNEAGRAM ENGINE ---
 def generate_360_mbti_persona(p_pos, lagna_rasi, sav_scores):
     fire_air = [1, 3, 5, 7, 9, 11]
@@ -85,35 +138,7 @@ def generate_360_mbti_persona(p_pos, lagna_rasi, sav_scores):
     letter_4 = "P" if perceiving_pct > 50 else "J"
 
     mbti_code = f"{letter_1}{letter_2}{letter_3}{letter_4}"
-
-    mbti_profiles = {
-        "INTJ": {"title": "The Architect", "desc": "You are a strategic, fiercely independent visionary. You approach life as a giant chessboard, always planning several moves ahead. You thrive on turning complex theories into actionable, high-level systems."},
-        "INTP": {"title": "The Logician", "desc": "You are an innovative and deeply analytical thinker. You draw energy from unraveling the underlying principles of the universe, preferring abstract concepts and relentless intellectual exploration over mundane routines."},
-        "ENTJ": {"title": "The Commander", "desc": "You are a bold, authoritative, and fiercely driven leader. You naturally see inefficiency and instantly know how to organize people and systems to achieve massive, overarching goals."},
-        "ENTP": {"title": "The Debater", "desc": "You are a quick-witted, audacious intellectual. You love playing devil's advocate, tearing apart traditional systems, and brainstorming highly unconventional solutions to complex problems."},
-        "INFJ": {"title": "The Advocate", "desc": "You are a quiet, mystical, and deeply inspiring force. You possess a profound intuition about human nature and dedicate your life to realizing a highly idealized vision of the future."},
-        "INFP": {"title": "The Mediator", "desc": "You are a poetic, altruistic, and deeply empathetic soul. You are driven by an unshakeable set of inner values and seek harmony, authentic self-expression, and meaningful connections."},
-        "ENFJ": {"title": "The Protagonist", "desc": "You are a charismatic, deeply empathetic, and natural-born leader. You possess an uncanny ability to inspire those around you, drawing energy from helping others reach their ultimate potential."},
-        "ENFP": {"title": "The Campaigner", "desc": "You are an enthusiastic, wildly creative, and sociable spirit. You see life as a massive web of interconnected possibilities and thrive when you are free to explore new ideas and deep relationships."},
-        "ISTJ": {"title": "The Logistician", "desc": "You are the backbone of society—practical, fact-minded, and fiercely reliable. You operate with unwavering logic and take pride in executing your duties perfectly, step by calculated step."},
-        "ISFJ": {"title": "The Defender", "desc": "You are a deeply dedicated, warm, and highly observant protector. You draw energy from maintaining stability, honoring traditions, and quietly ensuring the people you care about are safe and secure."},
-        "ESTJ": {"title": "The Executive", "desc": "You are an unsurpassed manager of people and processes. You value tradition, order, and dignity, bringing people together to execute projects efficiently and strictly by the book."},
-        "ESFJ": {"title": "The Consul", "desc": "You are an extraordinarily caring, social, and community-minded leader. You draw immense energy from orchestrating harmony in your environment and ensuring everyone feels supported and valued."},
-        "ISTP": {"title": "The Virtuoso", "desc": "You are a bold, practical, and highly adaptable master of your environment. You learn by doing, tearing things apart, and figuring out how they work with cool, detached logic."},
-        "ISFP": {"title": "The Adventurer", "desc": "You are a flexible, charming, and highly aesthetic creator. You live totally in the present moment, using your rich inner emotional world to push the boundaries of conventional expression."},
-        "ESTP": {"title": "The Entrepreneur", "desc": "You are a smart, energetic, and thrill-seeking operator. You do not just read the manual—you jump straight into the action, fixing problems on the fly and navigating risks with unmatched charm."},
-        "ESFP": {"title": "The Entertainer", "desc": "You are spontaneous, highly energetic, and deeply observant. Life is a stage to you, and you draw immense energy from engaging with your environment and bringing joy to the people around you."}
-    }
-    
-    corp_score = sav_scores[(lagna_rasi - 1 + 5) % 12]
-    biz_score = sav_scores[(lagna_rasi - 1 + 6) % 12]
-    prof_text = "Professionally, you possess a natural entrepreneurial spirit. You are built for equity, independent ventures, and leveraging strategic partnerships over standard employment." if biz_score > corp_score else "Professionally, you have a massive competitive advantage in structured corporate environments. You easily out-work rivals and thrive in complex hierarchies."
-    profile = mbti_profiles.get(mbti_code, {"title": "The Strategist", "desc": "You are a highly analytical and adaptable individual."})
-
-    return {
-        "code": mbti_code, "title": profile["title"], "desc": profile["desc"],
-        "extro_pct": extro_pct, "int_pct": int_pct, "think_pct": think_pct, "judging_pct": judging_pct, "prof_text": prof_text
-    }
+    return {"code": mbti_code, "extro_pct": extro_pct, "int_pct": int_pct, "think_pct": think_pct, "judging_pct": judging_pct}
 
 def get_enneagram_data(p_lon_absolute):
     degrees = {}
@@ -194,7 +219,7 @@ def get_enneagram_data(p_lon_absolute):
     growth_coaching = f"Your ultimate path to growth requires you to move toward the highest expression of <b>{g_p_name}</b>. This means actively cultivating {growth_traits.get(growth_planet, 'its highest energy')}. True authority will follow when you stop relying on your baseline instincts and embrace this advanced operating state."
     stress_coaching = f"Under severe executive stress, you disintegrate into the shadow of <b>{s_p_name}</b>. You lose your natural decisive edge and begin operating from fear, adopting toxic traits like {stress_traits.get(stress_planet, 'reactive behavior')}. You must recognize these triggers immediately."
     
-    ak_coaching = f"Your fundamental operating system is powered by <b>{ak_name}</b>. At your deepest subconscious level, you are fundamentally driven by the need for {enneagram_map.get(ak)[1]}. Every major executive decision you make is ultimately an attempt to satisfy this core urge. When you align your career directly with this specific energy, you become unstoppable."
+    ak_coaching = f"Your fundamental core drive is powered by <b>{ak_name}</b>. At your deepest subconscious level, you are fundamentally driven by the need for {enneagram_map.get(ak)[1]}. Every major executive decision you make is ultimately an attempt to satisfy this core urge. When you align your career directly with this specific energy, you become unstoppable."
     amk_coaching = f"While your Core dictates <i>what</i> you want, your Execution Wing, <b>{amk_name}</b>, dictates <i>how</i> you get it. You naturally rely on {amk_traits.get(amk, 'strategic focus')} to navigate complex professional landscapes. This is your tactical superpower—lean heavily on it to execute your grand vision."
 
     return {
@@ -208,7 +233,6 @@ def get_enneagram_data(p_lon_absolute):
 def get_coaching_rules(sav_scores, lagna_rasi, current_md, ennea_desire):
     lowest_house_idx = min(range(12), key=lambda i: sav_scores[(lagna_rasi - 1 + i) % 12])
     lowest_house = lowest_house_idx + 1
-    
     house_tips = {
         1: "Protect your personal vitality; do not burn out trying to be everything to everyone.",
         2: "Systematize your finances. Avoid impulsive resource allocation when stressed.",
@@ -248,7 +272,6 @@ def get_coaching_rules(sav_scores, lagna_rasi, current_md, ennea_desire):
     rule_1 = house_tips.get(lowest_house, "Maintain structural discipline.")
     rule_2 = f"You are currently operating in a <b>{current_md}</b> Mahadasha phase. Align your immediate strategic goals with the energy of this planet—specifically focusing on <i>{focus_text}</i>—rather than forcing outcomes that belong in a different season." if current_md else "Focus on mastering your current operational phase before expanding."
     rule_3 = f"Success for you is not just financial wealth; your ultimate metric for a life well-lived is {ennea_desire}."
-    
     return [rule_1, rule_2, rule_3]
 
 def get_d10_traits(d10_lord):
@@ -411,14 +434,14 @@ if st.session_state.report_generated:
 
         # --- TAB 1: PROFILE & PLACEMENTS ---
         with t1:
-            st.markdown("### Astrological Blueprint")
+            st.markdown("### Astrological blueprint")
             st.markdown("This section maps the exact astronomical coordinates of the planets at your moment of birth. In Vedic Astrology, your Ascendant (Lagna) forms your physical self and operating framework, while your Moon Sign (Rasi) dictates your internal emotional processor.")
             
             st.markdown(f"<h3 style='text-align: center; margin-top:20px;'>{'Birth Chart (Rasi)' if LANG=='English' else 'ராசி சக்கரம்'}</h3>", unsafe_allow_html=True)
             st.markdown(get_south_indian_chart_html(p_pos, lagna_rasi, "ராசி சக்கரம்" if LANG=="Tamil" else "Rasi Chart", LANG), unsafe_allow_html=True)
             
-            st.markdown("#### Core Planetary Alignments")
-            st.markdown("<span style='font-size: 13px; color: gray;'>This table displays the exact dignity and status of your planetary placements. 'Exalted' planets act as your superpowers, while 'Neecha' (debilitated) planets show areas requiring conscious development.</span>", unsafe_allow_html=True)
+            st.markdown("### Core planetary alignments")
+            st.markdown("This table displays the exact dignity and status of your planetary placements. 'Exalted' planets act as your superpowers, while 'Neecha' (debilitated) planets show areas requiring conscious development.")
             
             headers = ["கிரகம்", "ராசி", "பாவம்", "பலம்", "நிலை"] if LANG == "Tamil" else ["Planet", "Rasi", "House", "Dignity", "Status"]
             table_md = f"<table style='width: 100%; margin: 20px auto; border-collapse: collapse; font-family: sans-serif; font-size: 15px; text-align: center;'><tr style='background-color: #f8f9fa; border-bottom: 2px solid #ccc;'><th style='padding: 12px 8px;'>{headers[0]}</th><th style='padding: 12px 8px;'>{headers[1]}</th><th style='padding: 12px 8px;'>{headers[2]}</th><th style='padding: 12px 8px;'>{headers[3]}</th><th style='padding: 12px 8px;'>{headers[4]}</th></tr>"
@@ -442,10 +465,10 @@ if st.session_state.report_generated:
             sorted_houses = sorted([(sav_scores[(lagna_rasi-1+i)%12], i+1) for i in range(12)], key=lambda x: x[0], reverse=True)
             with c1:
                 st.markdown(f"<h4 style='color: #27ae60; margin-bottom: 10px;'>{'அதிக பலம் பெற்ற பாவங்கள்' if LANG=='Tamil' else 'Top Power Zones'}</h4>", unsafe_allow_html=True)
-                for s, h in sorted_houses[:3]: st.markdown(get_house_strength_analysis(h, s, LANG))
+                for s, h in sorted_houses[:3]: st.markdown(get_local_house_analysis(h, s, LANG), unsafe_allow_html=True)
             with c2:
                 st.markdown(f"<h4 style='color: #e74c3c; margin-bottom: 10px;'>{'கவனம் தேவைப்படும் பாவங்கள்' if LANG=='Tamil' else 'Top Challenge Zones'}</h4>", unsafe_allow_html=True)
-                for s, h in sorted_houses[-3:]: st.markdown(get_house_strength_analysis(h, s, LANG))
+                for s, h in sorted_houses[-3:]: st.markdown(get_local_house_analysis(h, s, LANG), unsafe_allow_html=True)
 
         # --- TAB 3: THE EXECUTIVE PLAYBOOK ---
         with t3:
@@ -522,11 +545,11 @@ if st.session_state.report_generated:
             
             playbook_html = f"""
 <div style="padding: 10px 0; color: #333; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
-<h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 1: The Operating System</h2>
+<h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 1: The core drive</h2>
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
 <div style="background: #fff; border: 1px solid #eaeaea; border-top: 4px solid {core_color}; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
 <div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Atmakaraka:</b> Core Driver</div>
-<div style="font-size: 18px; font-weight: bold; color: {core_color}; margin-bottom: 10px;">{ennea_data['ak_planet']} ({ennea_data['ak_type']})</div>
+<div style="font-size: 18px; font-weight: bold; color: {core_color}; margin-bottom: 10px;">{ennea_data['ak_planet']}</div>
 <div style="font-size: 14px; color: #444; line-height: 1.5;">{ennea_data['ak_coaching']}</div>
 </div>
 <div style="background: #fff; border: 1px solid #eaeaea; border-top: 4px solid {wing_color}; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
@@ -545,12 +568,12 @@ if st.session_state.report_generated:
 <div style="font-size: 14px; color: #444; line-height: 1.5;">{ennea_data['stress_coaching']}</div>
 </div>
 </div>
-<h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 2: The Zone of Genius</h2>
+<h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 2: The zone of genius</h2>
 <div style="margin-bottom: 30px;">
 {format_md(edu_txt)}
 {format_md(career_txt)}
 </div>
-<h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 3: The Karmic Directive</h2>
+<h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 3: The karmic directive</h2>
 <div style="display: flex; gap: 20px; margin-bottom: 30px;">
 <div style="flex: 1; background-color: #fafafa; border: 1px solid #eee; padding: 20px; border-radius: 6px;">
 <h4 style="color: #34495e; margin-top: 0; margin-bottom: 10px; font-size: 16px;">Zone of Ambition (Rahu in H{rahu_h})</h4>
@@ -561,7 +584,7 @@ if st.session_state.report_generated:
 <p style="font-size: 14px; color: #444; margin: 0; line-height: 1.5;">This is your area of innate mastery. Specifically, this points to <b>{ketu_domain}</b>. You are already naturally gifted here, but obsessing over it will stall your career. Delegate these tasks and use them only as a foundational strength.</p>
 </div>
 </div>
-<h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 4: The 3 Rules for Success</h2>
+<h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 4: The 3 rules for success</h2>
 <div style="background-color: #e8f6f3; border: 1px solid #d1f2eb; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
 <ol style="margin: 0; padding-left: 20px; font-size: 15px; color: #111; line-height: 1.6;">
 <li style="margin-bottom: 12px;"><b>Protect Your Energy:</b> {coaching_rules[0]}</li>
@@ -569,8 +592,8 @@ if st.session_state.report_generated:
 <li><b>The Ultimate Metric:</b> {coaching_rules[2]}</li>
 </ol>
 </div>
-<h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 5: The Cognitive Mechanics</h2>
-<p style="font-size: 14px; color: #666; margin-bottom: 25px;">While your Core Drive (Phase 1) explains <i>why</i> you act, your MBTI framework (<b>{mbti_data['code']}</b>) explains <i>how</i> your brain naturally processes data to get there.</p>
+<h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 5: The cognitive mechanics</h2>
+<p style="font-size: 14px; color: #666; margin-bottom: 25px;">While your Core Drive (Phase 1) explains <i>why</i> you act, your Cognitive mechanics (<b>{mbti_data['code']}</b>) explains <i>how</i> your brain naturally processes data to get there.</p>
 <div style="max-width: 650px; margin: 0 auto; padding: 10px 0;">
 {draw_mbti_bar_html("Energy Orientation", e_txt, "EXTRAVERTED", "INTROVERTED", mbti_data['extro_pct'])}
 {draw_mbti_bar_html("Information Processing", s_txt, "SENSING", "INTUITIVE", 100 - mbti_data['int_pct'])}
@@ -583,6 +606,9 @@ if st.session_state.report_generated:
 
         # --- TAB 4: LOVE & HEALTH ---
         with t4:
+            st.markdown("### Deep Navamsa & Partnerships")
+            st.markdown("This chart represents your deep subconscious, the second half of your life, and the fundamental energetic dynamics of your long-term partnerships.")
+            st.markdown(f"<h3 style='text-align: center; margin-top:20px;'>{'நவாம்ச சக்கரம் (Navamsa)' if LANG=='Tamil' else 'Destiny Chart (Navamsa)'}</h3>", unsafe_allow_html=True)
             st.markdown(get_south_indian_chart_html(p_d9, d9_lagna, "நவாம்சம்" if LANG=="Tamil" else "Navamsa", LANG), unsafe_allow_html=True)
             st.divider()
             for line in love_txt: st.markdown(line)
@@ -601,7 +627,7 @@ if st.session_state.report_generated:
 
         # --- TAB 6: ROADMAP (Strategic Timeline) ---
         with t6:
-            st.markdown("### Strategic Timeline & Mahadashas")
+            st.markdown("### Strategic timeline & mahadashas")
             
             if pd_info:
                 st.markdown(f"""
@@ -642,7 +668,6 @@ if st.session_state.report_generated:
 
             md_table_html = f"<table style='width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 14px; margin-top: 20px;'><tr style='border-bottom: 2px solid #ddd; background-color: #fdfdfd;'><th style='padding: 12px 8px; text-align: left; width: 10%; white-space: nowrap;'>Age</th><th style='padding: 12px 8px; text-align: left; width: 12%; white-space: nowrap;'>Years</th><th style='padding: 12px 8px; text-align: left; width: 15%;'>Dasha</th><th style='padding: 12px 8px; text-align: left; width: 63%;'>Context & Prediction</th></tr>"
             for row in mahadasha_data:
-                # Format years to stay on one line
                 years_one_line = row['Years'].replace(' - ', ' &ndash; ')
                 rich_context = dasha_expanded_context.get(row['Mahadasha'], row['Prediction'])
                 md_table_html += f"<tr style='border-bottom: 1px solid #eee;'><td style='padding: 12px 8px; vertical-align: top; white-space: nowrap;'>{row['Age (From-To)']}</td><td style='padding: 12px 8px; vertical-align: top; white-space: nowrap;'>{years_one_line}</td><td style='padding: 12px 8px; vertical-align: top; color: {planet_colors.get(row['Mahadasha'], '#333')}; font-weight: bold;'>{row['Mahadasha']}</td><td style='padding: 12px 8px; vertical-align: top; line-height: 1.5;'>{rich_context}</td></tr>"
@@ -652,6 +677,13 @@ if st.session_state.report_generated:
         # --- TAB 7: ORACLE ---
         with t7:
             st.subheader("💬 Ask the AI Astrologer" if LANG == "English" else "💬 AI ஜோதிடரிடம் கேளுங்கள்")
+            
+            c_chat, c_clear = st.columns([4, 1])
+            with c_clear:
+                if st.button("🗑️ Clear chat history", use_container_width=True):
+                    st.session_state.messages = []
+                    st.rerun()
+            
             chat_container = st.container()
             with chat_container:
                 for msg in st.session_state.messages:
@@ -665,22 +697,24 @@ if st.session_state.report_generated:
                         try:
                             genai.configure(api_key=API_KEY)
                             
-                            # Dynamic robust model selection to prevent 404 crashes
+                            # Dynamic robust model selection to prevent 404/deprecation crashes
                             valid_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-                            target_model = 'gemini-pro' # Ultimate safe fallback
+                            target_model = 'gemini-1.5-flash-latest' # Safe modern default
                             for m in valid_models:
-                                if 'gemini-1.5-flash-latest' in m:
+                                if 'gemini-2.0-flash' in m:
                                     target_model = m
                                     break
-                                elif 'gemini-2.0-flash' in m:
+                                elif 'gemini-1.5-flash-latest' in m:
                                     target_model = m
                                     break
-                                elif 'gemini-1.5-pro' in m:
-                                    target_model = m
 
                             model = genai.GenerativeModel(target_model)
                             response = model.generate_content(f"Data: Lagna {ZODIAC[lagna_rasi]}, Moon {ZODIAC[moon_rasi]}. User says: {prompt_input}")
                             st.markdown(response.text)
                             st.session_state.messages.append({"role": "assistant", "content": response.text})
-                        except Exception as e: st.error(f"AI Generation Failed: Check API Key or Model access. Details: {e}")
+                        except Exception as e:
+                            if "429" in str(e):
+                                st.error("⚠️ **Error 429: AI Quota Exceeded.** You have hit your free-tier limit for the Gemini API today. Please check your Google AI Studio billing/limits or try again tomorrow.")
+                            else:
+                                st.error(f"⚠️ AI Generation Failed. Details: {e}")
                 st.rerun()
