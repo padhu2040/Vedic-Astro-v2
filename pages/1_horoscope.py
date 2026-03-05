@@ -4,6 +4,8 @@ from datetime import datetime, time
 import google.generativeai as genai
 from supabase import create_client
 import plotly.graph_objects as go
+import urllib.parse
+import re
 
 # --- IMPORTS FROM OUR CUSTOM ENGINES ---
 from astro_engine import (
@@ -54,15 +56,13 @@ def load_profiles_from_db():
         except: pass
     return profiles
 
-# --- 360 DEGREE MBTI & EXECUTIVE PERSONA ENGINE ---
+# --- 360 DEGREE MBTI & ENNEAGRAM ENGINE ---
 def generate_360_mbti_persona(p_pos, lagna_rasi, sav_scores):
-    # 1. E vs I
     fire_air = [1, 3, 5, 7, 9, 11]
     extro_score = sum(1 for p, r in p_pos.items() if r in fire_air)
     extro_pct = int((extro_score / len(p_pos)) * 100) if len(p_pos) > 0 else 50
     letter_1 = "E" if extro_pct >= 50 else "I"
 
-    # 2. S vs N
     earth_signs = [2, 6, 10]
     sens_score = sum(1.5 for p, r in p_pos.items() if r in earth_signs)
     if p_pos.get("Saturn") in earth_signs: sens_score += 1
@@ -70,7 +70,6 @@ def generate_360_mbti_persona(p_pos, lagna_rasi, sav_scores):
     int_pct = 100 - sens_pct
     letter_2 = "S" if sens_pct > 50 else "N"
 
-    # 3. T vs F
     think_pct = 50
     if p_pos.get("Moon", 1) in [4, 8, 12]: think_pct -= 15 
     if p_pos.get("Venus", 1) in [4, 8, 12]: think_pct -= 10
@@ -79,7 +78,6 @@ def generate_360_mbti_persona(p_pos, lagna_rasi, sav_scores):
     think_pct = max(10, min(90, think_pct))
     letter_3 = "T" if think_pct >= 50 else "F"
 
-    # 4. J vs P
     mutable_signs = [3, 6, 9, 12]
     perceiving_score = sum(1 for p, r in p_pos.items() if r in mutable_signs)
     perceiving_pct = int((perceiving_score / len(p_pos)) * 100)
@@ -88,7 +86,6 @@ def generate_360_mbti_persona(p_pos, lagna_rasi, sav_scores):
 
     mbti_code = f"{letter_1}{letter_2}{letter_3}{letter_4}"
 
-    # THE 16 TYPES: 360-DEGREE 2ND PERSON DESCRIPTIONS
     mbti_profiles = {
         "INTJ": {"title": "The Architect", "desc": "You are a strategic, fiercely independent visionary. You approach life as a giant chessboard, always planning several moves ahead. You thrive on turning complex theories into actionable, high-level systems."},
         "INTP": {"title": "The Logician", "desc": "You are an innovative and deeply analytical thinker. You draw energy from unraveling the underlying principles of the universe, preferring abstract concepts and relentless intellectual exploration over mundane routines."},
@@ -108,20 +105,62 @@ def generate_360_mbti_persona(p_pos, lagna_rasi, sav_scores):
         "ESFP": {"title": "The Entertainer", "desc": "You are spontaneous, highly energetic, and deeply observant. Life is a stage to you, and you draw immense energy from engaging with your environment and bringing joy to the people around you."}
     }
     
-    # PROFESSIONAL FOCUS
     corp_score = sav_scores[(lagna_rasi - 1 + 5) % 12]
     biz_score = sav_scores[(lagna_rasi - 1 + 6) % 12]
     prof_text = "Professionally, you possess a natural entrepreneurial spirit. You are built for equity, independent ventures, and leveraging strategic partnerships over standard employment." if biz_score > corp_score else "Professionally, you have a massive competitive advantage in structured corporate environments. You easily out-work rivals and thrive in complex hierarchies."
-
     profile = mbti_profiles.get(mbti_code, {"title": "The Strategist", "desc": "You are a highly analytical and adaptable individual."})
 
     return {
-        "code": mbti_code,
-        "title": profile["title"],
-        "desc": profile["desc"],
-        "extro_pct": extro_pct, "int_pct": int_pct, "think_pct": think_pct, "judging_pct": judging_pct,
-        "prof_text": prof_text
+        "code": mbti_code, "title": profile["title"], "desc": profile["desc"],
+        "extro_pct": extro_pct, "int_pct": int_pct, "think_pct": think_pct, "judging_pct": judging_pct, "prof_text": prof_text
     }
+
+def get_enneagram_data(p_lon_absolute):
+    degrees = {}
+    for p in ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"]:
+        if p in p_lon_absolute:
+            deg = p_lon_absolute[p] % 30
+            if p in ["Rahu", "Ketu"]: deg = 30 - deg
+            degrees[p] = deg
+            
+    ak = max(degrees, key=degrees.get)
+    
+    enneagram_map = {
+        "Saturn": ("Type 1: The Reformer", "To be good, balanced, and have integrity.", "Being corrupt, evil, or defective.", "Operates on a strict internal compass of right and wrong, constantly striving for structural perfection."),
+        "Moon": ("Type 2: The Helper", "To feel loved and needed.", "Being unwanted or unworthy of being loved.", "Draws energy from caring for others and maintaining deep emotional bonds."),
+        "Sun": ("Type 3: The Achiever", "To feel valuable, successful, and admired.", "Being worthless or failing in the eyes of others.", "Inherently driven to rise to the top and be recognized."),
+        "Ketu": ("Type 4: The Individualist", "To find themselves and their unique significance.", "Having no identity or personal significance.", "Feels fundamentally different from the rest of the world and seeks authentic self-expression."),
+        "Mercury": ("Type 5: The Investigator", "To be capable and competent.", "Being useless, helpless, or incapable.", "Withdraws into the mind to master complex subjects and understand how the universe works."),
+        "Venus": ("Type 6: The Loyalist", "To have security, support, and guidance.", "Being without support and guidance.", "Seeks security through strong, loyal partnerships and alliance-building."),
+        "Rahu": ("Type 7: The Enthusiast", "To be happy, fully engaged, and experience everything.", "Being deprived, trapped, or missing out.", "Constantly chasing the next big thrill, expanding horizons, and avoiding boredom at all costs."),
+        "Mars": ("Type 8: The Challenger", "To protect themselves and be in control of their own life.", "Being harmed or controlled by others.", "Fiercely independent, aggressively protective, and utterly unafraid of confrontation."),
+        "Jupiter": ("Type 9: The Peacemaker", "To have inner stability and peace of mind.", "Loss, fragmentation, and conflict.", "Seeks to maintain a harmonious, unified environment and diffuses tension.")
+    }
+    return ak, enneagram_map.get(ak, ("Type 3: The Achiever", "To feel valuable and successful.", "Failure.", "Driven to succeed."))
+
+def get_coaching_rules(sav_scores, lagna_rasi, current_md, ennea_desire):
+    lowest_house_idx = min(range(12), key=lambda i: sav_scores[(lagna_rasi - 1 + i) % 12])
+    lowest_house = lowest_house_idx + 1
+    
+    house_tips = {
+        1: "Protect your personal vitality; do not burn out trying to be everything to everyone.",
+        2: "Systematize your finances. Avoid impulsive resource allocation when stressed.",
+        3: "Communicate clearly and do not hesitate to take calculated executive risks.",
+        4: "Fiercely protect your private time and home life from professional intrusion.",
+        5: "Delegate repetitive tasks; your bottleneck is trying to do all the creative work yourself.",
+        6: "You absorb workplace stress easily. Build strict boundaries with toxic corporate environments.",
+        7: "Do not compromise your vision just to keep the peace in strategic partnerships.",
+        8: "Embrace sudden changes in the market instead of resisting necessary transformations.",
+        9: "Stay open to new philosophies; avoid rigid dogmatism in your strategic approach.",
+        10: "Patience is key. True authority takes time to build; do not rush the executive process.",
+        11: "Audit your network. Cut out professional connections that drain your energy rather than providing ROI.",
+        12: "Prioritize deep rest. You are prone to burnout from poor boundary setting."
+    }
+    
+    rule_1 = house_tips.get(lowest_house, "Maintain structural discipline.")
+    rule_2 = f"You are currently operating in a {current_md} Mahadasha phase. Align your immediate goals with the energy of this planet rather than forcing outcomes." if current_md else "Focus on mastering your current operational phase before expanding."
+    rule_3 = f"Success for you is not just financial wealth; your ultimate metric for a life well-lived is {ennea_desire.lower()}"
+    return [rule_1, rule_2, rule_3]
 
 
 # --- UI HEADER ---
@@ -199,9 +238,7 @@ if st.session_state.report_generated:
             h = (r1 - lagna_rasi + 1) if (r1 - lagna_rasi + 1) > 0 else (r1 - lagna_rasi + 1) + 12
             dig = get_dignity(p, r1)
             status = "VARGOTTAMA" if r1 == p_d9[p] else "ROYAL" if dig == "Exalted" else "WEAK" if dig == "Neecha" else "Avg"
-            
-            p_name = t_p.get(p, p) if LANG == "Tamil" else t_p_eng.get(p, p)
-            master_table.append({"Planet": p_name, "Rasi": ZODIAC_TA.get(r1, "") if LANG=="Tamil" else ZODIAC[r1], "House": h, "Bhava": bhava_h, "Dignity": dig, "Status": status})
+            master_table.append({"Planet": t_p.get(p, p) if LANG == "Tamil" else t_p_eng.get(p, p), "Rasi": ZODIAC_TA.get(r1, "") if LANG=="Tamil" else ZODIAC[r1], "House": h, "Bhava": bhava_h, "Dignity": dig, "Status": status})
 
         # KETU INTEGRATION
         ketu_lon = (p_lon_absolute["Rahu"] + 180) % 360
@@ -217,7 +254,7 @@ if st.session_state.report_generated:
         sav_scores = calculate_sav_score(p_pos, lagna_rasi)
         nak, lord = get_nakshatra_details(moon_res[0])
         
-        # UI DATA
+        # DATA COMPILATION
         karmic_txt = analyze_karmic_axis(p_pos, lagna_rasi, lang=LANG)
         yogas = scan_yogas(p_pos, lagna_rasi, lang=LANG)
         career_txt = analyze_career_professional(p_pos, d10_lagna, lagna_rasi, sav_scores, bhava_placements, lang=LANG)
@@ -232,12 +269,14 @@ if st.session_state.report_generated:
         t_data = get_transit_data_advanced(f_year)
         transit_texts = [f"**{p}:** {d['Rasi']} ➔ {d['NextSignIdx']} ({d['NextDate']})" for p, d in t_data.items()]
 
-        db_id = TAMIL_IDENTITY_DB if LANG == "Tamil" else identity_db
-        report_id_data = db_id.get(ZODIAC[lagna_rasi], list(db_id.values())[0])
+        report_id_data = (TAMIL_IDENTITY_DB if LANG == "Tamil" else identity_db).get(ZODIAC[lagna_rasi], {})
         guide = TAMIL_LIFESTYLE.get(RASI_RULERS.get(moon_rasi, "Moon"), {}) if LANG == "Tamil" else lifestyle_guidance.get(RASI_RULERS.get(moon_rasi, "Moon"), {})
 
-        # MBTI ENGINE CALL
+        # 360 ENGINES
         mbti_data = generate_360_mbti_persona(p_pos, lagna_rasi, sav_scores)
+        ak_planet, ennea_data = get_enneagram_data(p_lon_absolute)
+        current_md = pd_info['MD'] if pd_info else None
+        coaching_rules = get_coaching_rules(sav_scores, lagna_rasi, current_md, ennea_data[1])
 
         # --- TOP INFO SECTION ---
         c_left, c_right = st.columns([3, 1])
@@ -261,7 +300,7 @@ if st.session_state.report_generated:
                 st.download_button(label="📄 Download PDF Report" if LANG=="English" else "📄 ஜாதகத்தை பதிவிறக்க", data=pdf_bytes, file_name=f"{name_in}_Astro_Report.pdf", mime="application/pdf", type="primary")
 
         # --- UI TABS ---
-        tb_lbls = ["360° Persona", "Profile & Placements", "Destiny Radar", "Work & Intellect", "Love & Health", "Yogas & Forecast", "Roadmap", "💬 Oracle"] if LANG == "English" else ["360° ஆளுமை", "சுயவிவரம்", "அஷ்டகவர்க்கம்", "தொழில்", "திருமணம்", "யோகங்கள்", "தசா புக்தி", "💬 ஜோதிடர்"]
+        tb_lbls = ["360° Persona", "Profile & Placements", "Destiny Radar", "Executive Playbook", "Love & Health", "Yogas & Forecast", "Roadmap", "💬 Oracle"] if LANG == "English" else ["360° ஆளுமை", "சுயவிவரம்", "அஷ்டகவர்க்கம்", "நிர்வாக வியூகம்", "திருமணம்", "யோகங்கள்", "தசா புக்தி", "💬 ஜோதிடர்"]
         t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs(tb_lbls)
 
         # --- TAB 1: THE MONOCHROME MBTI PERSONA ---
@@ -292,7 +331,6 @@ if st.session_state.report_generated:
 </div>
 """
             
-            # Flush-left, clean HTML with no background/border, Archetype first, MBTI code smaller
             mbti_html = f"""
 <div style="padding: 20px 0; color: #333; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
 <h2 style="text-align: center; color: #111; font-size: 28px; margin-bottom: 4px; font-weight: 800;">{mbti_data['title']}</h2>
@@ -351,12 +389,57 @@ if st.session_state.report_generated:
                 st.markdown(f"<h4 style='color: #e74c3c; margin-bottom: 10px;'>{'கவனம் தேவைப்படும் பாவங்கள்' if LANG=='Tamil' else 'Top Challenge Zones'}</h4>", unsafe_allow_html=True)
                 for s, h in sorted_houses[-3:]: st.markdown(get_house_strength_analysis(h, s, LANG))
 
+        # --- TAB 4: THE NEW EXECUTIVE PLAYBOOK ---
         with t4:
-            for line in edu_txt: st.markdown(line)
-            st.divider()
-            for line in career_txt: st.markdown(line)
-            st.divider()
-            for line in karmic_txt: st.markdown(line)
+            rahu_h = (p_pos["Rahu"] - lagna_rasi + 1) if (p_pos["Rahu"] - lagna_rasi + 1) > 0 else (p_pos["Rahu"] - lagna_rasi + 1) + 12
+            ketu_h = (p_pos["Ketu"] - lagna_rasi + 1) if (p_pos["Ketu"] - lagna_rasi + 1) > 0 else (p_pos["Ketu"] - lagna_rasi + 1) + 12
+
+            def format_md(text_list):
+                return "<br>".join([re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', line) for line in text_list])
+            
+            playbook_html = f"""
+<div style="padding: 20px 0; color: #333; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+<h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 1: The Operating System</h2>
+<div style="background-color: #fdfdfa; border-left: 4px solid #f39c12; padding: 15px; margin-bottom: 25px;">
+<div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;">Primary Driver: {ennea_data[0]}</div>
+<div style="font-size: 14px; color: #555; margin-bottom: 8px;">{ennea_data[3]}</div>
+<ul style="margin: 0; padding-left: 20px; font-size: 14px;">
+<li><b>Core Desire (Why you act):</b> {ennea_data[1]}</li>
+<li><b>Core Saboteur (What you fear):</b> {ennea_data[2]}</li>
+</ul>
+</div>
+
+<h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 2: The Zone of Genius</h2>
+<div style="margin-bottom: 25px; font-size: 14.5px; line-height: 1.6; color: #444;">
+<h4 style="color: #111; margin-bottom: 5px;">Academic & Strategic Intellect</h4>
+<p>{format_md(edu_txt)}</p>
+<h4 style="color: #111; margin-bottom: 5px; margin-top: 15px;">Career & Authority Execution</h4>
+<p>{format_md(career_txt)}</p>
+</div>
+
+<h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 3: The Karmic Directive</h2>
+<div style="display: flex; gap: 20px; margin-bottom: 25px;">
+<div style="flex: 1; background-color: #fafafa; border: 1px solid #eee; padding: 15px; border-radius: 6px;">
+<h4 style="color: #34495e; margin-top: 0; margin-bottom: 8px;">Zone of Ambition (Rahu in H{rahu_h})</h4>
+<p style="font-size: 13.5px; color: #555; margin: 0;">This is where you must actively disrupt your comfort zone. Growth here feels unnatural but yields massive executive returns. Lean heavily into this sector to scale your success.</p>
+</div>
+<div style="flex: 1; background-color: #fafafa; border: 1px solid #eee; padding: 15px; border-radius: 6px;">
+<h4 style="color: #7f8c8d; margin-top: 0; margin-bottom: 8px;">Zone of Detachment (Ketu in H{ketu_h})</h4>
+<p style="font-size: 13.5px; color: #555; margin: 0;">This is your area of innate mastery. You are already naturally gifted here, but obsessing over it will stall your career. Delegate these tasks and use them only as a foundation.</p>
+</div>
+</div>
+
+<h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 4: The 3 Rules for Success</h2>
+<div style="background-color: #e8f6f3; border: 1px solid #d1f2eb; padding: 20px; border-radius: 8px;">
+<ol style="margin: 0; padding-left: 20px; font-size: 15px; color: #111; line-height: 1.6;">
+<li style="margin-bottom: 12px;"><b>Protect Your Energy:</b> {coaching_rules[0]}</li>
+<li style="margin-bottom: 12px;"><b>Current Focus:</b> {coaching_rules[1]}</li>
+<li><b>The Ultimate Metric:</b> {coaching_rules[2]}</li>
+</ol>
+</div>
+</div>
+"""
+            st.markdown(playbook_html, unsafe_allow_html=True)
 
         with t5:
             st.markdown(get_south_indian_chart_html(p_d9, d9_lagna, "நவாம்சம்" if LANG=="Tamil" else "Navamsa", LANG), unsafe_allow_html=True)
