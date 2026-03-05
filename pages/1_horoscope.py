@@ -407,11 +407,57 @@ if st.session_state.report_generated:
                 st.download_button(label="📄 Download PDF Report" if LANG=="English" else "📄 ஜாதகத்தை பதிவிறக்க", data=pdf_bytes, file_name=f"{name_in}_Astro_Report.pdf", mime="application/pdf", type="primary")
 
         # --- UI TABS ---
-        tb_lbls = ["360° Persona", "Profile & Placements", "Destiny Radar", "Executive Playbook", "Love & Health", "Yogas & Forecast", "Roadmap", "💬 Oracle"] if LANG == "English" else ["360° ஆளுமை", "சுயவிவரம்", "அஷ்டகவர்க்கம்", "நிர்வாக வியூகம்", "திருமணம்", "யோகங்கள்", "தசா புக்தி", "💬 ஜோதிடர்"]
-        t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs(tb_lbls)
+        tb_lbls = ["Executive Playbook", "Profile & Placements", "Destiny Radar", "Love & Health", "Yogas & Forecast", "Roadmap", "💬 Oracle"] if LANG == "English" else ["நிர்வாக வியூகம்", "சுயவிவரம்", "அஷ்டகவர்க்கம்", "திருமணம்", "யோகங்கள்", "தசா புக்தி", "💬 ஜோதிடர்"]
+        t4, t2, t3, t5, t6, t7, t8 = st.tabs(tb_lbls)
 
-        # --- TAB 1: THE MONOCHROME MBTI PERSONA ---
-        with t1:
+        # --- TAB 4: THE NEW EXECUTIVE PLAYBOOK ---
+        with t4:
+            rahu_h = (p_pos["Rahu"] - lagna_rasi + 1) if (p_pos["Rahu"] - lagna_rasi + 1) > 0 else (p_pos["Rahu"] - lagna_rasi + 1) + 12
+            ketu_h = (p_pos["Ketu"] - lagna_rasi + 1) if (p_pos["Ketu"] - lagna_rasi + 1) > 0 else (p_pos["Ketu"] - lagna_rasi + 1) + 12
+
+            house_domains = {
+                1: "personal identity, physical vitality, and self-projection",
+                2: "financial accumulation, verbal communication, and family assets",
+                3: "self-directed effort, networking, and calculated risk-taking",
+                4: "emotional security, domestic life, and foundational assets",
+                5: "creative intelligence, speculative ventures, and guiding subordinates",
+                6: "overcoming competition, operational routines, and problem-solving",
+                7: "strategic partnerships, negotiations, and public relations",
+                8: "managing crises, other people's resources, and deep research",
+                9: "high-level philosophy, long-term vision, and global expansion",
+                10: "absolute authority, career execution, and public reputation",
+                11: "massive scaling, professional networks, and achieving major milestones",
+                12: "deep rest, foreign environments, and behind-the-scenes strategy"
+            }
+            rahu_domain = house_domains.get(rahu_h, "this specific area of life")
+            ketu_domain = house_domains.get(ketu_h, "this specific area of life")
+
+            def format_md(text_list):
+                formatted = []
+                for line in text_list:
+                    line = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', line)
+                    if line.startswith('#### '):
+                        line = f"<div style='color: #2c3e50; margin: 20px 0 8px 0; font-size: 16px; font-weight: 700; border-bottom: 1px solid #eaeaea; padding-bottom: 4px;'>{line.replace('#### ', '')}</div>"
+                    elif line.startswith('### '):
+                        line = f"<div style='color: #2c3e50; margin: 20px 0 8px 0; font-size: 16px; font-weight: 700; border-bottom: 1px solid #eaeaea; padding-bottom: 4px;'>{line.replace('### ', '')}</div>"
+                    elif line.startswith('## '):
+                        line = f"<div style='color: #2c3e50; margin: 20px 0 8px 0; font-size: 18px; font-weight: 800; border-bottom: 1px solid #eaeaea; padding-bottom: 4px;'>{line.replace('## ', '')}</div>"
+                    elif line.startswith('> '):
+                        line = f"<div style='border-left: 3px solid #ccc; padding-left: 10px; color: #666; font-style: italic; margin-bottom: 12px;'>{line.replace('> ', '')}</div>"
+                    else:
+                        line = f"<div style='margin-bottom: 12px; color: #444; line-height: 1.6;'>{line}</div>"
+                    formatted.append(line)
+                return "".join(formatted)
+            
+            # Dynamic Colors for Grid Visual
+            en_planet_colors = {
+                "Sun": "#d35400", "Moon": "#95a5a6", "Mars": "#c0392b", 
+                "Mercury": "#27ae60", "Jupiter": "#f39c12", "Venus": "#8e44ad", 
+                "Saturn": "#2c3e50", "Rahu": "#34495e", "Ketu": "#7f8c8d"
+            }
+            core_color = en_planet_colors.get(ennea_data['ak_eng'], "#2c3e50")
+            wing_color = en_planet_colors.get(ennea_data['amk_eng'], "#3498db")
+            
             e_txt = "You draw energy from the external environment and social interaction." if mbti_data['extro_pct'] >= 50 else "You draw energy from your inner world of ideas and quiet reflection."
             s_txt = "You process information through tangible facts, details, and present reality." if (100 - mbti_data['int_pct']) > 50 else "You process information through patterns, future possibilities, and abstract concepts."
             t_txt = "You make decisions based on objective logic, structure, and impersonal analysis." if mbti_data['think_pct'] >= 50 else "You make decisions based on personal values, empathy, and social harmony."
@@ -438,33 +484,77 @@ if st.session_state.report_generated:
 </div>
 """
             
-            mbti_html = f"""
-<div style="padding: 20px 0; color: #333; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
-<h2 style="text-align: center; color: #111; font-size: 28px; margin-bottom: 4px; font-weight: 800;">{mbti_data['title']}</h2>
-<div style="text-align: center; color: #7f8c8d; font-size: 14px; font-weight: bold; letter-spacing: 2px; margin-bottom: 8px;">{mbti_data['code']}</div>
-<p style="text-align: center; color: #666; font-size: 15px; margin-top: 0; font-style: italic;">Your core psychological operating system.</p>
-<hr style="border: 0; border-top: 1px solid #EBE6DC; margin: 30px 0;">
-<div style="display: flex; gap: 40px; margin-bottom: 30px;">
-<div style="flex: 1;">
-<h3 style="color: #111; margin-top: 0; border-bottom: 2px solid #2c3e50; padding-bottom: 5px; display: inline-block; font-size: 18px;">The Core Identity</h3>
-<p style="line-height: 1.6; font-size: 15px; color: #444;">{mbti_data['desc']}</p>
+            # The Full Executive Playbook HTML completely flush-left
+            playbook_html = f"""
+<div style="padding: 10px 0; color: #333; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+
+<h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 1: The Operating System</h2>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+    <div style="background: #fff; border: 1px solid #eaeaea; border-top: 4px solid {core_color}; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+        <div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Atmakaraka:</b> Core Driver</div>
+        <div style="font-size: 18px; font-weight: bold; color: {core_color}; margin-bottom: 10px;">{ennea_data['ak_planet']} ({ennea_data['ak_type']})</div>
+        <div style="font-size: 14px; color: #444; line-height: 1.5;">{ennea_data['ak_coaching']}</div>
+    </div>
+    
+    <div style="background: #fff; border: 1px solid #eaeaea; border-top: 4px solid {wing_color}; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+        <div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Amatyakaraka:</b> Execution Wing</div>
+        <div style="font-size: 18px; font-weight: bold; color: {wing_color}; margin-bottom: 10px;">{ennea_data['amk_planet']}</div>
+        <div style="font-size: 14px; color: #444; line-height: 1.5;">{ennea_data['amk_coaching']}</div>
+    </div>
+    
+    <div style="background: #f9fbf9; border: 1px solid #eaeaea; border-left: 4px solid #27ae60; padding: 20px; border-radius: 8px;">
+        <div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Ucha:</b> Growth Path</div>
+        <div style="font-size: 16px; font-weight: bold; color: #27ae60; margin-bottom: 10px;">{ennea_data['growth_planet']}</div>
+        <div style="font-size: 14px; color: #444; line-height: 1.5;">{ennea_data['growth_coaching']}</div>
+    </div>
+
+    <div style="background: #fdfaf9; border: 1px solid #eaeaea; border-left: 4px solid #e74c3c; padding: 20px; border-radius: 8px;">
+        <div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Neecha:</b> Stress Path</div>
+        <div style="font-size: 16px; font-weight: bold; color: #c0392b; margin-bottom: 10px;">{ennea_data['stress_planet']}</div>
+        <div style="font-size: 14px; color: #444; line-height: 1.5;">{ennea_data['stress_coaching']}</div>
+    </div>
 </div>
-<div style="flex: 1;">
-<h3 style="color: #111; margin-top: 0; border-bottom: 2px solid #2c3e50; padding-bottom: 5px; display: inline-block; font-size: 18px;">Professional Focus</h3>
-<p style="line-height: 1.6; font-size: 15px; color: #444;">{mbti_data['prof_text']}</p>
+
+<h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 2: The Zone of Genius</h2>
+<div style="margin-bottom: 30px;">
+{format_md(edu_txt)}
+{format_md(career_txt)}
+</div>
+
+<h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 3: The Karmic Directive</h2>
+<div style="display: flex; gap: 20px; margin-bottom: 30px;">
+<div style="flex: 1; background-color: #fafafa; border: 1px solid #eee; padding: 20px; border-radius: 6px;">
+<h4 style="color: #34495e; margin-top: 0; margin-bottom: 10px; font-size: 16px;">Zone of Ambition (Rahu in H{rahu_h})</h4>
+<p style="font-size: 14px; color: #444; margin: 0; line-height: 1.5;">This is where you must actively disrupt your comfort zone. Specifically, this points to <b>{rahu_domain}</b>. Growth here feels unnatural but yields massive executive returns. Lean heavily into this sector to scale your success.</p>
+</div>
+<div style="flex: 1; background-color: #fafafa; border: 1px solid #eee; padding: 20px; border-radius: 6px;">
+<h4 style="color: #7f8c8d; margin-top: 0; margin-bottom: 10px; font-size: 16px;">Zone of Detachment (Ketu in H{ketu_h})</h4>
+<p style="font-size: 14px; color: #444; margin: 0; line-height: 1.5;">This is your area of innate mastery. Specifically, this points to <b>{ketu_domain}</b>. You are already naturally gifted here, but obsessing over it will stall your career. Delegate these tasks and use them only as a foundational strength.</p>
 </div>
 </div>
-<hr style="border: 0; border-top: 1px solid #EBE6DC; margin: 30px 0;">
-<h3 style="text-align: center; color: #111; margin-bottom: 30px; font-size: 20px;">Cognitive Sliders</h3>
-<div style="max-width: 650px; margin: 0 auto;">
+
+<h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 4: The 3 Rules for Success</h2>
+<div style="background-color: #e8f6f3; border: 1px solid #d1f2eb; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+<ol style="margin: 0; padding-left: 20px; font-size: 15px; color: #111; line-height: 1.6;">
+<li style="margin-bottom: 12px;"><b>Protect Your Energy:</b> {coaching_rules[0]}</li>
+<li style="margin-bottom: 12px;"><b>Current Focus:</b> {coaching_rules[1]}</li>
+<li><b>The Ultimate Metric:</b> {coaching_rules[2]}</li>
+</ol>
+</div>
+
+<h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 5: The Cognitive Mechanics</h2>
+<p style="font-size: 14px; color: #666; margin-bottom: 25px;">While your Core Drive (Phase 1) explains <i>why</i> you act, your MBTI framework (<b>{mbti_data['code']}</b>) explains <i>how</i> your brain naturally processes data to get there.</p>
+<div style="max-width: 650px; margin: 0 auto; padding: 10px 0;">
 {draw_mbti_bar_html("Energy Orientation", e_txt, "EXTRAVERTED", "INTROVERTED", mbti_data['extro_pct'])}
 {draw_mbti_bar_html("Information Processing", s_txt, "SENSING", "INTUITIVE", 100 - mbti_data['int_pct'])}
 {draw_mbti_bar_html("Decision Making", t_txt, "THINKING", "FEELING", mbti_data['think_pct'])}
 {draw_mbti_bar_html("World Structure", j_txt, "JUDGING", "PERCEIVING", mbti_data['judging_pct'])}
 </div>
+
 </div>
 """
-            st.markdown(mbti_html, unsafe_allow_html=True)
+            st.markdown(playbook_html, unsafe_allow_html=True)
 
         with t2:
             st.markdown(f"<h3 style='text-align: center; margin-top:20px;'>{'Birth Chart (Rasi)' if LANG=='English' else 'ராசி சக்கரம்'}</h3>", unsafe_allow_html=True)
@@ -495,110 +585,6 @@ if st.session_state.report_generated:
             with c2:
                 st.markdown(f"<h4 style='color: #e74c3c; margin-bottom: 10px;'>{'கவனம் தேவைப்படும் பாவங்கள்' if LANG=='Tamil' else 'Top Challenge Zones'}</h4>", unsafe_allow_html=True)
                 for s, h in sorted_houses[-3:]: st.markdown(get_house_strength_analysis(h, s, LANG))
-
-        # --- TAB 4: THE NEW EXECUTIVE PLAYBOOK ---
-        with t4:
-            rahu_h = (p_pos["Rahu"] - lagna_rasi + 1) if (p_pos["Rahu"] - lagna_rasi + 1) > 0 else (p_pos["Rahu"] - lagna_rasi + 1) + 12
-            ketu_h = (p_pos["Ketu"] - lagna_rasi + 1) if (p_pos["Ketu"] - lagna_rasi + 1) > 0 else (p_pos["Ketu"] - lagna_rasi + 1) + 12
-
-            def format_md(text_list):
-                formatted = []
-                for line in text_list:
-                    line = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', line)
-                    if line.startswith('#### '):
-                        line = f"<h5 style='color: #2c3e50; margin-top: 15px; margin-bottom: 5px; font-size: 15px;'>{line.replace('#### ', '')}</h5>"
-                    elif line.startswith('### '):
-                        line = f"<h5 style='color: #2c3e50; margin-top: 15px; margin-bottom: 5px; font-size: 15px;'>{line.replace('### ', '')}</h5>"
-                    elif line.startswith('## '):
-                        line = f"<h4 style='color: #2c3e50; margin-top: 15px; margin-bottom: 5px; font-size: 16px;'>{line.replace('## ', '')}</h4>"
-                    elif line.startswith('> '):
-                        line = f"<div style='border-left: 3px solid #ccc; padding-left: 10px; color: #666; font-style: italic; margin-bottom: 5px;'>{line.replace('> ', '')}</div>"
-                    formatted.append(line)
-                return "<br>".join(formatted)
-            
-            # Dynamic Colors based on planets
-            en_planet_colors = {
-                "Sun": "#d35400", "Moon": "#95a5a6", "Mars": "#c0392b", 
-                "Mercury": "#27ae60", "Jupiter": "#f39c12", "Venus": "#8e44ad", 
-                "Saturn": "#2c3e50", "Rahu": "#34495e", "Ketu": "#7f8c8d"
-            }
-            core_color = en_planet_colors.get(ennea_data['ak_eng'], "#2c3e50")
-            wing_color = en_planet_colors.get(ennea_data['amk_eng'], "#3498db")
-            
-            playbook_html = f"""
-<div style="padding: 20px 0; color: #333; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
-
-<h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 1: The Operating System</h2>
-
-<div style="display: flex; gap: 30px; margin-bottom: 30px; align-items: center;">
-    
-<div style="flex: 0 0 250px; display: flex; justify-content: center;">
-<div style="width: 220px; height: 220px; border-radius: 50%; background: linear-gradient(to bottom, #2ecc71 50%, #e74c3c 50%); padding: 2px; display: flex; align-items: center; justify-content: center; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-<div style="width: 100%; height: 100%; background: #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: relative;">
-<div style="position: absolute; top: 6px; font-size: 10px; color: #27ae60; font-weight: normal; letter-spacing: 0.5px;">Growth (Ucha): {ennea_data['growth_planet']}</div>
-<div style="position: absolute; bottom: 6px; font-size: 10px; color: #c0392b; font-weight: normal; letter-spacing: 0.5px;">Stress (Neecha): {ennea_data['stress_planet']}</div>
-<div style="width: 150px; height: 150px; border-radius: 50%; border: 2px solid {wing_color}; display: flex; align-items: center; justify-content: center; position: relative; background: #ffffff;">
-<div style="position: absolute; top: 8px; font-size: 9px; font-weight: normal; color: {wing_color}; letter-spacing: 0.5px;">Wing: {ennea_data['amk_planet']}</div>
-<div style="width: 80px; height: 80px; border-radius: 50%; background: {core_color}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; text-align: center; font-size: 12px; line-height: 1.3; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-Core<br>{ennea_data['ak_planet']}
-</div>
-</div>
-</div>
-</div>
-</div>
-    
-<div style="flex: 1;">
-<div style="margin-bottom: 15px;">
-<div style="font-size: 16px; font-weight: bold; color: {core_color};">Core Driver: {ennea_data['ak_planet']} ({ennea_data['ak_type']})</div>
-<div style="font-size: 14px; color: #444; margin-top: 4px;">{ennea_data['ak_coaching']}</div>
-</div>
-<div style="margin-bottom: 15px;">
-<div style="font-size: 16px; font-weight: bold; color: {wing_color};">The Execution Wing: {ennea_data['amk_planet']}</div>
-<div style="font-size: 14px; color: #444; margin-top: 4px;">{ennea_data['amk_coaching']}</div>
-</div>
-</div>
-</div>
-
-<div style="display: flex; gap: 20px; margin-bottom: 30px;">
-<div style="flex: 1; background-color: #f9fbf9; border-left: 4px solid #2ecc71; padding: 15px;">
-<div style="font-size: 15px; font-weight: bold; color: #27ae60; margin-bottom: 5px;">Growth Path (Ucha): {ennea_data['growth_planet']}</div>
-<div style="font-size: 14px; color: #444;">{ennea_data['growth_coaching']}</div>
-</div>
-<div style="flex: 1; background-color: #fdfaf9; border-left: 4px solid #e74c3c; padding: 15px;">
-<div style="font-size: 15px; font-weight: bold; color: #c0392b; margin-bottom: 5px;">Stress Path (Neecha): {ennea_data['stress_planet']}</div>
-<div style="font-size: 14px; color: #444;">{ennea_data['stress_coaching']}</div>
-</div>
-</div>
-
-<h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 2: The Zone of Genius</h2>
-<div style="margin-bottom: 25px; font-size: 14.5px; line-height: 1.6; color: #444;">
-{format_md(edu_txt)}
-{format_md(career_txt)}
-</div>
-
-<h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 3: The Karmic Directive</h2>
-<div style="display: flex; gap: 20px; margin-bottom: 25px;">
-<div style="flex: 1; background-color: #fafafa; border: 1px solid #eee; padding: 15px; border-radius: 6px;">
-<h4 style="color: #34495e; margin-top: 0; margin-bottom: 8px;">Zone of Ambition (Rahu in H{rahu_h})</h4>
-<p style="font-size: 13.5px; color: #555; margin: 0;">This is where you must actively disrupt your comfort zone. Growth here feels unnatural but yields massive executive returns. Lean heavily into this sector to scale your success.</p>
-</div>
-<div style="flex: 1; background-color: #fafafa; border: 1px solid #eee; padding: 15px; border-radius: 6px;">
-<h4 style="color: #7f8c8d; margin-top: 0; margin-bottom: 8px;">Zone of Detachment (Ketu in H{ketu_h})</h4>
-<p style="font-size: 13.5px; color: #555; margin: 0;">This is your area of innate mastery. You are already naturally gifted here, but obsessing over it will stall your career. Delegate these tasks and use them only as a foundation.</p>
-</div>
-</div>
-
-<h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 4: The 3 Rules for Success</h2>
-<div style="background-color: #e8f6f3; border: 1px solid #d1f2eb; padding: 20px; border-radius: 8px;">
-<ol style="margin: 0; padding-left: 20px; font-size: 15px; color: #111; line-height: 1.6;">
-<li style="margin-bottom: 12px;"><b>Protect Your Energy:</b> {coaching_rules[0]}</li>
-<li style="margin-bottom: 12px;"><b>Current Focus:</b> {coaching_rules[1]}</li>
-<li><b>The Ultimate Metric:</b> {coaching_rules[2]}</li>
-</ol>
-</div>
-</div>
-"""
-            st.markdown(playbook_html, unsafe_allow_html=True)
 
         with t5:
             st.markdown(get_south_indian_chart_html(p_d9, d9_lagna, "நவாம்சம்" if LANG=="Tamil" else "Navamsa", LANG), unsafe_allow_html=True)
