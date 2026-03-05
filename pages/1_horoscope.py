@@ -115,7 +115,7 @@ def generate_360_mbti_persona(p_pos, lagna_rasi, sav_scores):
         "extro_pct": extro_pct, "int_pct": int_pct, "think_pct": think_pct, "judging_pct": judging_pct, "prof_text": prof_text
     }
 
-def get_enneagram_data(p_lon_absolute):
+def get_enneagram_data(p_lon_absolute, lang="English"):
     degrees = {}
     for p in ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"]:
         if p in p_lon_absolute:
@@ -148,19 +148,18 @@ def get_enneagram_data(p_lon_absolute):
         "Ketu": {"growth": "Jupiter", "stress": "Mercury"}
     }
     
-    ak_type, ak_desire = enneagram_map.get(ak, ("Type 3: The Achiever", "achieving success"))
-    amk_type = enneagram_map.get(amk, ("Type 5: The Investigator", ""))[0]
-    
     growth_planet = vd_map.get(ak, {}).get("growth", "Jupiter")
     stress_planet = vd_map.get(ak, {}).get("stress", "Saturn")
-    growth_type = enneagram_map.get(growth_planet, ("Type 9: The Peacemaker", ""))[0]
-    stress_type = enneagram_map.get(stress_planet, ("Type 1: The Reformer", ""))[0]
+    
+    # Coaching Text Generation in 2nd Person
+    growth_coaching = f"Your ultimate path to growth requires you to move toward the highest expression of {t_p.get(growth_planet, growth_planet)}. True authority will follow when you stop relying on your baseline instincts and begin cultivating this higher energy."
+    stress_coaching = f"Under severe executive stress, you disintegrate into the shadow of {t_p.get(stress_planet, stress_planet)}. You lose your natural decisive edge and begin operating from fear, adopting the toxic traits of this planetary energy."
 
     return {
-        "ak_planet": ak, "ak_type": ak_type, "ak_desire": ak_desire,
-        "amk_planet": amk, "amk_type": amk_type,
-        "growth_planet": growth_planet, "growth_type": growth_type,
-        "stress_planet": stress_planet, "stress_type": stress_type
+        "ak_planet": t_p.get(ak, ak), "ak_type": enneagram_map.get(ak)[0], "ak_desire": enneagram_map.get(ak)[1],
+        "amk_planet": t_p.get(amk, amk), "amk_type": enneagram_map.get(amk)[0],
+        "growth_planet": t_p.get(growth_planet, growth_planet), "growth_coaching": growth_coaching,
+        "stress_planet": t_p.get(stress_planet, stress_planet), "stress_coaching": stress_coaching
     }
 
 def get_coaching_rules(sav_scores, lagna_rasi, current_md, ennea_desire):
@@ -272,7 +271,7 @@ if st.session_state.report_generated:
         p_d9["Ketu"] = get_navamsa_chart(ketu_lon)
         bhava_placements["Ketu"] = determine_house(ketu_lon, bhava_cusps)
         k_h = (p_pos["Ketu"] - lagna_rasi + 1) if (p_pos["Ketu"] - lagna_rasi + 1) > 0 else (p_pos["Ketu"] - lagna_rasi + 1) + 12
-        master_table.append({"Planet": "Ketu" if LANG=="English" else "கேது", "Rasi": ZODIAC[p_pos["Ketu"]], "House": k_h, "Bhava": bhava_placements["Ketu"], "Dignity": get_dignity("Ketu", p_pos["Ketu"]), "Status": "Avg"})
+        master_table.append({"Planet": t_p.get("Ketu", "Ketu") if LANG=="Tamil" else "Ketu", "Rasi": ZODIAC[p_pos["Ketu"]], "House": k_h, "Bhava": bhava_placements["Ketu"], "Dignity": get_dignity("Ketu", p_pos["Ketu"]), "Status": "Avg"})
 
         p_pos["Lagna"] = lagna_rasi
         p_d9["Lagna"] = d9_lagna
@@ -299,7 +298,7 @@ if st.session_state.report_generated:
 
         # 360 ENGINES
         mbti_data = generate_360_mbti_persona(p_pos, lagna_rasi, sav_scores)
-        ennea_data = get_enneagram_data(p_lon_absolute)
+        ennea_data = get_enneagram_data(p_lon_absolute, lang=LANG)
         current_md = pd_info['MD'] if pd_info else None
         coaching_rules = get_coaching_rules(sav_scores, lagna_rasi, current_md, ennea_data['ak_desire'])
 
@@ -422,30 +421,47 @@ if st.session_state.report_generated:
             def format_md(text_list):
                 return "<br>".join([re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', line) for line in text_list])
             
+            # CSS based Concentric Visual
             playbook_html = f"""
 <div style="padding: 20px 0; color: #333; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
 
 <h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 1: The Operating System</h2>
 
-<div style="background-color: #fdfdfa; border-left: 4px solid #f39c12; padding: 15px; margin-bottom: 15px;">
-<div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;">Core Driver: {ennea_data['ak_type']} ({ennea_data['ak_planet']})</div>
-<div style="font-size: 13.5px; color: #7f8c8d; margin-bottom: 8px; font-style: italic;"><b>The Atmakaraka (Soul Planet):</b> In Vedic Astrology, this is the "King" of your chart with the highest degree. It represents your soul’s deepest driver and maps directly to your core Enneagram desire.</div>
-<ul style="margin: 0; padding-left: 20px; font-size: 14.5px;"><li>Your ultimate motivation is <b>{ennea_data['ak_desire']}</b>.</li></ul>
+<div style="display: flex; gap: 30px; margin-bottom: 30px; align-items: center;">
+    
+    <div style="flex: 0 0 250px; display: flex; justify-content: center;">
+        <div style="width: 220px; height: 220px; border-radius: 50%; border: 2px dashed #bdc3c7; display: flex; align-items: center; justify-content: center; position: relative;">
+            <div style="position: absolute; top: -10px; background: white; padding: 0 5px; font-size: 11px; font-weight: bold; color: #7f8c8d;">Outer Environment</div>
+            <div style="width: 150px; height: 150px; border-radius: 50%; border: 2px solid #3498db; display: flex; align-items: center; justify-content: center; position: relative; background: #f0f8ff;">
+                <div style="position: absolute; top: -10px; background: #f0f8ff; padding: 0 5px; font-size: 11px; font-weight: bold; color: #2980b9;">The Wing</div>
+                <div style="width: 80px; height: 80px; border-radius: 50%; background: #2c3e50; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; text-align: center; font-size: 13px; line-height: 1.2;">
+                    Core<br>{ennea_data['ak_planet']}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div style="flex: 1;">
+        <div style="margin-bottom: 15px;">
+            <div style="font-size: 16px; font-weight: bold; color: #2c3e50;">Core Driver: {ennea_data['ak_planet']} ({ennea_data['ak_type']})</div>
+            <div style="font-size: 14px; color: #555;"><b>Atmakaraka:</b> The planet with the highest degree in your chart. You act to satisfy this planet's deep desire: <i>{ennea_data['ak_desire']}</i>.</div>
+        </div>
+        <div style="margin-bottom: 15px;">
+            <div style="font-size: 16px; font-weight: bold; color: #2980b9;">The Execution Wing: {ennea_data['amk_planet']}</div>
+            <div style="font-size: 14px; color: #555;"><b>Amatyakaraka:</b> The second-highest degree. This is your "Prime Minister" that dictates the unique style and strategy you use to achieve your core desire.</div>
+        </div>
+    </div>
 </div>
 
-<div style="background-color: #fcfcfc; border-left: 4px solid #3498db; padding: 15px; margin-bottom: 15px;">
-<div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;">The Wing: {ennea_data['amk_type']} ({ennea_data['amk_planet']})</div>
-<div style="font-size: 13.5px; color: #7f8c8d; margin-bottom: 8px; font-style: italic;"><b>The Amatyakaraka (Minister Planet):</b> As the planet with the second-highest degree, this executes the King's orders. It acts as your Enneagram Wing, adding a unique flavor to how you achieve your goals.</div>
-</div>
-
-<div style="background-color: #f9fbf9; border-left: 4px solid #2ecc71; padding: 15px; margin-bottom: 15px;">
-<div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;">Growth Path: Integrates to {ennea_data['growth_type']} ({ennea_data['growth_planet']})</div>
-<div style="font-size: 13.5px; color: #7f8c8d; margin-bottom: 8px; font-style: italic;"><b>Ucha (Exaltation):</b> This is the sign where your Core Planet functions at its highest frequency. This reveals your path of integration—who you become when operating at your absolute best.</div>
-</div>
-
-<div style="background-color: #fdfaf9; border-left: 4px solid #e74c3c; padding: 15px; margin-bottom: 30px;">
-<div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;">Stress Path: Disintegrates to {ennea_data['stress_type']} ({ennea_data['stress_planet']})</div>
-<div style="font-size: 13.5px; color: #7f8c8d; margin-bottom: 8px; font-style: italic;"><b>Neecha (Debilitation):</b> This is where your core planet loses power. It maps to your path of disintegration—the reactive, toxic traits you adopt under severe executive stress.</div>
+<div style="display: flex; gap: 20px; margin-bottom: 30px;">
+    <div style="flex: 1; background-color: #f9fbf9; border-left: 4px solid #2ecc71; padding: 15px;">
+        <div style="font-size: 15px; font-weight: bold; color: #27ae60; margin-bottom: 5px;">Growth Path (Ucha): {ennea_data['growth_planet']}</div>
+        <div style="font-size: 14px; color: #444;">{ennea_data['growth_coaching']}</div>
+    </div>
+    <div style="flex: 1; background-color: #fdfaf9; border-left: 4px solid #e74c3c; padding: 15px;">
+        <div style="font-size: 15px; font-weight: bold; color: #c0392b; margin-bottom: 5px;">Stress Path (Neecha): {ennea_data['stress_planet']}</div>
+        <div style="font-size: 14px; color: #444;">{ennea_data['stress_coaching']}</div>
+    </div>
 </div>
 
 <h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 2: The Zone of Genius</h2>
