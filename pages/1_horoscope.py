@@ -406,11 +406,49 @@ if st.session_state.report_generated:
                 st.download_button(label="📄 Download PDF Report" if LANG=="English" else "📄 ஜாதகத்தை பதிவிறக்க", data=pdf_bytes, file_name=f"{name_in}_Astro_Report.pdf", mime="application/pdf", type="primary")
 
         # --- UI TABS ---
-        tb_lbls = ["Executive Playbook", "Profile & Placements", "Destiny Radar", "Love & Health", "Yogas & Forecast", "Roadmap", "💬 Oracle"] if LANG == "English" else ["நிர்வாக வியூகம்", "சுயவிவரம்", "அஷ்டகவர்க்கம்", "திருமணம்", "யோகங்கள்", "தசா புக்தி", "💬 ஜோதிடர்"]
-        t4, t2, t3, t5, t6, t7, t8 = st.tabs(tb_lbls)
+        tb_lbls = ["Profile & Placements", "Destiny Radar", "Executive Playbook", "Love & Health", "Yogas & Forecast", "Roadmap", "💬 Oracle"]
+        t1, t2, t3, t4, t5, t6, t7 = st.tabs(tb_lbls)
 
-        # --- TAB 4: THE NEW EXECUTIVE PLAYBOOK ---
-        with t4:
+        # --- TAB 1: PROFILE & PLACEMENTS ---
+        with t1:
+            st.markdown("### Astrological Blueprint")
+            st.markdown("This section maps the exact astronomical coordinates of the planets at your moment of birth. In Vedic Astrology, your Ascendant (Lagna) forms your physical self and operating framework, while your Moon Sign (Rasi) dictates your internal emotional processor.")
+            
+            st.markdown(f"<h3 style='text-align: center; margin-top:20px;'>{'Birth Chart (Rasi)' if LANG=='English' else 'ராசி சக்கரம்'}</h3>", unsafe_allow_html=True)
+            st.markdown(get_south_indian_chart_html(p_pos, lagna_rasi, "ராசி சக்கரம்" if LANG=="Tamil" else "Rasi Chart", LANG), unsafe_allow_html=True)
+            
+            st.markdown("#### Core Planetary Alignments")
+            st.markdown("<span style='font-size: 13px; color: gray;'>This table displays the exact dignity and status of your planetary placements. 'Exalted' planets act as your superpowers, while 'Neecha' (debilitated) planets show areas requiring conscious development.</span>", unsafe_allow_html=True)
+            
+            headers = ["கிரகம்", "ராசி", "பாவம்", "பலம்", "நிலை"] if LANG == "Tamil" else ["Planet", "Rasi", "House", "Dignity", "Status"]
+            table_md = f"<table style='width: 100%; margin: 20px auto; border-collapse: collapse; font-family: sans-serif; font-size: 15px; text-align: center;'><tr style='background-color: #f8f9fa; border-bottom: 2px solid #ccc;'><th style='padding: 12px 8px;'>{headers[0]}</th><th style='padding: 12px 8px;'>{headers[1]}</th><th style='padding: 12px 8px;'>{headers[2]}</th><th style='padding: 12px 8px;'>{headers[3]}</th><th style='padding: 12px 8px;'>{headers[4]}</th></tr>"
+            for row in master_table:
+                table_md += f"<tr style='border-bottom: 1px solid #eee;'><td style='padding: 12px 8px;'><b>{row['Planet']}</b></td><td style='padding: 12px 8px;'>{row['Rasi']}</td><td style='padding: 12px 8px;'>{row['House']}</td><td style='padding: 12px 8px;'>{row['Dignity']}</td><td style='padding: 12px 8px;'>{row['Status']}</td></tr>"
+            table_md += "</table>"
+            st.markdown(table_md, unsafe_allow_html=True)
+
+        # --- TAB 2: DESTINY RADAR ---
+        with t2:
+            house_meanings_en = ["Self & Vitality", "Wealth & Speech", "Courage & Network", "Home & Peace", "Intellect & Creativity", "Work & Obstacles", "Partnerships", "Transformation", "Wisdom & Luck", "Career & Authority", "Gains & Scaling", "Detachment & Loss"]
+            cats_labels = [f"H{i+1}: {house_meanings_en[i]}" for i in range(12)]
+            vals = [sav_scores[(lagna_rasi-1+i)%12] for i in range(12)]
+            text_colors = ['#27ae60' if v >= 30 else '#e74c3c' if v < 25 else '#333333' for v in vals]
+            fig_bar = go.Figure(data=[go.Bar(x=vals, y=cats_labels, orientation='h', marker_color='#bdc3c7', text=[f"<b>{v}</b>" for v in vals], textposition='outside', textfont=dict(color=text_colors, size=14))])
+            fig_bar.add_vline(x=28, line_width=2, line_dash="dash", line_color="#7f8c8d", annotation_text="Average (28)" if LANG=="English" else "சராசரி (28)", annotation_position="top right")
+            fig_bar.update_layout(yaxis=dict(autorange="reversed"), margin=dict(l=20, r=20, t=40, b=20), height=400)
+            st.plotly_chart(fig_bar, use_container_width=True)
+            
+            c1, c2 = st.columns(2)
+            sorted_houses = sorted([(sav_scores[(lagna_rasi-1+i)%12], i+1) for i in range(12)], key=lambda x: x[0], reverse=True)
+            with c1:
+                st.markdown(f"<h4 style='color: #27ae60; margin-bottom: 10px;'>{'அதிக பலம் பெற்ற பாவங்கள்' if LANG=='Tamil' else 'Top Power Zones'}</h4>", unsafe_allow_html=True)
+                for s, h in sorted_houses[:3]: st.markdown(get_house_strength_analysis(h, s, LANG))
+            with c2:
+                st.markdown(f"<h4 style='color: #e74c3c; margin-bottom: 10px;'>{'கவனம் தேவைப்படும் பாவங்கள்' if LANG=='Tamil' else 'Top Challenge Zones'}</h4>", unsafe_allow_html=True)
+                for s, h in sorted_houses[-3:]: st.markdown(get_house_strength_analysis(h, s, LANG))
+
+        # --- TAB 3: THE EXECUTIVE PLAYBOOK ---
+        with t3:
             rahu_h = (p_pos["Rahu"] - lagna_rasi + 1) if (p_pos["Rahu"] - lagna_rasi + 1) > 0 else (p_pos["Rahu"] - lagna_rasi + 1) + 12
             ketu_h = (p_pos["Ketu"] - lagna_rasi + 1) if (p_pos["Ketu"] - lagna_rasi + 1) > 0 else (p_pos["Ketu"] - lagna_rasi + 1) + 12
 
@@ -543,44 +581,16 @@ if st.session_state.report_generated:
 """
             st.markdown(playbook_html, unsafe_allow_html=True)
 
-        with t2:
-            st.markdown(f"<h3 style='text-align: center; margin-top:20px;'>{'Birth Chart (Rasi)' if LANG=='English' else 'ராசி சக்கரம்'}</h3>", unsafe_allow_html=True)
-            st.markdown(get_south_indian_chart_html(p_pos, lagna_rasi, "ராசி சக்கரம்" if LANG=="Tamil" else "Rasi Chart", LANG), unsafe_allow_html=True)
-            
-            headers = ["கிரகம்", "ராசி", "பாவம்", "பலம்", "நிலை"] if LANG == "Tamil" else ["Planet", "Rasi", "House", "Dignity", "Status"]
-            table_md = f"<table style='width: 80%; margin: 30px auto; border-collapse: collapse; font-family: sans-serif; font-size: 15px; text-align: center;'><tr style='background-color: #f8f9fa; border-bottom: 2px solid #ccc;'><th style='padding: 12px 8px;'>{headers[0]}</th><th style='padding: 12px 8px;'>{headers[1]}</th><th style='padding: 12px 8px;'>{headers[2]}</th><th style='padding: 12px 8px;'>{headers[3]}</th><th style='padding: 12px 8px;'>{headers[4]}</th></tr>"
-            for row in master_table:
-                table_md += f"<tr style='border-bottom: 1px solid #eee;'><td style='padding: 12px 8px;'><b>{row['Planet']}</b></td><td style='padding: 12px 8px;'>{row['Rasi']}</td><td style='padding: 12px 8px;'>{row['House']}</td><td style='padding: 12px 8px;'>{row['Dignity']}</td><td style='padding: 12px 8px;'>{row['Status']}</td></tr>"
-            table_md += "</table>"
-            st.markdown(table_md, unsafe_allow_html=True)
-
-        with t3:
-            p_lbl = "பாவம்" if LANG == "Tamil" else "H"
-            cats_labels = [f"{p_lbl} {i+1}" for i in range(12)]
-            vals = [sav_scores[(lagna_rasi-1+i)%12] for i in range(12)]
-            text_colors = ['#27ae60' if v >= 30 else '#e74c3c' if v < 25 else '#333333' for v in vals]
-            fig_bar = go.Figure(data=[go.Bar(x=vals, y=cats_labels, orientation='h', marker_color='#bdc3c7', text=[f"<b>{v}</b>" for v in vals], textposition='outside', textfont=dict(color=text_colors, size=14))])
-            fig_bar.add_vline(x=28, line_width=2, line_dash="dash", line_color="#7f8c8d", annotation_text="Average (28)" if LANG=="English" else "சராசரி (28)", annotation_position="top right")
-            fig_bar.update_layout(yaxis=dict(autorange="reversed"), margin=dict(l=20, r=20, t=40, b=20), height=400)
-            st.plotly_chart(fig_bar, use_container_width=True)
-            
-            c1, c2 = st.columns(2)
-            sorted_houses = sorted([(sav_scores[(lagna_rasi-1+i)%12], i+1) for i in range(12)], key=lambda x: x[0], reverse=True)
-            with c1:
-                st.markdown(f"<h4 style='color: #27ae60; margin-bottom: 10px;'>{'அதிக பலம் பெற்ற பாவங்கள்' if LANG=='Tamil' else 'Top Power Zones'}</h4>", unsafe_allow_html=True)
-                for s, h in sorted_houses[:3]: st.markdown(get_house_strength_analysis(h, s, LANG))
-            with c2:
-                st.markdown(f"<h4 style='color: #e74c3c; margin-bottom: 10px;'>{'கவனம் தேவைப்படும் பாவங்கள்' if LANG=='Tamil' else 'Top Challenge Zones'}</h4>", unsafe_allow_html=True)
-                for s, h in sorted_houses[-3:]: st.markdown(get_house_strength_analysis(h, s, LANG))
-
-        with t5:
+        # --- TAB 4: LOVE & HEALTH ---
+        with t4:
             st.markdown(get_south_indian_chart_html(p_d9, d9_lagna, "நவாம்சம்" if LANG=="Tamil" else "Navamsa", LANG), unsafe_allow_html=True)
             st.divider()
             for line in love_txt: st.markdown(line)
             st.divider()
             for line in health_txt: st.markdown(line)
 
-        with t6:
+        # --- TAB 5: YOGAS & FORECAST ---
+        with t5:
             for y in yogas:
                 st.markdown(f"#### {y['Name']}\n> **Type:** {y['Type']}\n\n{y['Description']}")
             st.divider()
@@ -589,12 +599,31 @@ if st.session_state.report_generated:
             st.divider()
             for txt in transit_texts: st.markdown(txt)
 
-        with t7:
+        # --- TAB 6: ROADMAP (Strategic Timeline) ---
+        with t6:
+            st.markdown("### Strategic Timeline & Mahadashas")
+            
             if pd_info:
-                st.markdown(f"#### {'IMMEDIATE FOCUS' if LANG=='English' else 'நடப்பு தசா புக்தி'}")
-                st.markdown(f"**{pd_info['Start']} to {pd_info['End']}**: {pd_info['PD']} ({pd_info['MD']} / {pd_info['AD']})")
+                st.markdown(f"""
+                <div style='background-color:#e8f6f3; padding:15px; border-left:4px solid #1abc9c; border-radius:4px; margin-bottom:20px; font-size:15px; color:#2c3e50;'>
+                    <b>Current Phase (Dasha/Bhukti):</b> You are running the <b>{pd_info['MD']}</b> Mahadasha and <b>{pd_info['AD']}</b> Antardasha until {pd_info['End']}.
+                </div>
+                """, unsafe_allow_html=True)
             
             planet_colors = {"Suriyan": "#d35400", "Chandran": "#95a5a6", "Sevvai": "#c0392b", "Budhan": "#27ae60", "Guru": "#f39c12", "Sukran": "#8e44ad", "Sani": "#2c3e50", "Rahu": "#34495e", "Ketu": "#7f8c8d"}
+            
+            dasha_expanded_context = {
+                "Suriyan": "This is a phase of intense visibility and authority. You will naturally gravitate towards leadership positions and expect recognition for your efforts. Build your personal brand and take decisive actions. However, you must actively manage your ego to avoid alienating key allies. Your relationship with authority figures takes center stage, requiring diplomacy.",
+                "Chandran": "A deeply emotional and intuitive phase. Your focus shifts from external conquest to internal security, home life, and emotional well-being. This is an excellent period for building strong teams, nurturing relationships, and dealing with the public. Adaptability is your greatest asset here. Real estate and domestic affairs often prosper.",
+                "Sevvai": "A high-octane period of aggressive execution and rapid scaling. You are infused with warrior energy, making this the perfect time to tackle massive obstacles and outmaneuver competitors. Patience will be extremely low; channel this aggressive energy into structured projects rather than interpersonal conflicts. Success comes through courage.",
+                "Rahu": "A karmic phase characterized by unconventional ambition and breaking boundaries. You will feel an intense, almost obsessive drive to succeed and expand your footprint. This period often brings sudden foreign opportunities, tech breakthroughs, and massive leaps in status. Beware of illusions; the growth is real, but you must stay grounded.",
+                "Guru": "A golden era of expansion, wisdom, and ethical growth. Wealth, mentorship, and opportunities flow with less resistance. It is a time to scale your vision, act as a strategic counselor, and accumulate assets. Legal and educational pursuits are highly favored. Avoid the trap of over-optimism or taking this luck for granted.",
+                "Sani": "The ultimate phase of structural discipline and delayed gratification. Saturn slows things down to test your foundations. Success here is mathematically guaranteed if you put in the grueling, patient work, but shortcuts will be punished. Build unshakeable infrastructure and master your craft through sheer endurance. Do not expect overnight results.",
+                "Budhan": "A highly stimulating period focused on intellect, communication, and commercial trade. Your analytical skills will be incredibly sharp, making this the ideal time for strategic planning, writing, and data-driven decision-making. Keep your nervous system in check, as the mental overdrive can lead to anxiety if not balanced with physical grounding.",
+                "Ketu": "A profound period of spiritual detachment and highly specialized mastery. You may feel a sudden disinterest in superficial social climbing. This is a time for deep, isolated research, backend development, and letting go of things that no longer serve you. Career pivots are common here as you seek deeper meaning. Let your expertise speak for itself.",
+                "Sukran": "A vibrant phase of aesthetic refinement, diplomacy, and material comfort. Your focus shifts to building elite alliances, enjoying the fruits of your labor, and cultivating harmonious environments. Wealth generation is strong, particularly through partnerships or arts. It is an excellent time for deepening relationships, provided you avoid superficial indulgences."
+            }
+
             dasha_names, start_years, durations = [], [], []
             for row in mahadasha_data:
                 dasha_names.append(row['Mahadasha'])
@@ -611,14 +640,17 @@ if st.session_state.report_generated:
             fig_timeline.update_layout(barmode='stack', height=150, margin=dict(l=0, r=0, t=10, b=20), xaxis=dict(range=[start_years[0], start_years[0]+120], tickformat="d"), yaxis=dict(showticklabels=False), showlegend=False)
             st.plotly_chart(fig_timeline, use_container_width=True)
 
-            md_table_html = f"<table style='width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 14px; margin-top: 20px;'><tr style='border-bottom: 2px solid #ddd; background-color: #fdfdfd;'><th style='padding: 10px 8px; text-align: left; width: 10%;'>Age</th><th style='padding: 10px 8px; text-align: left; width: 10%;'>Years</th><th style='padding: 10px 8px; text-align: left; width: 15%;'>Mahadasha</th><th style='padding: 10px 8px; text-align: left; width: 65%;'>Context & Prediction</th></tr>"
+            md_table_html = f"<table style='width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 14px; margin-top: 20px;'><tr style='border-bottom: 2px solid #ddd; background-color: #fdfdfd;'><th style='padding: 12px 8px; text-align: left; width: 10%; white-space: nowrap;'>Age</th><th style='padding: 12px 8px; text-align: left; width: 12%; white-space: nowrap;'>Years</th><th style='padding: 12px 8px; text-align: left; width: 15%;'>Dasha</th><th style='padding: 12px 8px; text-align: left; width: 63%;'>Context & Prediction</th></tr>"
             for row in mahadasha_data:
-                s_year, e_year = row['Years'].split(' - ')
-                md_table_html += f"<tr style='border-bottom: 1px solid #eee;'><td style='padding: 10px 8px; vertical-align: top;'>{row['Age (From-To)']}</td><td style='padding: 10px 8px; vertical-align: top;'>{s_year}<br>{e_year}</td><td style='padding: 10px 8px; vertical-align: top; color: {planet_colors.get(row['Mahadasha'], '#333')};'><b>{row['Mahadasha']}</b></td><td style='padding: 10px 8px; vertical-align: top;'>{row['Prediction']}</td></tr>"
+                # Format years to stay on one line
+                years_one_line = row['Years'].replace(' - ', ' &ndash; ')
+                rich_context = dasha_expanded_context.get(row['Mahadasha'], row['Prediction'])
+                md_table_html += f"<tr style='border-bottom: 1px solid #eee;'><td style='padding: 12px 8px; vertical-align: top; white-space: nowrap;'>{row['Age (From-To)']}</td><td style='padding: 12px 8px; vertical-align: top; white-space: nowrap;'>{years_one_line}</td><td style='padding: 12px 8px; vertical-align: top; color: {planet_colors.get(row['Mahadasha'], '#333')}; font-weight: bold;'>{row['Mahadasha']}</td><td style='padding: 12px 8px; vertical-align: top; line-height: 1.5;'>{rich_context}</td></tr>"
             md_table_html += "</table>"
             st.markdown(md_table_html, unsafe_allow_html=True)
 
-        with t8:
+        # --- TAB 7: ORACLE ---
+        with t7:
             st.subheader("💬 Ask the AI Astrologer" if LANG == "English" else "💬 AI ஜோதிடரிடம் கேளுங்கள்")
             chat_container = st.container()
             with chat_container:
@@ -632,9 +664,23 @@ if st.session_state.report_generated:
                     with st.chat_message("assistant"):
                         try:
                             genai.configure(api_key=API_KEY)
-                            model = genai.GenerativeModel('gemini-1.5-flash')
+                            
+                            # Dynamic robust model selection to prevent 404 crashes
+                            valid_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+                            target_model = 'gemini-pro' # Ultimate safe fallback
+                            for m in valid_models:
+                                if 'gemini-1.5-flash-latest' in m:
+                                    target_model = m
+                                    break
+                                elif 'gemini-2.0-flash' in m:
+                                    target_model = m
+                                    break
+                                elif 'gemini-1.5-pro' in m:
+                                    target_model = m
+
+                            model = genai.GenerativeModel(target_model)
                             response = model.generate_content(f"Data: Lagna {ZODIAC[lagna_rasi]}, Moon {ZODIAC[moon_rasi]}. User says: {prompt_input}")
                             st.markdown(response.text)
                             st.session_state.messages.append({"role": "assistant", "content": response.text})
-                        except Exception as e: st.error(f"Failed: {e}")
+                        except Exception as e: st.error(f"AI Generation Failed: Check API Key or Model access. Details: {e}")
                 st.rerun()
