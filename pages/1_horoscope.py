@@ -56,7 +56,7 @@ def load_profiles_from_db():
         except: pass
     return profiles
 
-# --- NEW: UNIQUE HOUSE STRENGTH ANALYSIS ENGINE ---
+# --- UNIQUE HOUSE STRENGTH ANALYSIS ENGINE ---
 def get_local_house_analysis(house, score, lang="English"):
     domains = {
         1: "Self, physical vitality, and personal brand",
@@ -233,6 +233,7 @@ def get_enneagram_data(p_lon_absolute):
 def get_coaching_rules(sav_scores, lagna_rasi, current_md, ennea_desire):
     lowest_house_idx = min(range(12), key=lambda i: sav_scores[(lagna_rasi - 1 + i) % 12])
     lowest_house = lowest_house_idx + 1
+    
     house_tips = {
         1: "Protect your personal vitality; do not burn out trying to be everything to everyone.",
         2: "Systematize your finances. Avoid impulsive resource allocation when stressed.",
@@ -379,6 +380,10 @@ if st.session_state.report_generated:
         sav_scores = calculate_sav_score(p_pos, lagna_rasi)
         nak, lord = get_nakshatra_details(moon_res[0])
         
+        # PRECOMPUTE RAHU/KETU HOUSES
+        rahu_h = (p_pos["Rahu"] - lagna_rasi + 1) if (p_pos["Rahu"] - lagna_rasi + 1) > 0 else (p_pos["Rahu"] - lagna_rasi + 1) + 12
+        ketu_h = (p_pos["Ketu"] - lagna_rasi + 1) if (p_pos["Ketu"] - lagna_rasi + 1) > 0 else (p_pos["Ketu"] - lagna_rasi + 1) + 12
+
         # DATA COMPILATION
         karmic_txt = analyze_karmic_axis(p_pos, lagna_rasi, lang=LANG)
         yogas = scan_yogas(p_pos, lagna_rasi, lang=LANG)
@@ -422,8 +427,10 @@ if st.session_state.report_generated:
                 career_txt=career_txt, edu_txt=edu_txt, health_txt=health_txt, love_txt=love_txt, 
                 karmic_txt=karmic_txt, id_data=report_id_data, lagna_str=l_name, moon_str=m_name, 
                 star_str=nak, yogas=yogas, fc=fc, micro_transits=micro_transits, 
-                mahadasha_data=mahadasha_data, master_table=master_table, phases=phases, pd_info=pd_info, guide=guide, 
-                transit_texts=transit_texts, lang=LANG
+                mahadasha_data=mahadasha_data, master_table=master_table, phases=phases, 
+                pd_info=pd_info, guide=guide, transit_texts=transit_texts, 
+                mbti_data=mbti_data, ennea_data=ennea_data, coaching_rules=coaching_rules, 
+                rahu_h=rahu_h, ketu_h=ketu_h, lang=LANG
             )
             if pdf_bytes:
                 st.download_button(label="📄 Download PDF Report" if LANG=="English" else "📄 ஜாதகத்தை பதிவிறக்க", data=pdf_bytes, file_name=f"{name_in}_Astro_Report.pdf", mime="application/pdf", type="primary")
@@ -472,9 +479,6 @@ if st.session_state.report_generated:
 
         # --- TAB 3: THE EXECUTIVE PLAYBOOK ---
         with t3:
-            rahu_h = (p_pos["Rahu"] - lagna_rasi + 1) if (p_pos["Rahu"] - lagna_rasi + 1) > 0 else (p_pos["Rahu"] - lagna_rasi + 1) + 12
-            ketu_h = (p_pos["Ketu"] - lagna_rasi + 1) if (p_pos["Ketu"] - lagna_rasi + 1) > 0 else (p_pos["Ketu"] - lagna_rasi + 1) + 12
-
             house_domains = {
                 1: "personal identity, physical vitality, and self-projection",
                 2: "financial accumulation, verbal communication, and family assets",
@@ -549,7 +553,7 @@ if st.session_state.report_generated:
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
 <div style="background: #fff; border: 1px solid #eaeaea; border-top: 4px solid {core_color}; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
 <div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Atmakaraka:</b> Core Driver</div>
-<div style="font-size: 18px; font-weight: bold; color: {core_color}; margin-bottom: 10px;">{ennea_data['ak_planet']}</div>
+<div style="font-size: 18px; font-weight: bold; color: {core_color}; margin-bottom: 10px;">{ennea_data['ak_planet']} ({ennea_data['ak_type']})</div>
 <div style="font-size: 14px; color: #444; line-height: 1.5;">{ennea_data['ak_coaching']}</div>
 </div>
 <div style="background: #fff; border: 1px solid #eaeaea; border-top: 4px solid {wing_color}; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
@@ -676,13 +680,7 @@ if st.session_state.report_generated:
 
         # --- TAB 7: ORACLE ---
         with t7:
-            st.subheader("💬 Ask the AI Astrologer" if LANG == "English" else "💬 AI ஜோதிடரிடம் கேளுங்கள்")
-            
-            c_chat, c_clear = st.columns([4, 1])
-            with c_clear:
-                if st.button("🗑️ Clear chat history", use_container_width=True):
-                    st.session_state.messages = []
-                    st.rerun()
+            st.subheader("✦ Ask the AI Astrologer" if LANG == "English" else "✦ AI ஜோதிடரிடம் கேளுங்கள்")
             
             chat_container = st.container()
             with chat_container:
@@ -696,10 +694,8 @@ if st.session_state.report_generated:
                     with st.chat_message("assistant"):
                         try:
                             genai.configure(api_key=API_KEY)
-                            
-                            # Dynamic robust model selection to prevent 404/deprecation crashes
                             valid_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-                            target_model = 'gemini-1.5-flash-latest' # Safe modern default
+                            target_model = 'gemini-1.5-flash-latest'
                             for m in valid_models:
                                 if 'gemini-2.0-flash' in m:
                                     target_model = m
@@ -714,7 +710,7 @@ if st.session_state.report_generated:
                             st.session_state.messages.append({"role": "assistant", "content": response.text})
                         except Exception as e:
                             if "429" in str(e):
-                                st.error("⚠️ **Error 429: AI Quota Exceeded.** You have hit your free-tier limit for the Gemini API today. Please check your Google AI Studio billing/limits or try again tomorrow.")
+                                st.error("⚠️ **Error 429: AI Quota Exceeded.** You have hit your free-tier limit for the Gemini API today. Please check your Google AI Studio billing limits.")
                             else:
                                 st.error(f"⚠️ AI Generation Failed. Details: {e}")
                 st.rerun()
