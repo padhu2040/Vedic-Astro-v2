@@ -128,15 +128,15 @@ def get_enneagram_data(p_lon_absolute):
     amk = sorted_planets[1][0] if len(sorted_planets) > 1 else ak
     
     enneagram_map = {
-        "Saturn": ("Type 1: The Reformer", "building structural perfection and integrity"),
-        "Moon": ("Type 2: The Helper", "creating deep emotional bonds and being loved"),
-        "Sun": ("Type 3: The Achiever", "achieving absolute success, value, and admiration"),
+        "Saturn": ("Type 1: The Reformer", "building structural perfection and absolute integrity"),
+        "Moon": ("Type 2: The Helper", "creating deep emotional bonds and being fundamentally needed"),
+        "Sun": ("Type 3: The Achiever", "achieving visible success, immense value, and admiration"),
         "Ketu": ("Type 4: The Individualist", "finding profound, unique personal significance"),
         "Mercury": ("Type 5: The Investigator", "mastering complex knowledge and absolute competence"),
         "Venus": ("Type 6: The Loyalist", "establishing unbreakable security and aligned partnerships"),
         "Rahu": ("Type 7: The Enthusiast", "experiencing limitless freedom and boundary expansion"),
-        "Mars": ("Type 8: The Challenger", "maintaining total control and protecting autonomy"),
-        "Jupiter": ("Type 9: The Peacemaker", "sustaining internal peace, wisdom, and harmony")
+        "Mars": ("Type 8: The Challenger", "maintaining total control and fiercely protecting autonomy"),
+        "Jupiter": ("Type 9: The Peacemaker", "sustaining internal peace, high wisdom, and harmony")
     }
     
     vd_map = {
@@ -171,19 +171,37 @@ def get_enneagram_data(p_lon_absolute):
         "Ketu": "apathetic withdrawal, nihilistic despair, and self-sabotaging isolation"
     }
     
+    amk_traits = {
+        "Sun": "charismatic authority, unwavering confidence, and commanding visibility",
+        "Moon": "intuitive empathy, emotional intelligence, and building deep trust",
+        "Mars": "bold initiative, fearless execution, and taking decisive action",
+        "Mercury": "flawless communication, data-driven analysis, and strategic networking",
+        "Jupiter": "expansive vision, ethical guidance, and high-level philosophical thinking",
+        "Venus": "diplomatic alliance-building, aesthetic perfection, and cultivating elite relationships",
+        "Saturn": "ironclad discipline, meticulous structuring, and enduring patience",
+        "Rahu": "unconventional innovation, disruptive thinking, and breaking established boundaries",
+        "Ketu": "profound detachment, deep backend research, and highly specialized mastery"
+    }
+    
     growth_planet = vd_map.get(ak, {}).get("growth", "Jupiter")
     stress_planet = vd_map.get(ak, {}).get("stress", "Saturn")
     
     # 2nd Person Coaching with explicit Tamil/English names and elaborated traits
     g_p_name = t_p_eng.get(growth_planet, growth_planet)
     s_p_name = t_p_eng.get(stress_planet, stress_planet)
+    ak_name = t_p_eng.get(ak, ak)
+    amk_name = t_p_eng.get(amk, amk)
 
     growth_coaching = f"Your ultimate path to growth requires you to move toward the highest expression of <b>{g_p_name}</b>. This means actively cultivating {growth_traits.get(growth_planet, 'its highest energy')}. True authority will follow when you stop relying on your baseline instincts and embrace this advanced operating state."
     stress_coaching = f"Under severe executive stress, you disintegrate into the shadow of <b>{s_p_name}</b>. You lose your natural decisive edge and begin operating from fear, adopting toxic traits like {stress_traits.get(stress_planet, 'reactive behavior')}. You must recognize these triggers immediately."
+    
+    ak_coaching = f"Your fundamental operating system is powered by <b>{ak_name}</b>. At your deepest subconscious level, you are fundamentally driven by the need for {enneagram_map.get(ak)[1]}. Every major executive decision you make is ultimately an attempt to satisfy this core urge. When you align your career directly with this specific energy, you become unstoppable."
+    amk_coaching = f"While your Core dictates <i>what</i> you want, your Execution Wing, <b>{amk_name}</b>, dictates <i>how</i> you get it. You naturally rely on {amk_traits.get(amk, 'strategic focus')} to navigate complex professional landscapes. This is your tactical superpower—lean heavily on it to execute your grand vision."
 
     return {
-        "ak_planet": t_p_eng.get(ak, ak), "ak_type": enneagram_map.get(ak)[0], "ak_desire": enneagram_map.get(ak)[1],
-        "amk_planet": t_p_eng.get(amk, amk), "amk_type": enneagram_map.get(amk)[0],
+        "ak_eng": ak, "amk_eng": amk,
+        "ak_planet": ak_name, "ak_type": enneagram_map.get(ak)[0], "ak_desire": enneagram_map.get(ak)[1], "ak_coaching": ak_coaching,
+        "amk_planet": amk_name, "amk_type": enneagram_map.get(amk)[0], "amk_coaching": amk_coaching,
         "growth_planet": g_p_name, "growth_coaching": growth_coaching,
         "stress_planet": s_p_name, "stress_coaching": stress_coaching
     }
@@ -219,8 +237,7 @@ def get_coaching_rules(sav_scores, lagna_rasi, current_md, ennea_desire):
         "Ketu": "deep research, backend mastery, and detached observation"
     }
 
-    # Find the English equivalent of the Dasha for the dictionary lookup
-    current_md_eng = "Guru" # Fallback
+    current_md_eng = "Guru"
     if current_md:
         for eng_k, tam_v in t_p.items():
             if current_md == tam_v or current_md == t_p_eng.get(eng_k, eng_k):
@@ -345,7 +362,6 @@ if st.session_state.report_generated:
         yogas = scan_yogas(p_pos, lagna_rasi, lang=LANG)
         career_txt = analyze_career_professional(p_pos, d10_lagna, lagna_rasi, sav_scores, bhava_placements, lang=LANG)
         
-        # Inject D10 Clarity dynamically
         d10_lord_name = t_p_eng.get(d10_lord, d10_lord)
         career_txt.append(f"**Leaning into {d10_lord_name}'s core traits means:** Executing with {get_d10_traits(d10_lord)}. Avoid copying others; this specific energetic style is your ultimate professional weapon.")
         
@@ -489,8 +505,9 @@ if st.session_state.report_generated:
                 formatted = []
                 for line in text_list:
                     line = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', line)
-                    # Convert markdown headers into styled HTML so they display cleanly inside the container
-                    if line.startswith('### '):
+                    if line.startswith('#### '):
+                        line = f"<h5 style='color: #2c3e50; margin-top: 15px; margin-bottom: 5px; font-size: 15px;'>{line.replace('#### ', '')}</h5>"
+                    elif line.startswith('### '):
                         line = f"<h5 style='color: #2c3e50; margin-top: 15px; margin-bottom: 5px; font-size: 15px;'>{line.replace('### ', '')}</h5>"
                     elif line.startswith('## '):
                         line = f"<h4 style='color: #2c3e50; margin-top: 15px; margin-bottom: 5px; font-size: 16px;'>{line.replace('## ', '')}</h4>"
@@ -499,7 +516,15 @@ if st.session_state.report_generated:
                     formatted.append(line)
                 return "<br>".join(formatted)
             
-            # CSS based Concentric Visual, 100% Flush Left to bypass Markdown code block detection
+            # Dynamic Colors based on planets
+            en_planet_colors = {
+                "Sun": "#d35400", "Moon": "#95a5a6", "Mars": "#c0392b", 
+                "Mercury": "#27ae60", "Jupiter": "#f39c12", "Venus": "#8e44ad", 
+                "Saturn": "#2c3e50", "Rahu": "#34495e", "Ketu": "#7f8c8d"
+            }
+            core_color = en_planet_colors.get(ennea_data['ak_eng'], "#2c3e50")
+            wing_color = en_planet_colors.get(ennea_data['amk_eng'], "#3498db")
+            
             playbook_html = f"""
 <div style="padding: 20px 0; color: #333; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
 
@@ -508,12 +533,15 @@ if st.session_state.report_generated:
 <div style="display: flex; gap: 30px; margin-bottom: 30px; align-items: center;">
     
 <div style="flex: 0 0 250px; display: flex; justify-content: center;">
-<div style="width: 220px; height: 220px; border-radius: 50%; border: 2px dashed #bdc3c7; display: flex; align-items: center; justify-content: center; position: relative;">
-<div style="position: absolute; top: -10px; background: white; padding: 0 5px; font-size: 11px; font-weight: bold; color: #7f8c8d;">Outer Environment</div>
-<div style="width: 150px; height: 150px; border-radius: 50%; border: 2px solid #3498db; display: flex; align-items: center; justify-content: center; position: relative; background: #f0f8ff;">
-<div style="position: absolute; top: -10px; background: #f0f8ff; padding: 0 5px; font-size: 11px; font-weight: bold; color: #2980b9;">The Wing</div>
-<div style="width: 80px; height: 80px; border-radius: 50%; background: #2c3e50; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; text-align: center; font-size: 13px; line-height: 1.2;">
+<div style="width: 220px; height: 220px; border-radius: 50%; background: linear-gradient(to bottom, #2ecc71 50%, #e74c3c 50%); padding: 2px; display: flex; align-items: center; justify-content: center; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+<div style="width: 100%; height: 100%; background: #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: relative;">
+<div style="position: absolute; top: 6px; font-size: 10px; color: #27ae60; font-weight: normal; letter-spacing: 0.5px;">Growth (Ucha): {ennea_data['growth_planet']}</div>
+<div style="position: absolute; bottom: 6px; font-size: 10px; color: #c0392b; font-weight: normal; letter-spacing: 0.5px;">Stress (Neecha): {ennea_data['stress_planet']}</div>
+<div style="width: 150px; height: 150px; border-radius: 50%; border: 2px solid {wing_color}; display: flex; align-items: center; justify-content: center; position: relative; background: #ffffff;">
+<div style="position: absolute; top: 8px; font-size: 9px; font-weight: normal; color: {wing_color}; letter-spacing: 0.5px;">Wing: {ennea_data['amk_planet']}</div>
+<div style="width: 80px; height: 80px; border-radius: 50%; background: {core_color}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; text-align: center; font-size: 12px; line-height: 1.3; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
 Core<br>{ennea_data['ak_planet']}
+</div>
 </div>
 </div>
 </div>
@@ -521,12 +549,12 @@ Core<br>{ennea_data['ak_planet']}
     
 <div style="flex: 1;">
 <div style="margin-bottom: 15px;">
-<div style="font-size: 16px; font-weight: bold; color: #2c3e50;">Core Driver: {ennea_data['ak_planet']} ({ennea_data['ak_type']})</div>
-<div style="font-size: 14px; color: #555;"><b>Atmakaraka:</b> The planet with the highest degree in your chart. You act to satisfy this planet's deep desire: <i>{ennea_data['ak_desire']}</i>.</div>
+<div style="font-size: 16px; font-weight: bold; color: {core_color};">Core Driver: {ennea_data['ak_planet']} ({ennea_data['ak_type']})</div>
+<div style="font-size: 14px; color: #444; margin-top: 4px;">{ennea_data['ak_coaching']}</div>
 </div>
 <div style="margin-bottom: 15px;">
-<div style="font-size: 16px; font-weight: bold; color: #2980b9;">The Execution Wing: {ennea_data['amk_planet']}</div>
-<div style="font-size: 14px; color: #555;"><b>Amatyakaraka:</b> The second-highest degree. This is your "Prime Minister" that dictates the unique style and strategy you use to achieve your core desire.</div>
+<div style="font-size: 16px; font-weight: bold; color: {wing_color};">The Execution Wing: {ennea_data['amk_planet']}</div>
+<div style="font-size: 14px; color: #444; margin-top: 4px;">{ennea_data['amk_coaching']}</div>
 </div>
 </div>
 </div>
@@ -544,10 +572,8 @@ Core<br>{ennea_data['ak_planet']}
 
 <h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 2: The Zone of Genius</h2>
 <div style="margin-bottom: 25px; font-size: 14.5px; line-height: 1.6; color: #444;">
-<h4 style="color: #111; margin-bottom: 5px;">Academic & Strategic Intellect</h4>
-<p>{format_md(edu_txt)}</p>
-<h4 style="color: #111; margin-bottom: 5px; margin-top: 15px;">Career & Authority Execution</h4>
-<p>{format_md(career_txt)}</p>
+{format_md(edu_txt)}
+{format_md(career_txt)}
 </div>
 
 <h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 3: The Karmic Directive</h2>
