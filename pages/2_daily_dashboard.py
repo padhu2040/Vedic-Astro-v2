@@ -1,6 +1,6 @@
 import streamlit as st
 import swisseph as swe
-from datetime import datetime, timezone
+from datetime import datetime, timezone, time  # <-- Added 'time' here!
 from supabase import create_client
 
 # --- IMPORTS FROM OUR CUSTOM ENGINE ---
