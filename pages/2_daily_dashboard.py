@@ -1,6 +1,6 @@
 import streamlit as st
 import swisseph as swe
-from datetime import datetime, timezone, time  # <-- Added 'time' here!
+from datetime import datetime, timezone, time
 from supabase import create_client
 
 # --- IMPORTS FROM OUR CUSTOM ENGINE ---
@@ -97,31 +97,31 @@ else:
             positions = daily_weather["positions"]
 
             dashboard_html = f"""
-            <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333;">
+<div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333;">
                 
-                <h3 style="color: #2c3e50; margin-bottom: 15px; font-size: 20px; border-bottom: 2px solid #eee; padding-bottom: 8px;">1. Primary Strategic Focus (24-48 Hours)</h3>
-                <div style="background: #fff; border: 1px solid #eaeaea; border-left: 5px solid {focus_data['color']}; padding: 20px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 30px;">
-                    <div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Astrological Driver:</b> The Moon currently in {positions['Moon']}</div>
-                    <div style="font-size: 20px; font-weight: bold; color: {focus_data['color']}; margin-bottom: 10px;">{focus_data['title']}</div>
-                    <div style="font-size: 15px; color: #444; line-height: 1.6;">{focus_data['desc']}</div>
-                </div>
+<h3 style="color: #2c3e50; margin-bottom: 15px; font-size: 20px; border-bottom: 2px solid #eee; padding-bottom: 8px;">1. Primary Strategic Focus (24-48 Hours)</h3>
+<div style="background: #fff; border: 1px solid #eaeaea; border-left: 5px solid {focus_data['color']}; padding: 20px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 30px;">
+<div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Astrological Driver:</b> The Moon currently in {positions['Moon']}</div>
+<div style="font-size: 20px; font-weight: bold; color: {focus_data['color']}; margin-bottom: 10px;">{focus_data['title']}</div>
+<div style="font-size: 15px; color: #444; line-height: 1.6;">{focus_data['desc']}</div>
+</div>
 
-                <h3 style="color: #2c3e50; margin-bottom: 15px; font-size: 20px; border-bottom: 2px solid #eee; padding-bottom: 8px;">2. Communication & Data Weather</h3>
-                <div style="background: #fafafa; border: 1px solid #eaeaea; border-left: 5px solid #27ae60; padding: 20px; border-radius: 6px; margin-bottom: 30px;">
-                    <div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Astrological Driver:</b> Mercury currently in {positions['Mercury']}</div>
-                    <div style="font-size: 18px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">{comm_data['title']}</div>
-                    <div style="font-size: 15px; color: #444; line-height: 1.6;">{comm_data['desc']}</div>
-                </div>
+<h3 style="color: #2c3e50; margin-bottom: 15px; font-size: 20px; border-bottom: 2px solid #eee; padding-bottom: 8px;">2. Communication & Data Weather</h3>
+<div style="background: #fafafa; border: 1px solid #eaeaea; border-left: 5px solid #27ae60; padding: 20px; border-radius: 6px; margin-bottom: 30px;">
+<div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Astrological Driver:</b> Mercury currently in {positions['Mercury']}</div>
+<div style="font-size: 18px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">{comm_data['title']}</div>
+<div style="font-size: 15px; color: #444; line-height: 1.6;">{comm_data['desc']}</div>
+</div>
 
-                <h3 style="color: #2c3e50; margin-bottom: 15px; font-size: 20px; border-bottom: 2px solid #eee; padding-bottom: 8px;">3. Executive Vitality & Authority</h3>
-                <div style="background: #fafafa; border: 1px solid #eaeaea; border-left: 5px solid #f39c12; padding: 20px; border-radius: 6px; margin-bottom: 30px;">
-                    <div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Astrological Driver:</b> The Sun currently in {positions['Sun']}</div>
-                    <div style="font-size: 18px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">{energy_data['title']}</div>
-                    <div style="font-size: 15px; color: #444; line-height: 1.6;">{energy_data['desc']}</div>
-                </div>
+<h3 style="color: #2c3e50; margin-bottom: 15px; font-size: 20px; border-bottom: 2px solid #eee; padding-bottom: 8px;">3. Executive Vitality & Authority</h3>
+<div style="background: #fafafa; border: 1px solid #eaeaea; border-left: 5px solid #f39c12; padding: 20px; border-radius: 6px; margin-bottom: 30px;">
+<div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Astrological Driver:</b> The Sun currently in {positions['Sun']}</div>
+<div style="font-size: 18px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">{energy_data['title']}</div>
+<div style="font-size: 15px; color: #444; line-height: 1.6;">{energy_data['desc']}</div>
+</div>
 
-            </div>
-            """
+</div>
+"""
             st.markdown(dashboard_html, unsafe_allow_html=True)
             
             st.caption("Note: This dashboard calculates transits dynamically based on current UTC time mapping against your exact natal coordinates. Micro-transits (like the Moon) shift every 2.5 days.")
