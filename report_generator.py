@@ -158,10 +158,10 @@ def generate_pdf_report(name_in, p_pos, p_d9, lagna_rasi, sav_scores, career_txt
     
     sorted_houses = sorted([(sav_scores[(lagna_rasi-1+i)%12], i+1) for i in range(12)], key=lambda x: x[0], reverse=True)
     zones_html = "<table style='width:100%; margin-top:15px; border-collapse: collapse; border: none;'><tr><td style='width:50%; vertical-align:top; padding-right:10px; border: none;'>"
-    zones_html += f"<h4 style='color: #27ae60; margin-top:0;'>Top Power Zones</h4>"
+    zones_html += f"<h4 style='color: #27ae60; margin-top:0;'>Top power zones</h4>"
     for s, h in sorted_houses[:3]: zones_html += f"<div style='font-size:12px;'>{get_local_house_analysis_pdf(h, s)}</div>"
     zones_html += "</td><td style='width:50%; vertical-align:top; padding-left:10px; border: none; border-left: 1px solid #eee;'>"
-    zones_html += f"<h4 style='color: #e74c3c; margin-top:0;'>Top Challenge Zones</h4>"
+    zones_html += f"<h4 style='color: #e74c3c; margin-top:0;'>Top challenge zones</h4>"
     for s, h in sorted_houses[-3:]: zones_html += f"<div style='font-size:12px;'>{get_local_house_analysis_pdf(h, s)}</div>"
     zones_html += "</td></tr></table></div>"
 
@@ -224,16 +224,16 @@ def generate_pdf_report(name_in, p_pos, p_d9, lagna_rasi, sav_scores, career_txt
         <p>This section maps the exact astronomical coordinates of the planets at your moment of birth. In Vedic Astrology, your Ascendant (Lagna) forms your physical self and operating framework, while your Moon Sign (Rasi) dictates your internal emotional processor.</p>
         {chart1}
         <h3 style="margin-top: 25px;">Core planetary alignments</h3>
-        <p style="font-size: 12px; color: gray;">This table displays the exact dignity and status of your planetary placements. 'Exalted' planets act as your superpowers, while 'Neecha' (debilitated) planets show areas requiring conscious development.</p>
+        <p>This table displays the exact dignity and status of your planetary placements. 'Exalted' planets act as your superpowers, while 'Neecha' (debilitated) planets show areas requiring conscious development.</p>
         {master_table_html}
         
-        <h2>2. Destiny Radar (Ashtakavarga)</h2>
+        <h2>2. Destiny radar</h2>
         {score_html}
         {zones_html}
         
         <div class="page-break"></div>
         
-        <h2>3. Executive Playbook</h2>
+        <h2>3. Executive playbook</h2>
         
         <h3>Phase 1: The core drive</h3>
         <table style="width: 100%; border-collapse: separate; border-spacing: 10px 10px; border: none; margin-bottom: 15px;">
@@ -295,7 +295,7 @@ def generate_pdf_report(name_in, p_pos, p_d9, lagna_rasi, sav_scores, career_txt
         </div>
 
         <h3>Phase 5: The cognitive mechanics</h3>
-        <p style="font-size: 13px; color: #666; margin-bottom: 15px;">While your Core Drive (Phase 1) explains <i>why</i> you act, your Cognitive mechanics (<b>{mbti_data['code']}</b>) explains <i>how</i> your brain naturally processes data to get there.</p>
+        <p style="font-size: 13px; color: #666; margin-bottom: 15px;">While Core Drive (Phase 1) explains <i>why</i> you act, your Cognitive mechanics (<b>{mbti_data['code']}</b>) explains <i>how</i> your brain naturally processes data to get there.</p>
         <div style="max-width: 500px;">
             {draw_mbti_bar_html_pdf("Energy Orientation", e_txt, "EXTRAVERTED", "INTROVERTED", mbti_data['extro_pct'])}
             {draw_mbti_bar_html_pdf("Information Processing", s_txt, "SENSING", "INTUITIVE", 100 - mbti_data['int_pct'])}
@@ -305,25 +305,25 @@ def generate_pdf_report(name_in, p_pos, p_d9, lagna_rasi, sav_scores, career_txt
         
         <div class="page-break"></div>
 
-        <h2>4. Love & Health (Navamsa)</h2>
+        <h2>4. Love & health</h2>
         <p>This chart represents your deep subconscious, the second half of your life, and the fundamental energetic dynamics of your long-term partnerships.</p>
         {chart2}
         {format_section(love_txt)}
         <hr style="border: 0; border-top: 1px dashed #ccc; margin: 15px 0;">
         {format_section(health_txt)}
         
-        <h2>5. Yogas & Forecast</h2>
+        <h2>5. Yogas & forecast</h2>
     """
     
     for y in yogas: 
         html += f"<div style='page-break-inside: avoid;'><h4>{y['Name']} ({y['Type']})</h4><p>{md_to_html(y['Description'])}</p></div>"
 
-    html += f"<h3>Annual Forecast</h3>"
+    html += f"<h3>Annual forecast</h3>"
     for cat, data in fc.items():
         parsed_desc = md_to_html(data[0])
         html += f"<div style='page-break-inside: avoid;'><h4>{cat}</h4><p>{parsed_desc}</p><blockquote><b>Remedy:</b> {data[1]}</blockquote></div>"
 
-    html += f"<div style='page-break-inside: avoid;'><h3>Planetary Transits</h3>"
+    html += f"<div style='page-break-inside: avoid;'><h3>Planetary transits</h3>"
     for txt in transit_texts: 
         html += f"<p>{md_to_html(txt)}</p>"
     html += "</div>"
