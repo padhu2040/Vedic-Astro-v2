@@ -380,10 +380,6 @@ if st.session_state.report_generated:
         sav_scores = calculate_sav_score(p_pos, lagna_rasi)
         nak, lord = get_nakshatra_details(moon_res[0])
         
-        # PRECOMPUTE RAHU/KETU HOUSES
-        rahu_h = (p_pos["Rahu"] - lagna_rasi + 1) if (p_pos["Rahu"] - lagna_rasi + 1) > 0 else (p_pos["Rahu"] - lagna_rasi + 1) + 12
-        ketu_h = (p_pos["Ketu"] - lagna_rasi + 1) if (p_pos["Ketu"] - lagna_rasi + 1) > 0 else (p_pos["Ketu"] - lagna_rasi + 1) + 12
-
         # DATA COMPILATION
         karmic_txt = analyze_karmic_axis(p_pos, lagna_rasi, lang=LANG)
         yogas = scan_yogas(p_pos, lagna_rasi, lang=LANG)
@@ -471,14 +467,17 @@ if st.session_state.report_generated:
             c1, c2 = st.columns(2)
             sorted_houses = sorted([(sav_scores[(lagna_rasi-1+i)%12], i+1) for i in range(12)], key=lambda x: x[0], reverse=True)
             with c1:
-                st.markdown(f"<h4 style='color: #27ae60; margin-bottom: 10px;'>{'அதிக பலம் பெற்ற பாவங்கள்' if LANG=='Tamil' else 'Top Power Zones'}</h4>", unsafe_allow_html=True)
+                st.markdown(f"<h4 style='color: #27ae60; margin-bottom: 10px;'>{'Top power zones' if LANG=='English' else 'அதிக பலம் பெற்ற பாவங்கள்'}</h4>", unsafe_allow_html=True)
                 for s, h in sorted_houses[:3]: st.markdown(get_local_house_analysis(h, s, LANG), unsafe_allow_html=True)
             with c2:
-                st.markdown(f"<h4 style='color: #e74c3c; margin-bottom: 10px;'>{'கவனம் தேவைப்படும் பாவங்கள்' if LANG=='Tamil' else 'Top Challenge Zones'}</h4>", unsafe_allow_html=True)
+                st.markdown(f"<h4 style='color: #e74c3c; margin-bottom: 10px;'>{'Top challenge zones' if LANG=='English' else 'கவனம் தேவைப்படும் பாவங்கள்'}</h4>", unsafe_allow_html=True)
                 for s, h in sorted_houses[-3:]: st.markdown(get_local_house_analysis(h, s, LANG), unsafe_allow_html=True)
 
         # --- TAB 3: THE EXECUTIVE PLAYBOOK ---
         with t3:
+            rahu_h = (p_pos["Rahu"] - lagna_rasi + 1) if (p_pos["Rahu"] - lagna_rasi + 1) > 0 else (p_pos["Rahu"] - lagna_rasi + 1) + 12
+            ketu_h = (p_pos["Ketu"] - lagna_rasi + 1) if (p_pos["Ketu"] - lagna_rasi + 1) > 0 else (p_pos["Ketu"] - lagna_rasi + 1) + 12
+
             house_domains = {
                 1: "personal identity, physical vitality, and self-projection",
                 2: "financial accumulation, verbal communication, and family assets",
@@ -597,7 +596,7 @@ if st.session_state.report_generated:
 </ol>
 </div>
 <h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 5: The cognitive mechanics</h2>
-<p style="font-size: 14px; color: #666; margin-bottom: 25px;">While your Core Drive (Phase 1) explains <i>why</i> you act, your Cognitive mechanics (<b>{mbti_data['code']}</b>) explains <i>how</i> your brain naturally processes data to get there.</p>
+<p style="font-size: 14px; color: #666; margin-bottom: 25px;">While Core Drive (Phase 1) explains the WHY you act, your Cognitive mechanics (<b>{mbti_data['code']}</b>) explains HOW your brain naturally processes data to get there.</p>
 <div style="max-width: 650px; margin: 0 auto; padding: 10px 0;">
 {draw_mbti_bar_html("Energy Orientation", e_txt, "EXTRAVERTED", "INTROVERTED", mbti_data['extro_pct'])}
 {draw_mbti_bar_html("Information Processing", s_txt, "SENSING", "INTUITIVE", 100 - mbti_data['int_pct'])}
@@ -610,7 +609,7 @@ if st.session_state.report_generated:
 
         # --- TAB 4: LOVE & HEALTH ---
         with t4:
-            st.markdown("### Deep Navamsa & Partnerships")
+            st.markdown("### Deep navamsa & partnerships")
             st.markdown("This chart represents your deep subconscious, the second half of your life, and the fundamental energetic dynamics of your long-term partnerships.")
             st.markdown(f"<h3 style='text-align: center; margin-top:20px;'>{'நவாம்ச சக்கரம் (Navamsa)' if LANG=='Tamil' else 'Destiny Chart (Navamsa)'}</h3>", unsafe_allow_html=True)
             st.markdown(get_south_indian_chart_html(p_d9, d9_lagna, "நவாம்சம்" if LANG=="Tamil" else "Navamsa", LANG), unsafe_allow_html=True)
@@ -680,7 +679,13 @@ if st.session_state.report_generated:
 
         # --- TAB 7: ORACLE ---
         with t7:
-            st.subheader("✦ Ask the AI Astrologer" if LANG == "English" else "✦ AI ஜோதிடரிடம் கேளுங்கள்")
+            c1, c2 = st.columns([5, 1])
+            with c1:
+                st.subheader("✦ Ask the AI Astrologer" if LANG == "English" else "✦ AI ஜோதிடரிடம் கேளுங்கள்")
+            with c2:
+                if st.button("🗑️ Clear", help="Clear chat history", use_container_width=True):
+                    st.session_state.messages = []
+                    st.rerun()
             
             chat_container = st.container()
             with chat_container:
