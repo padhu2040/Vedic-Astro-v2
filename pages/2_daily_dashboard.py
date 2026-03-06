@@ -6,7 +6,7 @@ from supabase import create_client
 # --- IMPORTS FROM OUR CUSTOM ENGINE ---
 from astro_engine import (
     get_location_coordinates, get_utc_offset, get_daily_executive_weather,
-    ZODIAC_TA, ZODIAC
+    get_daily_panchangam_metrics, ZODIAC_TA, ZODIAC
 )
 
 st.set_page_config(page_title="Daily Executive Weather", layout="centered")
@@ -53,9 +53,7 @@ with st.sidebar:
     else:
         def_n, def_dob, def_tob, def_loc = "", datetime(2000, 1, 1).date(), time(12, 0), ""
 
-    # Hidden inputs to keep the logic intact without cluttering the daily UI
     name_in = st.text_input("Name", value=def_n, disabled=True) if def_n else None
-    
     calc_btn = st.button("Generate Today's Strategy", type="primary", use_container_width=True)
 
 # --- MAIN DASHBOARD UI ---
@@ -79,25 +77,52 @@ else:
             ascmc = swe.houses_ex(jd_ut_natal, lat_val, lon_val, b'P', swe.FLG_SIDEREAL)[1]
             natal_lagna_rasi = int(ascmc[0]/30)+1
             
-            moon_res = swe.calc_ut(jd_ut_natal, swe.MOON, swe.FLG_SIDEREAL)[0]
-            natal_moon_rasi = int(moon_res[0]/30)+1
+            # We need the exact natal moon longitude for Tarabalam
+            natal_moon_lon = swe.calc_ut(jd_ut_natal, swe.MOON, swe.FLG_SIDEREAL)[0][0]
+            natal_moon_rasi = int(natal_moon_lon/30)+1
 
             # 2. Calculate Current Live Transits (UTC)
             utcnow = datetime.now(timezone.utc)
             current_ut_hour = utcnow.hour + (utcnow.minute/60.0)
             current_jd_ut = swe.julday(utcnow.year, utcnow.month, utcnow.day, current_ut_hour)
 
-            # 3. Call the Daily Engine
+            # 3. Call the Engine Modules
             daily_weather = get_daily_executive_weather(current_jd_ut, natal_moon_rasi, natal_lagna_rasi, LANG)
+            panchangam = get_daily_panchangam_metrics(current_jd_ut, natal_moon_lon, tz_val)
 
-            # 4. Render the Dashboard
             focus_data = daily_weather["focus"]
             comm_data = daily_weather["communication"]
             energy_data = daily_weather["energy"]
             positions = daily_weather["positions"]
 
+            # 4. Render the Full Dashboard
             dashboard_html = f"""
 <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333;">
+
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 35px;">
+    <div style="background: #fff; border: 1px solid #eaeaea; border-top: 3px solid {panchangam['tara_color']}; border-radius: 6px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+        <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Tarabalam</div>
+        <div style="font-size: 13px; font-weight: bold; color: {panchangam['tara_color']};">{panchangam['tara_name']}</div>
+        <div style="font-size: 11px; color: #666; margin-top: 4px;">{panchangam['tara_desc']}</div>
+    </div>
+    
+    <div style="background: #fff; border: 1px solid #eaeaea; border-top: 3px solid #2c3e50; border-radius: 6px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+        <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Nalla Neram</div>
+        <div style="font-size: 13px; font-weight: bold; color: #2c3e50; line-height: 1.4;">{panchangam['nalla_neram']}</div>
+    </div>
+
+    <div style="background: #fff; border: 1px solid #eaeaea; border-top: 3px solid #8e44ad; border-radius: 6px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+        <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Current Horai</div>
+        <div style="font-size: 14px; font-weight: bold; color: #8e44ad;">{panchangam['horai']}</div>
+        <div style="font-size: 11px; color: #666; margin-top: 4px;">Updates hourly</div>
+    </div>
+
+    <div style="background: #fff; border: 1px solid #eaeaea; border-top: 3px solid #2980b9; border-radius: 6px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+        <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Moon Dynamics</div>
+        <div style="font-size: 14px; font-weight: bold; color: #2980b9;">{panchangam['nakshatra']}</div>
+        <div style="font-size: 11px; color: #666; margin-top: 4px;">{panchangam['paksha']}</div>
+    </div>
+</div>
                 
 <h3 style="color: #2c3e50; margin-bottom: 15px; font-size: 20px; border-bottom: 2px solid #eee; padding-bottom: 8px;">1. Primary Strategic Focus (24-48 Hours)</h3>
 <div style="background: #fff; border: 1px solid #eaeaea; border-left: 5px solid {focus_data['color']}; padding: 20px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 30px;">
