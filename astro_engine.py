@@ -517,3 +517,87 @@ def generate_360_persona(lagna_rasi, moon_rasi, sav_scores, p_pos, bhava_placeme
     persona['Shadow'] = shadow_map.get(bottom_house, "Requires conscious self-reflection.")
 
     return persona
+
+# --- DAILY EXECUTIVE WEATHER ENGINE ---
+
+def get_daily_executive_weather(current_jd_ut, natal_moon_rasi, natal_lagna_rasi, lang="English"):
+    """
+    Calculates the exact daily transits for fast-moving planets (Moon, Sun, Mercury)
+    and maps them against the user's natal chart for immediate tactical coaching.
+    """
+    import swisseph as swe
+    from datetime import datetime
+
+    # Calculate exact current transits
+    t_moon_res = swe.calc_ut(current_jd_ut, swe.MOON, swe.FLG_SIDEREAL)[0][0]
+    t_sun_res = swe.calc_ut(current_jd_ut, swe.SUN, swe.FLG_SIDEREAL)[0][0]
+    t_merc_res = swe.calc_ut(current_jd_ut, swe.MERCURY, swe.FLG_SIDEREAL)[0][0]
+    
+    t_moon_rasi = int(t_moon_res / 30) + 1
+    t_sun_rasi = int(t_sun_res / 30) + 1
+    t_merc_rasi = int(t_merc_res / 30) + 1
+    
+    # Calculate distance from Natal placements
+    moon_from_moon = (t_moon_rasi - natal_moon_rasi) % 12 + 1
+    moon_from_lagna = (t_moon_rasi - natal_lagna_rasi) % 12 + 1
+    merc_from_lagna = (t_merc_rasi - natal_lagna_rasi) % 12 + 1
+    sun_from_lagna = (t_sun_rasi - natal_lagna_rasi) % 12 + 1
+
+    # 1. STRATEGIC FOCUS (Driven by the Moon - Changes every 2.5 days)
+    focus_color = "#3498db" # Default Blue
+    if moon_from_moon == 8:
+        focus_title = "High Alert: Tactical Retreat (Chandrashtama)"
+        focus_desc = "The Moon is transiting a highly volatile sector relative to your natal mind. Emotional static is high. **Do not sign major contracts, launch products, or engage in aggressive negotiations today.** Focus strictly on routine, low-stakes administrative tasks and protect your energy."
+        focus_color = "#e74c3c" # Red
+    elif moon_from_lagna == 10:
+        focus_title = "Maximum Visibility: Execute"
+        focus_desc = "The current cosmic weather is lighting up your sector of absolute authority. You are highly visible today. This is the perfect 24-hour window to pitch to the board, close a deal, or step confidently into a leadership role."
+        focus_color = "#27ae60" # Green
+    elif moon_from_lagna == 12:
+        focus_title = "Deep Backend & Strategy"
+        focus_desc = "Your energy is naturally withdrawing. Do not force external networking today. This is a highly productive day for deep, isolated research, strategic planning, and behind-the-scenes development."
+        focus_color = "#9b59b6" # Purple
+    elif moon_from_lagna in [1, 5, 9]:
+        focus_title = "Visionary & Creative Flow"
+        focus_desc = "Your intuition and creative problem-solving are operating at peak efficiency. Trust your gut instincts today. Excellent for brainstorming, advising your team, and looking at the big picture."
+        focus_color = "#f39c12" # Orange
+    elif moon_from_lagna in [2, 6, 10]:
+        focus_title = "Operational & Financial Focus"
+        focus_desc = "Your mind is naturally attuned to practical, material realities today. Excellent weather for auditing finances, restructuring workflows, and tackling operational bottlenecks."
+        focus_color = "#2980b9" # Blue
+    else:
+        focus_title = "Steady Execution"
+        focus_desc = "The daily environment is neutral and stable. Maintain your current operational momentum. Focus on clearing your backlog and ensuring your foundational systems are running smoothly."
+
+    # 2. COMMUNICATION WEATHER (Driven by Mercury)
+    if merc_from_lagna in [3, 11]:
+        comm_title = "High-Velocity Networking"
+        comm_desc = "Data processing and communication are highly favored. Send the difficult emails, host the all-hands meeting, and leverage your professional network. People will easily understand your logic."
+    elif merc_from_lagna in [6, 8, 12]:
+        comm_title = "Data Friction & Misalignment"
+        comm_desc = "There is friction in the communication channels. Double-check all data, assume emails might be misread, and over-communicate clarity to avoid unnecessary operational drama."
+    else:
+        comm_title = "Clear & Direct Logic"
+        comm_desc = "Standard communication flows smoothly. Trust your data analysis and present your logic directly. No hidden agendas in the operational weather today."
+
+    # 3. VITALITY & AUTHORITY (Driven by the Sun)
+    if sun_from_lagna in [1, 10, 11]:
+        energy_title = "Commanding Presence"
+        energy_desc = "You possess a massive reserve of executive vitality right now. You naturally command respect in rooms. Use this month-long window to lead with absolute authority."
+    elif sun_from_lagna in [6, 8, 12]:
+        energy_title = "Energy Conservation"
+        energy_desc = "Your core vitality is being tested by external friction. Do not burn out trying to micromanage everything. Conserve your energy and delegate heavily."
+    else:
+        energy_title = "Sustained Baseline"
+        energy_desc = "Your executive energy levels are balanced. You have enough vitality to lead effectively without burning out, provided you maintain basic structural discipline."
+
+    return {
+        "focus": {"title": focus_title, "desc": focus_desc, "color": focus_color},
+        "communication": {"title": comm_title, "desc": comm_desc},
+        "energy": {"title": energy_title, "desc": energy_desc},
+        "positions": {
+            "Moon": ZODIAC[t_moon_rasi],
+            "Sun": ZODIAC[t_sun_rasi],
+            "Mercury": ZODIAC[t_merc_rasi]
+        }
+    }
