@@ -601,3 +601,84 @@ def get_daily_executive_weather(current_jd_ut, natal_moon_rasi, natal_lagna_rasi
             "Mercury": ZODIAC[t_merc_rasi]
         }
     }
+# --- DAILY PANCHANGAM & TIMING ENGINE ---
+def get_daily_panchangam_metrics(current_jd_ut, natal_moon_lon, tz_name="Asia/Kolkata"):
+    """
+    Calculates exact daily Nakshatra, personalized Tarabalam, Moon Phase,
+    standard Nalla Neram, and the current active Horai.
+    """
+    import swisseph as swe
+    from datetime import datetime
+    import pytz
+
+    # 1. Exact Longitudes
+    sun_lon = swe.calc_ut(current_jd_ut, swe.SUN, swe.FLG_SIDEREAL)[0][0]
+    moon_lon = swe.calc_ut(current_jd_ut, swe.MOON, swe.FLG_SIDEREAL)[0][0]
+
+    # 2. Paksha (Moon Phase)
+    tithi_val = ((moon_lon - sun_lon) % 360) / 12
+    tithi_idx = int(tithi_val) + 1
+    paksha = "Waxing (Shukla Paksha)" if tithi_idx <= 15 else "Waning (Krishna Paksha)"
+
+    # 3. Nakshatra (Daily vs Natal)
+    NAKSHATRAS = [
+        "Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra", 
+        "Punarvasu", "Pushya", "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", 
+        "Hasta", "Chitra", "Swati", "Vishakha", "Anuradha", "Jyeshtha", 
+        "Mula", "Purva Ashadha", "Uttara Ashadha", "Shravana", "Dhanishta", "Shatabhisha", 
+        "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"
+    ]
+    daily_nak_idx = int((moon_lon % 360) / (360/27))
+    natal_nak_idx = int((natal_moon_lon % 360) / (360/27))
+    daily_nak_name = NAKSHATRAS[daily_nak_idx]
+
+    # 4. Tarabalam (Personalized Auspiciousness)
+    tara_calc = ((daily_nak_idx - natal_nak_idx) % 9) + 1
+    tara_meanings = {
+        1: ("Janma (Average)", "Maintain routine.", "#f39c12"),
+        2: ("Sampat (Excellent)", "Favorable for wealth.", "#27ae60"),
+        3: ("Vipat (Caution)", "Avoid major decisions.", "#e74c3c"),
+        4: ("Kshema (Good)", "Favorable for security.", "#27ae60"),
+        5: ("Pratyak (Obstacles)", "Expect setbacks.", "#e74c3c"),
+        6: ("Sadhana (Success)", "Realization of goals.", "#27ae60"),
+        7: ("Naidhana (Severe)", "Unfavorable for actions.", "#e74c3c"),
+        8: ("Mitra (Favorable)", "Good for partnerships.", "#2980b9"),
+        9: ("Parama Mitra (Excellent)", "Deeply supportive day.", "#27ae60")
+    }
+    tara_name, tara_desc, tara_color = tara_meanings[tara_calc]
+
+    # 5. Day of Week & Nalla Neram (Tamil Standard)
+    local_tz = pytz.timezone(tz_name)
+    dt_obj = datetime.now(local_tz)
+    weekday_idx = dt_obj.weekday() # 0 = Mon, 6 = Sun
+    
+    nalla_neram_map = {
+        6: "07:30 AM - 08:30 AM<br>03:15 PM - 04:15 PM", # Sunday
+        0: "06:00 AM - 07:30 AM<br>04:45 PM - 05:45 PM", # Mon
+        1: "07:30 AM - 08:30 AM<br>04:45 PM - 05:45 PM", # Tue
+        2: "09:00 AM - 10:00 AM<br>04:45 PM - 05:45 PM", # Wed
+        3: "10:30 AM - 11:30 AM<br>04:45 PM - 05:45 PM", # Thu
+        4: "06:00 AM - 07:30 AM<br>04:45 PM - 05:45 PM", # Fri
+        5: "07:30 AM - 08:30 AM<br>04:45 PM - 05:45 PM", # Sat
+    }
+
+    # 6. Current Horai (Calculated based on local hour)
+    horai_lords = ["Sun", "Venus", "Mercury", "Moon", "Saturn", "Jupiter", "Mars"]
+    day_starts = {6:0, 0:3, 1:6, 2:2, 3:5, 4:1, 5:4} # Sun=0, Mon=3, Tue=6, etc.
+    
+    current_hour = dt_obj.hour
+    hours_since_sunrise = current_hour - 6 # Standardizing to 6AM generic sunrise
+    if hours_since_sunrise < 0:
+        hours_since_sunrise += 24
+        start_idx = day_starts[(weekday_idx - 1) % 7]
+    else:
+        start_idx = day_starts[weekday_idx]
+    
+    current_horai_idx = (start_idx + hours_since_sunrise) % 7
+    current_horai = horai_lords[current_horai_idx]
+
+    return {
+        "paksha": paksha, "nakshatra": daily_nak_name,
+        "tara_name": tara_name, "tara_desc": tara_desc, "tara_color": tara_color,
+        "nalla_neram": nalla_neram_map[weekday_idx], "horai": current_horai
+    }
