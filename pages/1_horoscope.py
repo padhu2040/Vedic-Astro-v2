@@ -366,7 +366,7 @@ if st.session_state.report_generated:
             status = "VARGOTTAMA" if r1 == p_d9[p] else "ROYAL" if dig == "Exalted" else "WEAK" if dig == "Neecha" else "Avg"
             master_table.append({"Planet": t_p.get(p, p) if LANG == "Tamil" else t_p_eng.get(p, p), "Rasi": ZODIAC_TA.get(r1, "") if LANG=="Tamil" else ZODIAC[r1], "House": h, "Bhava": bhava_h, "Dignity": dig, "Status": status})
 
-        # KETU INTEGRATION
+        # PRECOMPUTE RAHU/KETU HOUSES (Moved to fix the PDF NameError!)
         ketu_lon = (p_lon_absolute["Rahu"] + 180) % 360
         p_lon_absolute["Ketu"] = ketu_lon
         p_pos["Ketu"] = int(ketu_lon/30) + 1
@@ -374,6 +374,9 @@ if st.session_state.report_generated:
         bhava_placements["Ketu"] = determine_house(ketu_lon, bhava_cusps)
         k_h = (p_pos["Ketu"] - lagna_rasi + 1) if (p_pos["Ketu"] - lagna_rasi + 1) > 0 else (p_pos["Ketu"] - lagna_rasi + 1) + 12
         master_table.append({"Planet": t_p.get("Ketu", "Ketu") if LANG=="Tamil" else "Ketu", "Rasi": ZODIAC[p_pos["Ketu"]], "House": k_h, "Bhava": bhava_placements["Ketu"], "Dignity": get_dignity("Ketu", p_pos["Ketu"]), "Status": "Avg"})
+
+        rahu_h = (p_pos["Rahu"] - lagna_rasi + 1) if (p_pos["Rahu"] - lagna_rasi + 1) > 0 else (p_pos["Rahu"] - lagna_rasi + 1) + 12
+        ketu_h = (p_pos["Ketu"] - lagna_rasi + 1) if (p_pos["Ketu"] - lagna_rasi + 1) > 0 else (p_pos["Ketu"] - lagna_rasi + 1) + 12
 
         p_pos["Lagna"] = lagna_rasi
         p_d9["Lagna"] = d9_lagna
@@ -475,9 +478,6 @@ if st.session_state.report_generated:
 
         # --- TAB 3: THE EXECUTIVE PLAYBOOK ---
         with t3:
-            rahu_h = (p_pos["Rahu"] - lagna_rasi + 1) if (p_pos["Rahu"] - lagna_rasi + 1) > 0 else (p_pos["Rahu"] - lagna_rasi + 1) + 12
-            ketu_h = (p_pos["Ketu"] - lagna_rasi + 1) if (p_pos["Ketu"] - lagna_rasi + 1) > 0 else (p_pos["Ketu"] - lagna_rasi + 1) + 12
-
             house_domains = {
                 1: "personal identity, physical vitality, and self-projection",
                 2: "financial accumulation, verbal communication, and family assets",
@@ -679,13 +679,7 @@ if st.session_state.report_generated:
 
         # --- TAB 7: ORACLE ---
         with t7:
-            c1, c2 = st.columns([5, 1])
-            with c1:
-                st.subheader("✦ Ask the AI Astrologer" if LANG == "English" else "✦ AI ஜோதிடரிடம் கேளுங்கள்")
-            with c2:
-                if st.button("🗑️ Clear", help="Clear chat history", use_container_width=True):
-                    st.session_state.messages = []
-                    st.rerun()
+            st.subheader("✦ Ask the AI Astrologer" if LANG == "English" else "✦ AI ஜோதிடரிடம் கேளுங்கள்")
             
             chat_container = st.container()
             with chat_container:
