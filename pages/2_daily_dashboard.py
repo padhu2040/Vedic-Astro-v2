@@ -58,7 +58,6 @@ with st.sidebar:
 
 # --- MAIN DASHBOARD UI ---
 st.title("⚡ Daily Executive Weather" if LANG=="English" else "⚡ தினசரி ஜோதிட அறிக்கை")
-st.markdown(f"**{'Live Tactical Strategy for' if LANG=='English' else 'இன்றைய நாள்'}:** {datetime.now().strftime('%B %d, %Y')}")
 
 if not def_n:
     msg = "👈 Please select a saved profile from the sidebar to load your daily executive weather report." if LANG=="English" else "👈 உங்கள் சுயவிவரத்தை தேர்ந்தெடுக்கவும்."
@@ -88,90 +87,112 @@ else:
             # --- SETUP TABS ---
             t1_name = "📅 Daily Overview" if LANG=="English" else "📅 பஞ்சாங்கம்"
             t2_name = "⏳ Hourly Planner" if LANG=="English" else "⏳ நாள்காட்டி"
-            t3_name = "🎯 Tactical Strategy" if LANG=="English" else "🎯 வியூகம்"
+            t3_name = "🎯 Strategy" if LANG=="English" else "🎯 வியூகம்"
             tab1, tab2, tab3 = st.tabs([t1_name, t2_name, t3_name])
 
-            # --- TAB 1: DAILY OVERVIEW (The Tearaway Calendar Summary) ---
+            # --- TAB 1: 6-CARD GRID (Minimalist & Flat) ---
             with tab1:
-                # Chandrashtama Alert
-                if pan['is_chandrashtama']:
-                    alert_title = "🚨 CHANDRASHTAMA ALERT" if LANG=="English" else "🚨 சந்திராஷ்டமம் எச்சரிக்கை"
-                    alert_desc = "The Moon is in your 8th house today. Maintain a low profile, avoid arguments, and delay major executive decisions." if LANG=="English" else "இன்று சந்திராஷ்டமம். முக்கிய முடிவுகளைத் தவிர்க்கவும், கவனமாக இருக்கவும்."
-                    st.markdown(f"<div style='background-color:#ffebee; border-left:5px solid #c0392b; padding:15px; border-radius:4px; margin-bottom:20px;'><h4 style='color:#c0392b; margin:0 0 5px 0;'>{alert_title}</h4><p style='color:#333; margin:0; font-size:14px;'>{alert_desc}</p></div>", unsafe_allow_html=True)
-
-                t_tara = "Personalized Tarabalam" if LANG=="English" else "தாராபலம்"
-                t_horai = "Current Active Horai" if LANG=="English" else "நடப்பு ஓரை"
-                t_moon = "Daily Moon Phase" if LANG=="English" else "சந்திர நிலை"
-
-                metric_html = f"""
-<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
-<div style="background: #fff; border: 1px solid #eaeaea; border-top: 3px solid {pan['tara_color']}; border-radius: 6px; padding: 15px; text-align: center;">
-<div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">{t_tara}</div>
-<div style="font-size: 14px; font-weight: bold; color: {pan['tara_color']};">{pan['tara_name']}</div>
-<div style="font-size: 12px; color: #666; margin-top: 4px;">{pan['tara_desc']}</div>
-</div>
-<div style="background: #fff; border: 1px solid #eaeaea; border-top: 3px solid #8e44ad; border-radius: 6px; padding: 15px; text-align: center;">
-<div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">{t_horai}</div>
-<div style="font-size: 16px; font-weight: bold; color: #8e44ad;">{pan['horai']}</div>
-</div>
-<div style="background: #fff; border: 1px solid #eaeaea; border-top: 3px solid #2980b9; border-radius: 6px; padding: 15px; text-align: center;">
-<div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">{t_moon} ({pan['nakshatra']})</div>
-<div style="font-size: 14px; font-weight: bold; color: #2980b9;">{pan['moon_phase']}</div>
-</div>
-</div>
-                """
-                st.markdown(metric_html, unsafe_allow_html=True)
-
-                # Core Timing Summary Grid
-                t_title = "Important Timings Today" if LANG=="English" else "இன்றைய முக்கிய நேரங்கள்"
-                sun_str = "Sunrise / Sunset" if LANG=="English" else "சூரிய உதயம் / அஸ்தமனம்"
-                soolam_str = "Soolam (Avoid Travel)" if LANG=="English" else "சூலம் (பயணத் தடை)"
-                rem_str = "Remedy" if LANG=="English" else "பரிகாரம்"
-
-                timing_html = f"""
-<div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #fff; border: 1px solid #eaeaea; border-radius: 6px; padding: 20px;">
-<h3 style="margin-top:0; color:#2c3e50; font-size: 18px; border-bottom: 1px solid #eee; padding-bottom: 10px;">{t_title}</h3>
-
-<div style="display: flex; border-bottom: 1px solid #f9f9f9; padding: 8px 0;">
-    <div style="flex: 1; color: #7f8c8d; font-size: 14px;">{sun_str}</div>
-    <div style="flex: 1; text-align: right; color: #333; font-weight: bold; font-size: 14px;">{pan['sunrise']} / {pan['sunset']}</div>
-</div>
-"""
-                for key, val in pan["summary_times"].items():
-                    color = "#27ae60" if "Nalla" in key or "நல்ல" in key or "கௌரி" in key else "#c0392b" if "Rahu" in key or "ராகு" in key else "#d35400" if "Yem" in key or "எம" in key else "#8e44ad"
-                    timing_html += f"""
-<div style="display: flex; border-bottom: 1px solid #f9f9f9; padding: 8px 0;">
-    <div style="flex: 1; color: {color}; font-size: 14px; font-weight: bold;">{key}</div>
-    <div style="flex: 1; text-align: right; color: #333; font-size: 14px;">{val}</div>
-</div>
-"""
-                timing_html += f"""
-<div style="display: flex; padding: 8px 0;">
-    <div style="flex: 1; color: #7f8c8d; font-size: 14px;">{soolam_str}</div>
-    <div style="flex: 1; text-align: right; color: #333; font-size: 14px;"><b>{pan['soolam_dir']}</b> ({rem_str}: {pan['soolam_rem']})</div>
-</div>
-</div>
-"""
-                st.markdown(timing_html, unsafe_allow_html=True)
-
-
-            # --- TAB 2: HOURLY PLANNER (The Minimalist List) ---
-            with tab2:
-                cal_title = "The Cosmic Calendar" if LANG=="English" else "நாள்காட்டி"
-                st.markdown(f"<h3 style='color: #2c3e50; font-family: sans-serif; font-size: 18px; margin-top: 5px; border-bottom: 2px solid #eee; padding-bottom: 8px;'>{cal_title}</h3>", unsafe_allow_html=True)
+                moon_icon = "🌔" if pan['is_waxing'] else "🌘"
                 
-                schedule_html = "<div style='font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif; margin-bottom: 20px;'>"
+                # Dictionary for labels based on language
+                lbl = {
+                    "m_phase": "Moon Phase" if LANG=="English" else "சந்திர நிலை",
+                    "sun_yoga": "Sun & Astronomical Yoga" if LANG=="English" else "சூரியன் & யோகம்",
+                    "sun_r": "Sunrise" if LANG=="English" else "உதயம்",
+                    "sun_s": "Sunset" if LANG=="English" else "அஸ்தமனம்",
+                    "yoga": "Nithya Yoga" if LANG=="English" else "நித்திய யோகம்",
+                    "tara": "Personal Tarabalam" if LANG=="English" else "தாராபலம்",
+                    "nak": "Nakshatra" if LANG=="English" else "நட்சத்திரம்",
+                    "ch_alert": "Chandrashtama for" if LANG=="English" else "சந்திராஷ்டமம்",
+                    "ausp": "Auspicious Timings" if LANG=="English" else "நல்ல நேரங்கள்",
+                    "nn": "Nalla Neram" if LANG=="English" else "நல்ல நேரம்",
+                    "gnn": "Gowri Neram" if LANG=="English" else "கௌரி நேரம்",
+                    "inausp": "Obstacle Windows" if LANG=="English" else "தடை நேரங்கள்",
+                    "rk": "Rahu Kalam" if LANG=="English" else "ராகு காலம்",
+                    "yg": "Yemagandam" if LANG=="English" else "எமகண்டம்"
+                }
+
+                grid_html = f"""
+<style>
+.metric-card {{ background: #ffffff; border: 1px solid #e0e0e0; border-radius: 4px; padding: 16px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-shadow: 0 1px 2px rgba(0,0,0,0.01); display: flex; flex-direction: column; justify-content: space-between; min-height: 120px; }}
+.card-header {{ font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px; color: #7f8c8d; font-weight: 500; margin-bottom: 8px; }}
+.card-title {{ font-size: 26px; font-weight: 300; color: #111; line-height: 1.1; margin-bottom: 4px; }}
+.card-sub {{ font-size: 13px; color: #555; font-weight: 400; }}
+.card-row {{ display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #f7f7f7; padding: 6px 0; }}
+.card-row:last-child {{ border-bottom: none; }}
+.row-lbl {{ font-size: 12px; color: #7f8c8d; font-weight: 400; }}
+.row-val {{ font-size: 13px; color: #222; font-weight: 500; text-align: right; }}
+</style>
+
+<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px;">
+
+    <div class="metric-card">
+        <div class="card-header">{pan['day_str']}</div>
+        <div>
+            <div class="card-title">{pan['date_str']}</div>
+            <div class="card-sub" style="color: #2c3e50;">{pan['tamil_month']}</div>
+        </div>
+    </div>
+
+    <div class="metric-card">
+        <div class="card-header">{lbl['m_phase']}</div>
+        <div>
+            <div class="card-title" style="font-size: 22px;">{moon_icon} {pan['tithi']}</div>
+            <div class="card-sub">{pan['paksha']} <span style="color:#95a5a6;">|</span> {pan['countdown']}</div>
+        </div>
+    </div>
+
+    <div class="metric-card">
+        <div class="card-header">{lbl['sun_yoga']}</div>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;">
+            <div class="card-row"><span class="row-lbl">{lbl['sun_r']} / {lbl['sun_s']}</span><span class="row-val">{pan['sunrise']} - {pan['sunset']}</span></div>
+            <div class="card-row"><span class="row-lbl">{lbl['yoga']}</span><span class="row-val">{pan['yoga']}</span></div>
+        </div>
+    </div>
+
+    <div class="metric-card">
+        <div class="card-header">{lbl['tara']}</div>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;">
+            <div class="card-row"><span class="row-lbl">{lbl['nak']}</span><span class="row-val">{pan['nakshatra']} <span style="color:#7f8c8d; font-weight:400;">({pan['tara_name']})</span></span></div>
+            <div class="card-row"><span class="row-lbl" style="color:#c0392b;">{lbl['ch_alert']}</span><span class="row-val" style="color:#c0392b;">{pan['ch_rasi_name']}</span></div>
+        </div>
+    </div>
+
+    <div class="metric-card" style="border-top: 2px solid #27ae60;">
+        <div class="card-header" style="color: #27ae60;">{lbl['ausp']}</div>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;">
+            <div class="card-row"><span class="row-lbl">{lbl['nn']}</span><span class="row-val">{pan['nn']}</span></div>
+            <div class="card-row"><span class="row-lbl">{lbl['gnn']}</span><span class="row-val">{pan['gnn']}</span></div>
+        </div>
+    </div>
+
+    <div class="metric-card" style="border-top: 2px solid #c0392b;">
+        <div class="card-header" style="color: #c0392b;">{lbl['inausp']}</div>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;">
+            <div class="card-row"><span class="row-lbl">{lbl['rk']}</span><span class="row-val">{pan['rk']}</span></div>
+            <div class="card-row"><span class="row-lbl">{lbl['yg']}</span><span class="row-val">{pan['yg']}</span></div>
+        </div>
+    </div>
+
+</div>
+"""
+                st.markdown(grid_html, unsafe_allow_html=True)
+
+
+            # --- TAB 2: HOURLY PLANNER (Minimalist Line Items) ---
+            with tab2:
+                schedule_html = "<div style='font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;'>"
                 for row in pan["schedule"]:
                     badges_html = ""
                     for b in row["badges"]:
-                        badges_html += f"<div style='color: {b['color']}; font-size: 11.5px; font-weight: 500; margin-top: 3px;'>{b['text']} ({b['start'].strftime('%I:%M')} - {b['end'].strftime('%I:%M%p')})</div>"
+                        badges_html += f"<div style='color: {b['color']}; font-size: 11px; font-weight: 500; margin-top: 2px;'>{b['text']} ({b['start'].strftime('%I:%M').lstrip('0')} - {b['end'].strftime('%I:%M').lstrip('0')})</div>"
                     
                     schedule_html += f"""
-<div style="display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 5px; border-bottom: 1px solid #f2f2f2;">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 2px; border-bottom: 1px solid #f2f2f2;">
 <div style="flex: 1;">
-<div style="font-size: 11px; color: #888; font-weight: 400; margin-bottom: 4px;">{row['time']}</div>
-<div style="font-size: 15px; font-weight: 500; color: {row['color']};">{row['lord']}</div>
-<div style="font-size: 12px; color: #666; margin-top: 2px; font-weight: 400;">{row['activity']}</div>
+<div style="font-size: 11px; color: #999; font-weight: 400; margin-bottom: 2px;">{row['time']}</div>
+<div style="font-size: 14.5px; font-weight: 500; color: {row['color']};">{row['lord']}</div>
+<div style="font-size: 12px; color: #666; margin-top: 1px; font-weight: 300;">{row['activity']}</div>
 </div>
 <div style="text-align: right; flex: 1;">
 {badges_html}
@@ -182,41 +203,44 @@ else:
                 st.markdown(schedule_html, unsafe_allow_html=True)
 
 
-            # --- TAB 3: TACTICAL STRATEGY (The Weather Cards) ---
+            # --- TAB 3: TACTICAL STRATEGY ---
             with tab3:
                 focus = daily_weather["focus"]
                 comm = daily_weather["communication"]
                 energy = daily_weather["energy"]
                 
-                s_focus = "Primary Strategic Focus" if LANG=="English" else "முக்கிய வியூகம்"
-                s_comm = "Communication & Data Weather" if LANG=="English" else "தகவல் தொடர்பு"
-                s_energy = "Executive Vitality & Authority" if LANG=="English" else "ஆளுமை நிலை"
+                s_focus = "Strategic Focus" if LANG=="English" else "வியூகம்"
+                s_comm = "Communication" if LANG=="English" else "தகவல் தொடர்பு"
+                s_energy = "Executive Vitality" if LANG=="English" else "ஆளுமை நிலை"
 
                 weather_html = f"""
-<div style="font-family: sans-serif;">
-<h3 style="color: #2c3e50; margin-top: 5px; margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid #eee; padding-bottom: 8px;">1. {s_focus}</h3>
-<div style="background: #fff; border: 1px solid #eaeaea; border-left: 5px solid {focus['color']}; padding: 20px; border-radius: 6px; margin-bottom: 25px;">
-<div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Driver:</b> Moon in {daily_weather['positions']['Moon']}</div>
-<div style="font-size: 17px; font-weight: bold; color: {focus['color']}; margin-bottom: 10px;">{focus['title']}</div>
-<div style="font-size: 14px; color: #444; line-height: 1.6; margin-bottom: 10px;">{focus['desc']}</div>
-<div style="font-size: 13px; color: #111; font-style: italic; background: #f9f9f9; padding: 10px; border-radius: 4px;">{focus['remedy']}</div>
+<style>
+.t-card {{ background: #fff; border: 1px solid #e0e0e0; padding: 18px; border-radius: 4px; margin-bottom: 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-shadow: 0 1px 2px rgba(0,0,0,0.01); }}
+.t-head {{ font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; font-weight: 500; }}
+.t-title {{ font-size: 17px; font-weight: 600; margin-bottom: 8px; }}
+.t-desc {{ font-size: 13.5px; color: #444; line-height: 1.5; margin-bottom: 12px; font-weight: 300; }}
+.t-rem {{ font-size: 12.5px; color: #222; font-style: italic; background: #fafafa; padding: 10px; border-radius: 4px; border: 1px solid #f0f0f0; }}
+</style>
+
+<div class="t-card" style="border-left: 3px solid {focus['color']};">
+<div class="t-head">1. {s_focus} (Moon in {daily_weather['positions']['Moon']})</div>
+<div class="t-title" style="color: {focus['color']};">{focus['title']}</div>
+<div class="t-desc">{focus['desc']}</div>
+<div class="t-rem">{focus['remedy']}</div>
 </div>
 
-<h3 style="color: #2c3e50; margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid #eee; padding-bottom: 8px;">2. {s_comm}</h3>
-<div style="background: #fff; border: 1px solid #eaeaea; border-left: 5px solid #27ae60; padding: 20px; border-radius: 6px; margin-bottom: 25px;">
-<div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Driver:</b> Mercury in {daily_weather['positions']['Mercury']}</div>
-<div style="font-size: 17px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">{comm['title']}</div>
-<div style="font-size: 14px; color: #444; line-height: 1.6; margin-bottom: 10px;">{comm['desc']}</div>
-<div style="font-size: 13px; color: #111; font-style: italic; background: #f9f9f9; padding: 10px; border-radius: 4px;">{comm['remedy']}</div>
+<div class="t-card" style="border-left: 3px solid #27ae60;">
+<div class="t-head">2. {s_comm} (Mercury in {daily_weather['positions']['Mercury']})</div>
+<div class="t-title" style="color: #2c3e50;">{comm['title']}</div>
+<div class="t-desc">{comm['desc']}</div>
+<div class="t-rem">{comm['remedy']}</div>
 </div>
 
-<h3 style="color: #2c3e50; margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid #eee; padding-bottom: 8px;">3. {s_energy}</h3>
-<div style="background: #fff; border: 1px solid #eaeaea; border-left: 5px solid #f39c12; padding: 20px; border-radius: 6px; margin-bottom: 30px;">
-<div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Driver:</b> Sun in {daily_weather['positions']['Sun']}</div>
-<div style="font-size: 17px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">{energy['title']}</div>
-<div style="font-size: 14px; color: #444; line-height: 1.6; margin-bottom: 10px;">{energy['desc']}</div>
-<div style="font-size: 13px; color: #111; font-style: italic; background: #f9f9f9; padding: 10px; border-radius: 4px;">{energy['remedy']}</div>
+<div class="t-card" style="border-left: 3px solid #f39c12;">
+<div class="t-head">3. {s_energy} (Sun in {daily_weather['positions']['Sun']})</div>
+<div class="t-title" style="color: #2c3e50;">{energy['title']}</div>
+<div class="t-desc">{energy['desc']}</div>
+<div class="t-rem">{energy['remedy']}</div>
 </div>
-</div>
-                """
+"""
                 st.markdown(weather_html, unsafe_allow_html=True)
