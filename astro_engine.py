@@ -616,6 +616,9 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
     from datetime import datetime, timedelta, time, timezone
     import pytz
 
+    # LOCK THE ENGINE TO VEDIC SIDEREAL (Thirukanitha Standard)
+    swe.set_sid_mode(swe.SIDM_LAHIRI)
+
     local_tz = pytz.timezone(tz_name)
     now_dt = datetime.now(local_tz)
     
@@ -664,7 +667,7 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
 
     def get_sun_lon(jd): return swe.calc_ut(jd, swe.SUN, swe.FLG_SIDEREAL)[0][0]
     
-    # 2. True Sankramana (Exact Tamil Day & Year)
+    # 2. True Sankramana (Exact Tamil Day)
     curr_lon = get_sun_lon(current_jd_ut)
     sun_rasi_idx = int(curr_lon / 30) + 1
     jd_sank = current_jd_ut
@@ -693,7 +696,7 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
     tamil_days_dict = {0:"திங்கள்", 1:"செவ்வாய்", 2:"புதன்", 3:"வியாழன்", 4:"வெள்ளி", 5:"சனி", 6:"ஞாயிறு"}
     day_ta = tamil_days_dict[dt_obj.weekday()]
 
-    # 3. Iterative End-Time Calculators
+    # 3. Precision End-Time Calculators
     def get_tithi(jd): return int(((((swe.calc_ut(jd, swe.MOON, swe.FLG_SIDEREAL)[0][0]) - (swe.calc_ut(jd, swe.SUN, swe.FLG_SIDEREAL)[0][0])) % 360) / 12) + 1)
     def get_nak(jd): return int((swe.calc_ut(jd, swe.MOON, swe.FLG_SIDEREAL)[0][0] % 360) / (360/27))
     def get_rasi(jd): return int(swe.calc_ut(jd, swe.MOON, swe.FLG_SIDEREAL)[0][0] / 30) + 1
@@ -702,12 +705,14 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
     def find_end_time(start_jd, func, max_hours):
         start_val = func(start_jd)
         jd = start_jd
-        for _ in range(max_hours * 2):
-            jd += 0.5
+        # Step forward by 2-hour chunks safely
+        for _ in range(max_hours):
+            jd += (2.0 / 24.0)
             if func(jd) != start_val: break
-        jd -= 0.5
-        for _ in range(720):
-            jd += (1/1440)
+        # Step back 2 hours, then inch forward by 1 minute for exact boundary
+        jd -= (2.0 / 24.0)
+        for _ in range(120):
+            jd += (1.0 / 1440.0)
             if func(jd) != start_val: return jd, func(jd)
         return jd, func(jd)
 
@@ -716,7 +721,7 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
     jd_rasi_end, next_r_idx = find_end_time(current_jd_ut, get_rasi, 72)
     jd_yoga_end, next_y_idx = find_end_time(current_jd_ut, get_yoga, 30)
 
-    # 4. Sraardha Tithi (Calculated explicitly at Aparahna 1:30 PM)
+    # 4. Sraardha Tithi
     sr_dt = local_tz.localize(datetime(dt_obj.year, dt_obj.month, dt_obj.day, 13, 30, 0))
     sr_utc = sr_dt.astimezone(pytz.utc)
     sr_jd = swe.julday(sr_utc.year, sr_utc.month, sr_utc.day, sr_utc.hour + (sr_utc.minute/60.0))
@@ -749,48 +754,60 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
     target_das_dt = dt_obj + timedelta(days=d_to_das)
     dasami_str = f"{d_to_das}d to Dasami ({target_das_dt.strftime('%b %d')})" if lang=="English" else f"தசமிக்கு {d_to_das} நாள் ({target_das_dt.strftime('%d %b')})"
 
-    # 5. Vrata, Deity & Mantra Engine
+    # 5. Vrata, Deity & Muhurtham Logic
+    good_tithis = [2,3,5,7,10,11,13]
+    bad_days = [1, 5] # Tue, Sat (0=Mon)
+    t_mod = tithi_idx % 15
+    is_muhurtham = (t_mod in good_tithis) and (dt_obj.weekday() not in bad_days)
+    
     vrata_name_en, vrata_name_ta = "Standard Day", "சாதாரண நாள்"
     vrata_icon, v_mantra = "✨", "Om Shanti" if lang=="English" else "ஓம் சாந்தி"
     
-    t_mod = tithi_idx % 15
+    if is_muhurtham:
+        vrata_name_en, vrata_name_ta = "Subha Muhurtham", "சுப முகூர்த்தம்"
+        vrata_icon, v_mantra = "🌿", "Om Sri Maha Ganapataye Namaha" if lang=="English" else "ஓம் ஸ்ரீ மஹா கணபதயே நமஹ"
+
     if t_mod == 4:
-        vrata_name_en, vrata_name_ta, vrata_icon = "Chaturthi (Lord Ganesha)", "சதுர்த்தி (விநாயகர்)", "🐘"
-        v_mantra = "Om Gam Ganapataye Namaha" if lang=="English" else "ஓம் கம் கணபதயே நமஹ"
+        vrata_name_en = "Sankatahara Chaturthi" if not is_waxing else "Valarpirai Chaturthi"
+        vrata_name_ta = "சங்கடஹர சதுர்த்தி" if not is_waxing else "வளர்பிறை சதுர்த்தி"
+        vrata_icon, v_mantra = "🐘", "Om Gam Ganapataye Namaha" if lang=="English" else "ஓம் கம் கணபதயே நமஹ"
     elif t_mod == 6:
-        vrata_name_en, vrata_name_ta, vrata_icon = "Shashti (Lord Murugan)", "சஷ்டி (முருகன்)", "🦚"
-        v_mantra = "Om Saravanabhavaya Namaha" if lang=="English" else "ஓம் சரவணபவாய நமஹ"
+        vrata_name_en, vrata_name_ta = "Shashti (Lord Murugan)", "சஷ்டி (முருகன்)"
+        vrata_icon, v_mantra = "🦚", "Om Saravanabhavaya Namaha" if lang=="English" else "ஓம் சரவணபவாய நமஹ"
     elif t_mod == 11:
-        vrata_name_en, vrata_name_ta, vrata_icon = "Ekadasi (Lord Perumal)", "ஏகாதசி (பெருமாள்)", "🪔"
-        v_mantra = "Om Namo Narayanaya" if lang=="English" else "ஓம் நமோ நாராயணாய"
+        vrata_name_en, vrata_name_ta = "Ekadasi (Lord Perumal)", "ஏகாதசி (பெருமாள்)"
+        vrata_icon, v_mantra = "🪔", "Om Namo Narayanaya" if lang=="English" else "ஓம் நமோ நாராயணாய"
     elif t_mod == 13:
-        vrata_name_en, vrata_name_ta, vrata_icon = "Pradosham (Lord Shiva)", "பிரதோஷம் (சிவன்)", "🔱"
-        v_mantra = "Om Namah Shivaya" if lang=="English" else "ஓம் நமசிவாய"
+        vrata_name_en, vrata_name_ta = "Pradosham (Lord Shiva)", "பிரதோஷம் (சிவன்)"
+        vrata_icon, v_mantra = "🔱", "Om Namah Shivaya" if lang=="English" else "ஓம் நமசிவாய"
     elif tithi_idx == 15:
-        vrata_name_en, vrata_name_ta, vrata_icon = "Pournami (Goddess Amman)", "பௌர்ணமி (அம்மன்)", "🌕"
-        v_mantra = "Om Dum Durgayai Namaha" if lang=="English" else "ஓம் தும் துர்காயை நமஹ"
+        vrata_name_en, vrata_name_ta = "Pournami (Goddess Amman)", "பௌர்ணமி (அம்மன்)"
+        vrata_icon, v_mantra = "🌕", "Om Dum Durgayai Namaha" if lang=="English" else "ஓம் தும் துர்காயை நமஹ"
     elif tithi_idx == 30:
-        vrata_name_en, vrata_name_ta, vrata_icon = "Amavasai (Ancestors)", "அமாவாசை (முன்னோர்கள்)", "🌑"
-        v_mantra = "Om Pitru Devatayai Namaha" if lang=="English" else "ஓம் பித்ரு தேவதாயை நமஹ"
+        vrata_name_en, vrata_name_ta = "Amavasai (Ancestors)", "அமாவாசை (முன்னோர்கள்)"
+        vrata_icon, v_mantra = "🌑", "Om Pitru Devatayai Namaha" if lang=="English" else "ஓம் பித்ரு தேவதாயை நமஹ"
     elif t_mod == 8:
-        vrata_name_en, vrata_name_ta, vrata_icon = "Ashtami (Lord Bhairava)", "அஷ்டமி (பைரவர்)", "⚔️"
-        v_mantra = "Om Kala Bhairavaya Namaha" if lang=="English" else "ஓம் கால பைரவாய நமஹ"
+        vrata_name_en, vrata_name_ta = "Ashtami (Lord Bhairava)", "அஷ்டமி (பைரவர்)"
+        vrata_icon, v_mantra = "⚔️", "Om Kala Bhairavaya Namaha" if lang=="English" else "ஓம் கால பைரவாய நமஹ"
     elif t_mod == 9:
-        vrata_name_en, vrata_name_ta, vrata_icon = "Navami (Goddess Saraswati)", "நவமி (சரஸ்வதி)", "📖"
-        v_mantra = "Om Aim Saraswatyai Namaha" if lang=="English" else "ஓம் ஐம் சரஸ்வத்யை நமஹ"
+        vrata_name_en, vrata_name_ta = "Navami (Goddess Saraswati)", "நவமி (சரஸ்வதி)"
+        vrata_icon, v_mantra = "📖", "Om Aim Saraswatyai Namaha" if lang=="English" else "ஓம் ஐம் சரஸ்வத்யை நமஹ"
     elif t_mod == 10:
-        vrata_name_en, vrata_name_ta, vrata_icon = "Dasami (Goddess Nimishamba)", "தசமி (நிமிஷாம்பிகை)", "🪷"
-        v_mantra = "Om Sri Nimishambayai Namaha" if lang=="English" else "ஓம் ஸ்ரீ நிமிஷாம்பிகையே நமஹ"
+        vrata_name_en, vrata_name_ta = "Dasami (Goddess Nimishamba)", "தசமி (நிமிஷாம்பிகை)"
+        vrata_icon, v_mantra = "🪷", "Om Sri Nimishambayai Namaha" if lang=="English" else "ஓம் ஸ்ரீ நிமிஷாம்பிகையே நமஹ"
+
+    # Ensure Muhurtham flag stays if overruled by Deity
+    muh_str = "Favorable for General Auspicious Tasks" if is_muhurtham else "No Standard Muhurtham Today"
+    if lang == "Tamil": muh_str = "சுப காரியங்களுக்கு உகந்தது" if is_muhurtham else "இன்று சுப முகூர்த்தம் இல்லை"
     
     v_name = vrata_name_en if lang=="English" else vrata_name_ta
 
-    # 6. Subakariyam (Nakshatra specific)
+    # 6. Subakariyam
     subha_en = ["Travel, taking medicine, arts.", "Clearing debts, severe actions.", "Clearing debts, cutting, severe acts.", "Marriage, construction, farming.", "Travel, naming, marriage.", "Demolition, severe actions.", "Farming, travel, medicine.", "All auspicious acts, buying gold.", "Lawsuits, severe actions.", "Ancestral rites, buying land.", "Arts, entertainment, farming.", "Marriage, house warming.", "Education, arts, travel.", "Wearing jewels, arts, crafts.", "Business, farming, socializing.", "Making garments, farming.", "Marriage, travel, accounting.", "Machineries, farming.", "Construction, gardening.", "Water works, clearing debts.", "Marriage, house warming.", "Medicine, learning, moving.", "Buying vehicles, moving.", "Medicine, education, travel.", "Farming, water works.", "Marriage, house warming.", "Marriage, buying jewelry."]
     subha_ta = ["பயணம், மருந்து, கலை", "கடன் அடைக்க, கடின வேலைகள்", "கடன் தீர்க்க, கடின வேலைகள்", "திருமணம், வீடு கட்ட, விவசாயம்", "பயணம், பெயர் சூட்ட, திருமணம்", "பழையதை அழிக்க, கடின வேலைகள்", "விவசாயம், பயணம், மருந்து", "அனைத்து சுப காரியங்கள், பொன் வாங்க", "வழக்குகள், கடின வேலைகள்", "பித்ரு காரியங்கள், நிலம் வாங்க", "கலை, கேளிக்கை, விவசாயம்", "திருமணம், கிரகப்பிரவேசம்", "கல்வி, கலை, பயணம்", "ஆபரணம் அணிய, கலை, தொழில்", "வியாபாரம், விவசாயம், நட்பு", "ஆடை தயாரிக்க, விவசாயம்", "திருமணம், பயணம், கணக்கு", "இயந்திரங்கள் வாங்க, விவசாயம்", "கட்டிடம், தோட்டம், கடின வேலை", "நீர் சம்பந்தப்பட்ட வேலை, கடன் அடைக்க", "திருமணம், கிரகப்பிரவேசம்", "மருந்து, கல்வி, கிரகப்பிரவேசம்", "வாகனம் வாங்க, வீடு மாற", "மருந்து, கல்வி, பயணம்", "விவசாயம், நீர் வேலைகள்", "திருமணம், கிரகப்பிரவேசம்", "திருமணம், ஆபரணம் வாங்க"]
     nak_idx_now = get_nak(current_jd_ut)
     suba_str = subha_en[nak_idx_now] if lang == "English" else subha_ta[nak_idx_now]
 
-    # Astro Setup
     yogas_en = ["Vishkumbham", "Priti", "Ayushman", "Saubhagyam", "Shobhanam", "Atigandam", "Sukarmam", "Dhriti", "Shulam", "Gandam", "Vriddhi", "Dhruvam", "Vyaghatam", "Harshanam", "Vajram", "Siddhi", "Vyatipatam", "Variyan", "Parigham", "Shivam", "Siddham", "Sadhyam", "Shubham", "Shuklam", "Brahmam", "Indram", "Vaidhriti"]
     yogas_ta = ["விஷ்கம்பம்", "பிரீதி", "ஆயுஷ்மான்", "சௌபாக்கியம்", "சோபனம்", "அதிகண்டம்", "சுகர்மம்", "திருதி", "சூலம்", "கண்டம்", "விருத்தி", "துருவம்", "வியாகாதம்", "ஹர்ஷணம்", "வஜ்ரம்", "சித்தி", "வியதிபாதம்", "வரியான்", "பரிகம்", "சிவம்", "சித்தம்", "சாத்தியம்", "சுபம்", "சுக்கிலம்", "பிரம்மா", "இந்திரம்", "வைதிருதி"]
     daily_yoga = yogas_en[get_yoga(current_jd_ut)] if lang=="English" else yogas_ta[get_yoga(current_jd_ut)]
@@ -867,7 +884,7 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
         "tithi_short": t_name, "t_end": format_end_time(jd_tithi_end), "t_next": next_t_name,
         "sr_tithi": sr_tithi_name,
         "paksha": paksha, "countdown": countdown_str, "dasami_str": dasami_str, "is_waxing": is_waxing,
-        "v_name": v_name, "v_icon": vrata_icon, "v_mantra": v_mantra, "suba_str": suba_str,
+        "v_name": v_name, "v_icon": vrata_icon, "v_mantra": v_mantra, "suba_str": suba_str, "muh_str": muh_str,
         "sunrise": jd_to_local_dt(sunrise_jd).strftime('%I:%M %p').lstrip('0'), "sunset": jd_to_local_dt(sunset_jd).strftime('%I:%M %p').lstrip('0'),
         "yoga": daily_yoga, "y_end": format_end_time(jd_yoga_end), "y_next": next_yoga_name,
         "nakshatra": nak_name, "n_end": format_end_time(jd_nak_end), "n_next": next_nak_name,
