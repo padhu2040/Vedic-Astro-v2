@@ -68,7 +68,11 @@ with st.spinner("Calculating orbital mechanics..."):
     except:
         lat_val, lon_val, tz_val = 13.0827, 80.2707, "Asia/Kolkata"
 
-    natal_lagna_rasi, natal_moon_rasi, natal_moon_lon = None, None, None
+    # Pre-Initialize all variables to prevent NameErrors!
+    natal_lagna_rasi = None
+    natal_moon_rasi = None
+    natal_moon_lon = None
+    
     if def_n:
         swe.set_sid_mode(swe.SIDM_LAHIRI)
         birth_dt = datetime.combine(def_dob, def_tob)
@@ -81,12 +85,22 @@ with st.spinner("Calculating orbital mechanics..."):
         natal_moon_lon = swe.calc_ut(jd_ut_natal, swe.MOON, swe.FLG_SIDEREAL)[0][0]
         natal_moon_rasi = int(natal_moon_lon/30)+1
 
-    pan = get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_val, LANG, natal_lagna_rasi, natal_moon_rasi, natal_moon_lon)
+    # KEYWORD ARGUMENTS to completely eliminate TypeError
+    pan = get_daily_panchangam_metrics(
+        target_date=target_date, 
+        lat_val=lat_val, 
+        lon_val=lon_val, 
+        tz_name=tz_val, 
+        lang=LANG, 
+        user_lagna=natal_lagna_rasi, 
+        user_moon=natal_moon_rasi, 
+        natal_moon_lon=natal_moon_lon
+    )
     
     if def_n:
         daily_weather = get_daily_executive_weather(pan['current_jd_ut'], natal_moon_rasi, natal_lagna_rasi, LANG)
 
-# --- SETUP TABS ---
+# --- SETUP TABS (No icons) ---
 t1_name = "Overview" if LANG=="English" else "பஞ்சாங்கம்"
 t2_name = "Horai" if LANG=="English" else "ஓரை"
 t3_name = "Strategy" if LANG=="English" else "வியூகம்"
@@ -96,6 +110,7 @@ tab1, tab2, tab3 = st.tabs([t1_name, t2_name, t3_name])
 with tab1:
     lbl = {
         "m_phase": "Moon Phase" if LANG=="English" else "சந்திர நிலை",
+        "ast": "Astronomical" if LANG=="English" else "வானியல்",
         "sun_yoga": "Sun & Astronomical Yoga" if LANG=="English" else "சூரியன் & யோகம்",
         "sun_r": "Sunrise" if LANG=="English" else "உதயம்",
         "sun_s": "Sunset" if LANG=="English" else "அஸ்தமனம்",
@@ -111,15 +126,68 @@ with tab1:
     }
 
     tara_row = f"""<div class="card-row"><span class="row-lbl">{lbl['tara']}</span><span class="row-val" style="color:{pan['tara_color']};">{pan['tara_name']}</span></div>""" if def_n else ""
-    moon_color = "#f1c40f" if pan['is_waxing'] else "#34495e"
+    
+    # Flat CSS Circle for Moon instead of emoji
+    moon_color = "#e0e0e0" if pan['is_waxing'] else "#34495e"
+    moon_icon = f"""<div style="width:12px; height:12px; border-radius:50%; background:{moon_color}; border:1px solid #ccc; display:inline-block; margin-right:6px;"></div>"""
 
-    grid_html = f"""<style>.grid-container {{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }}.m-card {{ background: #ffffff; border: 1px solid #eaeaea; border-radius: 4px; padding: 16px; display: flex; flex-direction: column; box-shadow: 0 1px 2px rgba(0,0,0,0.02); min-height: 120px; }}.c-head {{ font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #888; font-weight: 500; margin-bottom: 12px; border-bottom: 1px solid #f9f9f9; padding-bottom: 4px; }}.card-row {{ display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #f7f7f7; padding: 6px 0; }}.card-row:last-child {{ border-bottom: none; }}.row-lbl {{ font-size: 12.5px; color: #7f8c8d; font-weight: 400; }}.row-val {{ font-size: 13.5px; color: #222; font-weight: 500; text-align: right; }}</style>
+    # Flattened HTML to prevent Streamlit Markdown Code Block interception
+    grid_html = f"""<style>
+.grid-container {{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }}
+.m-card {{ background: #ffffff; border: 1px solid #eaeaea; border-radius: 4px; padding: 16px; display: flex; flex-direction: column; box-shadow: 0 1px 2px rgba(0,0,0,0.02); min-height: 120px; }}
+.c-head {{ font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #888; font-weight: 500; margin-bottom: 12px; border-bottom: 1px solid #f9f9f9; padding-bottom: 4px; }}
+.card-row {{ display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #f7f7f7; padding: 6px 0; }}
+.card-row:last-child {{ border-bottom: none; }}
+.row-lbl {{ font-size: 12.5px; color: #7f8c8d; font-weight: 400; }}
+.row-val {{ font-size: 13.5px; color: #222; font-weight: 500; text-align: right; }}
+</style>
 <div class="grid-container">
-<div class="m-card" style="flex-direction: row; align-items: center; padding: 12px;"><div style="flex: 1; border-right: 1px solid #eee; padding-right: 12px; text-align: center;"><div style="font-size: 28px; font-weight: 300; color: #111; line-height: 1;">{pan['date_en'].split(' ')[0]}</div><div style="font-size: 12px; color: #7f8c8d; font-weight: 400; margin-top: 4px;">{pan['day_en']}<br>{pan['date_en'].split(' ')[1]}</div></div><div style="flex: 1; padding-left: 12px; text-align: center;"><div style="font-size: 28px; font-weight: 300; color: #2c3e50; line-height: 1;">{pan['date_ta']}</div><div style="font-size: 12px; color: #7f8c8d; font-weight: 400; margin-top: 4px;">{pan['month_ta']}<br>Month</div></div></div>
-<div class="m-card" style="justify-content: center;"><div style="font-size: 20px; font-weight: 400; color: #111; margin-bottom: 6px; display:flex; align-items:center;"><div style="width:12px; height:12px; border-radius:50%; background:{moon_color}; margin-right:8px; border:1px solid #ccc;"></div>{pan['tithi']}</div><div style="font-size: 13px; color: #555; margin-bottom: 2px;">{pan['paksha']}</div><div style="font-size: 12px; color: #888;">{pan['countdown']}</div></div>
-<div class="m-card"><div class="c-head">{lbl['ast']}</div><div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;"><div class="card-row"><span class="row-lbl">{lbl['sun_r']} / {lbl['sun_s']}</span><span class="row-val">{pan['sunrise']} - {pan['sunset']}</span></div><div class="card-row"><span class="row-lbl">Rasi & Star</span><span class="row-val">{pan['rasi']} / {pan['nakshatra']}</span></div><div class="card-row"><span class="row-lbl">{lbl['yoga']}</span><span class="row-val">{pan['yoga']}</span></div>{tara_row}</div></div>
-<div class="m-card" style="border-top: 2px solid #27ae60;"><div class="c-head" style="color: #27ae60;">{lbl['ausp']}</div><div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;"><div class="card-row"><span class="row-lbl">{lbl['nn']}</span><span class="row-val">{pan['nn']}</span></div><div class="card-row"><span class="row-lbl">{lbl['gnn']}</span><span class="row-val">{pan['gnn']}</span></div></div></div>
-<div class="m-card" style="border-top: 2px solid #c0392b; grid-column: span 2;"><div class="c-head" style="color: #c0392b;">{lbl['inausp']}</div><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;"><div><div class="card-row"><span class="row-lbl">{lbl['rk']}</span><span class="row-val">{pan['rk']}</span></div><div class="card-row"><span class="row-lbl">{lbl['yg']}</span><span class="row-val">{pan['yg']}</span></div></div><div style="border-left: 1px dashed #eee; padding-left: 15px;"><div class="card-row" style="flex-direction: column; align-items: flex-start; border: none;"><span class="row-lbl" style="color:#c0392b; margin-bottom: 4px;">Chandrashtama for:</span><span class="row-val" style="font-size: 12px; text-align: left;">{pan['ch_naks']}</span></div></div></div></div>
+<div class="m-card" style="flex-direction: row; align-items: center; padding: 12px;">
+<div style="flex: 1; border-right: 1px solid #eee; padding-right: 12px; text-align: center;">
+<div style="font-size: 28px; font-weight: 300; color: #111; line-height: 1;">{pan['date_en'].split(' ')[0]}</div>
+<div style="font-size: 12px; color: #7f8c8d; font-weight: 400; margin-top: 4px;">{pan['day_en']}<br>{pan['date_en'].split(' ')[1]}</div>
+</div>
+<div style="flex: 1; padding-left: 12px; text-align: center;">
+<div style="font-size: 28px; font-weight: 300; color: #2c3e50; line-height: 1;">{pan['date_ta']}</div>
+<div style="font-size: 12px; color: #7f8c8d; font-weight: 400; margin-top: 4px;">{pan['month_ta']}<br>Month</div>
+</div>
+</div>
+<div class="m-card" style="justify-content: center;">
+<div style="font-size: 20px; font-weight: 400; color: #111; margin-bottom: 6px; display:flex; align-items:center;">{moon_icon}{pan['tithi']}</div>
+<div style="font-size: 13px; color: #555; margin-bottom: 2px;">{pan['paksha']}</div>
+<div style="font-size: 12px; color: #888;">{pan['countdown']}</div>
+</div>
+<div class="m-card">
+<div class="c-head">{lbl['ast']}</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;">
+<div class="card-row"><span class="row-lbl">{lbl['sun_r']} / {lbl['sun_s']}</span><span class="row-val">{pan['sunrise']} - {pan['sunset']}</span></div>
+<div class="card-row"><span class="row-lbl">Rasi & Star</span><span class="row-val">{pan['rasi']} / {pan['nakshatra']}</span></div>
+<div class="card-row"><span class="row-lbl">{lbl['yoga']}</span><span class="row-val">{pan['yoga']}</span></div>
+{tara_row}
+</div>
+</div>
+<div class="m-card" style="border-top: 2px solid #27ae60;">
+<div class="c-head" style="color: #27ae60;">{lbl['ausp']}</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;">
+<div class="card-row"><span class="row-lbl">{lbl['nn']}</span><span class="row-val">{pan['nn']}</span></div>
+<div class="card-row"><span class="row-lbl">{lbl['gnn']}</span><span class="row-val">{pan['gnn']}</span></div>
+</div>
+</div>
+<div class="m-card" style="border-top: 2px solid #c0392b; grid-column: span 2;">
+<div class="c-head" style="color: #c0392b;">{lbl['inausp']}</div>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+<div>
+<div class="card-row"><span class="row-lbl">{lbl['rk']}</span><span class="row-val">{pan['rk']}</span></div>
+<div class="card-row"><span class="row-lbl">{lbl['yg']}</span><span class="row-val">{pan['yg']}</span></div>
+</div>
+<div style="border-left: 1px dashed #eee; padding-left: 15px;">
+<div class="card-row" style="flex-direction: column; align-items: flex-start; border: none;">
+<span class="row-lbl" style="color:#c0392b; margin-bottom: 4px;">Chandrashtama for:</span>
+<span class="row-val" style="font-size: 12px; text-align: left;">{pan['ch_naks']}</span>
+</div>
+</div>
+</div>
+</div>
 </div>"""
     st.markdown(grid_html, unsafe_allow_html=True)
 
@@ -129,7 +197,7 @@ with tab2:
     st.markdown(f"<div style='font-family: sans-serif; font-size: 14px; color: #7f8c8d; margin-bottom: 10px;'>{msg_h}</div>", unsafe_allow_html=True)
     
     if def_n:
-        st.markdown("<div style='font-size: 12px; color: #f39c12; margin-bottom: 15px;'><b>Note:</b> Highlighted [POWER] blocks indicate highly favorable timings based on your specific Lagna and Moon Rasi.</div>", unsafe_allow_html=True)
+        st.markdown("<div style='font-size: 12px; color: #7f8c8d; margin-bottom: 15px;'>Note: Highlighted <span style='background: #2c3e50; color: #fff; padding: 2px 4px; border-radius: 2px; font-size: 9px;'>POWER</span> blocks indicate highly favorable timings based on your specific Lagna and Moon Rasi.</div>", unsafe_allow_html=True)
 
     schedule_html = "<div style='font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif; max-height: 400px; overflow-y: auto; padding-right: 5px;'>"
     
@@ -138,13 +206,14 @@ with tab2:
         border = "border-bottom: 1px solid #f2f2f2;"
         indicator = ""
         
+        # Flat pill indicators (No Emojis)
         if row['is_current']:
-            bg_col = "#f4f9f4"
-            border = f"border-left: 4px solid {row['color']}; border-bottom: 1px solid #e0e0e0;"
-            indicator = "<span style='font-size: 9px; color: #27ae60; border: 1px solid #27ae60; text-transform: uppercase; font-weight: bold; margin-left: 8px; padding: 1px 4px; border-radius: 2px;'>NOW</span>"
+            bg_col = "#f9fbf9"
+            border = f"border-left: 3px solid {row['color']}; border-bottom: 1px solid #e0e0e0;"
+            indicator = "<span style='border: 1px solid #27ae60; color: #27ae60; padding: 1px 4px; border-radius: 2px; font-size: 9px; font-weight: 600; margin-left: 8px;'>NOW</span>"
             
         if row['is_power']:
-            indicator += " <span style='font-size: 9px; color: #fff; background: #f39c12; text-transform: uppercase; font-weight: bold; margin-left: 6px; padding: 2px 4px; border-radius: 2px;'>POWER</span>"
+            indicator += " <span style='background: #2c3e50; color: #fff; padding: 2px 4px; border-radius: 2px; font-size: 9px; font-weight: 600; margin-left: 6px;'>POWER</span>"
 
         schedule_html += f"<div style='display: flex; justify-content: space-between; align-items: center; padding: 12px 10px; background-color: {bg_col}; {border} margin-bottom: 4px; border-radius: 4px;'><div style='display:flex; flex-direction:column;'><span style='font-size: 11px; color: #999; font-weight: 400; margin-bottom: 2px;'>{row['time']} {indicator}</span><span style='font-size: 15px; font-weight: 500; color: {row['color']};'>{row['lord']}</span></div><div style='text-align: right;'><span style='font-size: 12.5px; color: #555; font-weight: 400;'>{row['activity']}</span></div></div>"
         
