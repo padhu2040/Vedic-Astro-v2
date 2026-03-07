@@ -54,18 +54,19 @@ with st.sidebar:
         def_n, def_dob, def_tob, def_loc = "", datetime(2000, 1, 1).date(), time(12, 0), ""
 
     name_in = st.text_input("Name", value=def_n, disabled=True) if def_n else None
-    calc_btn = st.button("Generate Today's Strategy", type="primary", use_container_width=True)
+    calc_btn = st.button("Generate Today's Strategy" if LANG=="English" else "இன்றைய பலன்கள்", type="primary", use_container_width=True)
 
 # --- MAIN DASHBOARD UI ---
-st.title("⚡ Daily Executive Weather")
-st.markdown(f"**Live Tactical Strategy for:** {datetime.now().strftime('%B %d, %Y')}")
+st.title("⚡ Daily Executive Weather" if LANG=="English" else "⚡ தினசரி ஜோதிட அறிக்கை")
+st.markdown(f"**{'Live Tactical Strategy for' if LANG=='English' else 'இன்றைய நாள்'}:** {datetime.now().strftime('%B %d, %Y')}")
 st.divider()
 
 if not def_n:
-    st.info("👈 Please select a saved profile from the sidebar to load your daily executive weather report.")
+    msg = "👈 Please select a saved profile from the sidebar to load your daily executive weather report." if LANG=="English" else "👈 உங்கள் சுயவிவரத்தை தேர்ந்தெடுக்கவும்."
+    st.info(msg)
 else:
     if calc_btn or def_n:
-        with st.spinner("Synchronizing exact local coordinates..."):
+        with st.spinner("Synchronizing real-time planetary coordinates..."):
             lat_val, lon_val, tz_val = get_location_coordinates(def_loc)
             swe.set_sid_mode(swe.SIDM_LAHIRI)
             birth_dt = datetime.combine(def_dob, def_tob)
@@ -83,29 +84,28 @@ else:
             current_ut_hour = utcnow.hour + (utcnow.minute/60.0)
             current_jd_ut = swe.julday(utcnow.year, utcnow.month, utcnow.day, current_ut_hour)
 
-            # Pulling Data from Engines
             daily_weather = get_daily_executive_weather(current_jd_ut, natal_moon_rasi, natal_lagna_rasi, LANG)
             panchangam = get_daily_panchangam_metrics(current_jd_ut, natal_moon_lon, lat_val, lon_val, tz_val, LANG)
 
-            t_tara = "Tarabalam" if LANG=="English" else "தாராபலம்"
-            t_horai = "Active Horai" if LANG=="English" else "நடப்பு ஓரை"
-            t_moon = "Moon Phase" if LANG=="English" else "சந்திர நிலை"
+            t_tara = "Personalized Tarabalam" if LANG=="English" else "தாராபலம்"
+            t_horai = "Current Active Horai" if LANG=="English" else "நடப்பு ஓரை"
+            t_moon = "Daily Moon Phase" if LANG=="English" else "சந்திர நிலை"
 
             # --- TOP METRICS GRID ---
             metric_html = f"""
 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
 <div style="background: #fff; border: 1px solid #eaeaea; border-top: 3px solid {panchangam['tara_color']}; border-radius: 6px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
 <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">{t_tara}</div>
-<div style="font-size: 13px; font-weight: bold; color: {panchangam['tara_color']};">{panchangam['tara_name']}</div>
-<div style="font-size: 11px; color: #666; margin-top: 4px;">{panchangam['tara_desc']}</div>
+<div style="font-size: 14px; font-weight: bold; color: {panchangam['tara_color']};">{panchangam['tara_name']}</div>
+<div style="font-size: 12px; color: #666; margin-top: 4px;">{panchangam['tara_desc']}</div>
 </div>
 <div style="background: #fff; border: 1px solid #eaeaea; border-top: 3px solid #8e44ad; border-radius: 6px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
 <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">{t_horai}</div>
-<div style="font-size: 15px; font-weight: bold; color: #8e44ad;">{panchangam['horai']}</div>
+<div style="font-size: 16px; font-weight: bold; color: #8e44ad;">{panchangam['horai']}</div>
 </div>
 <div style="background: #fff; border: 1px solid #eaeaea; border-top: 3px solid #2980b9; border-radius: 6px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
 <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">{t_moon} ({panchangam['nakshatra']})</div>
-<div style="font-size: 13px; font-weight: bold; color: #2980b9;">{panchangam['moon_phase']}</div>
+<div style="font-size: 14px; font-weight: bold; color: #2980b9;">{panchangam['moon_phase']}</div>
 </div>
 </div>
             """
@@ -113,7 +113,8 @@ else:
 
             # --- THE MINIMALIST COSMIC CALENDAR ---
             cal_title = "The Cosmic Calendar" if LANG=="English" else "நாள்காட்டி"
-            st.markdown(f"<h3 style='color: #2c3e50; font-family: sans-serif; font-size: 20px; margin-top: 10px; border-bottom: 2px solid #eee; padding-bottom: 8px;'>{cal_title} ({panchangam['sunrise']} - {panchangam['sunset']})</h3>", unsafe_allow_html=True)
+            sun_title = "Sunrise - Sunset:" if LANG=="English" else "சூரிய உதயம் - அஸ்தமனம்:"
+            st.markdown(f"<h3 style='color: #2c3e50; font-family: sans-serif; font-size: 20px; margin-top: 10px; border-bottom: 2px solid #eee; padding-bottom: 8px;'>{cal_title} <span style='font-size:14px; color:#7f8c8d; font-weight:normal;'>({sun_title} {panchangam['sunrise']} - {panchangam['sunset']})</span></h3>", unsafe_allow_html=True)
             
             schedule_html = "<div style='font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif; margin-bottom: 30px;'>"
             for row in panchangam["schedule"]:
@@ -126,11 +127,11 @@ else:
                 schedule_html += f"""
 <div style="display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 5px; border-bottom: 1px solid #f2f2f2;">
 <div style="flex: 1;">
-<div style="font-size: 15px; font-weight: bold; color: {row['color']};">{row['lord']}</div>
-<div style="font-size: 12px; color: #888; margin-top: 2px; font-weight: 400;">{row['activity']}</div>
+<div style="font-size: 11px; color: #888; font-weight: 400; margin-bottom: 4px;">{row['time']}</div>
+<div style="font-size: 15px; font-weight: 500; color: {row['color']};">{row['lord']}</div>
+<div style="font-size: 12px; color: #666; margin-top: 2px; font-weight: 400;">{row['activity']}</div>
 </div>
 <div style="text-align: right; flex: 1;">
-<div style="font-size: 13.5px; color: #444; font-weight: 500;">{row['time']}</div>
 {badges_html}
 </div>
 </div>
@@ -143,24 +144,31 @@ else:
             comm = daily_weather["communication"]
             energy = daily_weather["energy"]
             
+            s_focus = "Primary Strategic Focus" if LANG=="English" else "முக்கிய வியூகம்"
+            s_comm = "Communication & Data Weather" if LANG=="English" else "தகவல் தொடர்பு"
+            s_energy = "Executive Vitality & Authority" if LANG=="English" else "ஆளுமை நிலை"
+
             weather_html = f"""
 <div style="font-family: sans-serif;">
-<div style="background: #fff; border: 1px solid #eaeaea; border-left: 5px solid {focus['color']}; padding: 20px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 15px;">
-<div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Strategic Focus:</b> Moon in {daily_weather['positions']['Moon']}</div>
+<h3 style="color: #2c3e50; margin-bottom: 15px; font-size: 20px; border-bottom: 2px solid #eee; padding-bottom: 8px;">1. {s_focus}</h3>
+<div style="background: #fff; border: 1px solid #eaeaea; border-left: 5px solid {focus['color']}; padding: 20px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 25px;">
+<div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Astrological Driver:</b> Moon in {daily_weather['positions']['Moon']}</div>
 <div style="font-size: 18px; font-weight: bold; color: {focus['color']}; margin-bottom: 10px;">{focus['title']}</div>
 <div style="font-size: 14px; color: #444; line-height: 1.6; margin-bottom: 10px;">{focus['desc']}</div>
 <div style="font-size: 13px; color: #111; font-style: italic; background: #f9f9f9; padding: 10px; border-radius: 4px;">{focus['remedy']}</div>
 </div>
 
-<div style="background: #fff; border: 1px solid #eaeaea; border-left: 5px solid #27ae60; padding: 20px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 15px;">
-<div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Communication:</b> Mercury in {daily_weather['positions']['Mercury']}</div>
+<h3 style="color: #2c3e50; margin-bottom: 15px; font-size: 20px; border-bottom: 2px solid #eee; padding-bottom: 8px;">2. {s_comm}</h3>
+<div style="background: #fff; border: 1px solid #eaeaea; border-left: 5px solid #27ae60; padding: 20px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 25px;">
+<div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Astrological Driver:</b> Mercury in {daily_weather['positions']['Mercury']}</div>
 <div style="font-size: 18px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">{comm['title']}</div>
 <div style="font-size: 14px; color: #444; line-height: 1.6; margin-bottom: 10px;">{comm['desc']}</div>
 <div style="font-size: 13px; color: #111; font-style: italic; background: #f9f9f9; padding: 10px; border-radius: 4px;">{comm['remedy']}</div>
 </div>
 
+<h3 style="color: #2c3e50; margin-bottom: 15px; font-size: 20px; border-bottom: 2px solid #eee; padding-bottom: 8px;">3. {s_energy}</h3>
 <div style="background: #fff; border: 1px solid #eaeaea; border-left: 5px solid #f39c12; padding: 20px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 30px;">
-<div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Executive Vitality:</b> Sun in {daily_weather['positions']['Sun']}</div>
+<div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Astrological Driver:</b> Sun in {daily_weather['positions']['Sun']}</div>
 <div style="font-size: 18px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">{energy['title']}</div>
 <div style="font-size: 14px; color: #444; line-height: 1.6; margin-bottom: 10px;">{energy['desc']}</div>
 <div style="font-size: 13px; color: #111; font-style: italic; background: #f9f9f9; padding: 10px; border-radius: 4px;">{energy['remedy']}</div>
