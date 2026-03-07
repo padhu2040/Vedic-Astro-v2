@@ -89,23 +89,25 @@ with st.spinner("Calculating precision timelines..."):
     if def_n:
         daily_weather = get_daily_executive_weather(pan['current_jd_ut'], natal_moon_rasi, natal_lagna_rasi, LANG)
 
-# --- 5-TAB ARCHITECTURE ---
+# --- 3-TAB ARCHITECTURE ---
 t1_name = "Overview" if LANG=="English" else "பஞ்சாங்கம்"
 t2_name = "Strategy" if LANG=="English" else "வியூகம்"
-t3_name = "Obstacles" if LANG=="English" else "தடைகள்"
-t4_name = "Auspicious" if LANG=="English" else "நல்ல நேரம்"
-t5_name = "Horai" if LANG=="English" else "ஓரை"
+t3_name = "Horai" if LANG=="English" else "ஓரை"
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs([t1_name, t2_name, t3_name, t4_name, t5_name])
+tab1, tab2, tab3 = st.tabs([t1_name, t2_name, t3_name])
 
-# --- TAB 1: OVERVIEW (4-Card Astro Grid) ---
+# --- TAB 1: OVERVIEW (Unified Grid) ---
 with tab1:
     lbl = {
+        "m_phase": "Moon Phase" if LANG=="English" else "சந்திர நிலை",
         "ast": "Astronomical Elements" if LANG=="English" else "வானியல்",
         "sun_r": "Sunrise" if LANG=="English" else "உதயம்",
         "sun_s": "Sunset" if LANG=="English" else "அஸ்தமனம்",
         "yoga": "Nithya Yoga" if LANG=="English" else "நித்திய யோகம்",
-        "tara": "Personal Tarabalam" if LANG=="English" else "தாராபலம்"
+        "tara": "Personal Tarabalam" if LANG=="English" else "தாராபலம்",
+        "ausp": "Auspicious Timings" if LANG=="English" else "நல்ல நேரங்கள்",
+        "inausp": "Obstacles & Cautions" if LANG=="English" else "தடை நேரங்கள்",
+        "vrata": "Special Day / Deity" if LANG=="English" else "விசேஷ நாள் / தெய்வம்"
     }
 
     tara_row = f"""<div class="m-card" style="grid-column: span 2;"><div class="c-head">{lbl['tara']}</div><div class="card-row"><span class="row-lbl" style="font-size:14px;">Alignment for your Star</span><span class="row-val" style="color:{pan['tara_color']}; font-size:15px;">{pan['tara_name']}</span></div></div>""" if def_n else ""
@@ -115,8 +117,11 @@ with tab1:
     grid_html = f"""<style>.grid-container {{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }}.m-card {{ background: #ffffff; border: 1px solid #eaeaea; border-radius: 4px; padding: 16px; display: flex; flex-direction: column; box-shadow: 0 1px 2px rgba(0,0,0,0.02); min-height: 120px; }}.c-head {{ font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #888; font-weight: 500; margin-bottom: 12px; border-bottom: 1px solid #f9f9f9; padding-bottom: 4px; }}.card-row {{ display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #f7f7f7; padding: 8px 0; }}.card-row:last-child {{ border-bottom: none; }}.row-lbl {{ font-size: 12.5px; color: #7f8c8d; font-weight: 400; }}.row-val {{ font-size: 13.5px; color: #222; font-weight: 500; text-align: right; }}.time-sub {{ font-size: 10.5px; color: #999; width: 100%; text-align: right; margin-top: 3px; font-weight: 400; }}</style>
 <div class="grid-container">
 <div class="m-card" style="flex-direction: row; align-items: center; padding: 12px;"><div style="flex: 1; border-right: 1px solid #eee; padding-right: 12px; text-align: center;"><div style="font-size: 32px; font-weight: 300; color: #111; line-height: 1;">{pan['day_num']}</div><div style="font-size: 12px; color: #7f8c8d; font-weight: 400; margin-top: 4px;">{pan['day_en']}<br>{pan['month_year_en']}</div></div><div style="flex: 1; padding-left: 12px; text-align: center;"><div style="font-size: 32px; font-weight: 300; color: #2c3e50; line-height: 1;">{pan['date_ta']}</div><div style="font-size: 12px; color: #7f8c8d; font-weight: 400; margin-top: 4px;">{pan['day_ta']}<br>{pan['tamil_year']} {pan['month_ta']}</div></div></div>
-<div class="m-card" style="justify-content: center;"><div style="font-size: 20px; font-weight: 400; color: #111; margin-bottom: 4px; display:flex; align-items:center;">{moon_icon}{pan['tithi_short']}</div><div style="font-size: 12.5px; color: #555; margin-bottom: 8px;">{pan['paksha']}</div><div style="font-size: 11px; color: #888; border-top: 1px dashed #eee; padding-top: 6px; line-height: 1.5;">Ends @ {pan['t_end']} ➔ {pan['t_next']}<br>{pan['countdown']}</div></div>
+<div class="m-card" style="justify-content: center;"><div style="font-size: 20px; font-weight: 400; color: #111; margin-bottom: 6px; display:flex; align-items:center;">{moon_icon}{pan['tithi_short']}</div><div style="font-size: 12.5px; color: #555; margin-bottom: 8px;">{pan['paksha']}</div><div style="font-size: 11px; color: #888; border-top: 1px dashed #eee; padding-top: 6px; line-height: 1.5;">Ends @ {pan['t_end']} ➔ {pan['t_next']}<br>{pan['countdown']}<br>{pan['dasami_str']}</div></div>
+<div class="m-card" style="grid-column: span 2;"><div class="c-head">{lbl['vrata']}</div><div style="display:flex; align-items:center; margin-bottom:8px;"><div style="filter:grayscale(100%); opacity:0.75; font-size:32px; margin-right:15px;">{pan['v_icon']}</div><div><div style="font-size:16px; font-weight:500; color:#222; margin-bottom:4px;">{pan['v_name']}</div><div style="font-size:12px; color:#7f8c8d;">{pan['muh_str']}</div></div></div></div>
 <div class="m-card" style="grid-column: span 2;"><div class="c-head">{lbl['ast']}</div><div style="flex-grow: 1; display: flex; flex-direction: column;"><div class="card-row"><span class="row-lbl">{lbl['sun_r']} / {lbl['sun_s']}</span><span class="row-val">{pan['sunrise']} - {pan['sunset']}</span></div><div class="card-row" style="flex-direction:column; align-items:flex-start;"><div style="display:flex; width:100%; justify-content:space-between;"><span class="row-lbl">Rasi & Star</span><span class="row-val">{pan['rasi']} / {pan['nakshatra']}</span></div><div class="time-sub">Star ends @ {pan['n_end']} ➔ {pan['n_next']}<br>Rasi ends @ {pan['r_end']} ➔ {pan['r_next']}</div></div><div class="card-row" style="flex-direction:column; align-items:flex-start; border-bottom:none;"><div style="display:flex; width:100%; justify-content:space-between;"><span class="row-lbl">{lbl['yoga']}</span><span class="row-val">{pan['yoga']}</span></div><div class="time-sub">Ends @ {pan['y_end']} ➔ {pan['y_next']}</div></div></div></div>
+<div class="m-card" style="border-top: 2px solid #27ae60;"><div class="c-head" style="color: #27ae60;">{lbl['ausp']}</div><div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;"><div class="card-row"><span class="row-lbl">Nalla Neram</span><span class="row-val">{pan['nn']}</span></div><div class="card-row" style="border-bottom:none;"><span class="row-lbl">Gowri Neram</span><span class="row-val">{pan['gnn']}</span></div></div></div>
+<div class="m-card" style="border-top: 2px solid #c0392b;"><div class="c-head" style="color: #c0392b;">{lbl['inausp']}</div><div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;"><div class="card-row"><span class="row-lbl">Rahu Kalam</span><span class="row-val">{pan['rk']}</span></div><div class="card-row"><span class="row-lbl">Yemagandam</span><span class="row-val">{pan['yg']}</span></div><div class="card-row" style="flex-direction:column; align-items:flex-start; border:none; padding-top:12px; margin-top:6px; border-top: 1px dashed #eee;"><span class="row-lbl" style="color:#c0392b; font-weight:500; margin-bottom:4px;">Chandrashtama for:</span><span class="row-val" style="text-align:left; font-size:11.5px;">{pan['ch_naks']}</span></div></div></div>
 {tara_row}
 </div>"""
     st.markdown(grid_html, unsafe_allow_html=True)
@@ -132,25 +137,8 @@ with tab2:
 <div class="t-card" style="border-left: 3px solid #27ae60;"><div class="t-head"><span>Communication</span> <span>Mercury in {daily_weather['positions']['Mercury']}</span></div><div class="t-title" style="color: #2c3e50;">{comm['title']}</div><div class="t-desc">{comm['desc']}</div><div class="t-rem">{comm['remedy']}</div></div>"""
         st.markdown(weather_html, unsafe_allow_html=True)
 
-# --- TAB 3: OBSTACLES ---
+# --- TAB 3: HORAI ---
 with tab3:
-    obs_html = f"""<div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #fff; border: 1px solid #eaeaea; border-top: 3px solid #c0392b; border-radius: 4px; padding: 20px;">
-<div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f7f7f7; padding: 10px 0;"><span style="color: #7f8c8d; font-size: 14px;">Rahu Kalam</span><span style="color: #222; font-weight: 500; font-size: 14px;">{pan['rk']}</span></div>
-<div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f7f7f7; padding: 10px 0;"><span style="color: #7f8c8d; font-size: 14px;">Yemagandam</span><span style="color: #222; font-weight: 500; font-size: 14px;">{pan['yg']}</span></div>
-<div style="padding: 10px 0; margin-top: 10px; border-top: 1px dashed #eee;">
-<div style="color: #c0392b; font-size: 13px; font-weight: bold; margin-bottom: 6px;">Chandrashtama Alert For Nakshatras:</div>
-<div style="color: #333; font-size: 14px;">{pan['ch_naks']}</div></div></div>"""
-    st.markdown(obs_html, unsafe_allow_html=True)
-
-# --- TAB 4: AUSPICIOUS ---
-with tab4:
-    ausp_html = f"""<div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #fff; border: 1px solid #eaeaea; border-top: 3px solid #27ae60; border-radius: 4px; padding: 20px;">
-<div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f7f7f7; padding: 10px 0;"><span style="color: #7f8c8d; font-size: 14px;">Nalla Neram</span><span style="color: #222; font-weight: 500; font-size: 14px; text-align:right;">{pan['nn']}</span></div>
-<div style="display: flex; justify-content: space-between; padding: 10px 0;"><span style="color: #7f8c8d; font-size: 14px;">Gowri Neram</span><span style="color: #222; font-weight: 500; font-size: 14px; text-align:right;">{pan['gnn']}</span></div></div>"""
-    st.markdown(ausp_html, unsafe_allow_html=True)
-
-# --- TAB 5: HORAI ---
-with tab5:
     if def_n: st.markdown("<div style='font-size: 12px; color: #7f8c8d; margin-bottom: 15px;'>Note: Highlighted <span style='background: #2c3e50; color: #fff; padding: 2px 4px; border-radius: 2px; font-size: 9px;'>POWER</span> blocks indicate highly favorable timings based on your Lagna and Moon Rasi.</div>", unsafe_allow_html=True)
     schedule_html = "<div style='font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif; max-height: 400px; overflow-y: auto; padding-right: 5px;'>"
     
