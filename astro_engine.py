@@ -617,7 +617,7 @@ def get_daily_panchangam_metrics(lat_val=13.0827, lon_val=80.2707, tz_name="Asia
     Includes Tamil Solar Day, Lunar Countdown, and Nakshatra-based Chandrashtama.
     """
     import swisseph as swe
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone  # <-- Fix: Added timezone here!
     import pytz
 
     local_tz = pytz.timezone(tz_name)
@@ -768,5 +768,5 @@ def get_daily_panchangam_metrics(lat_val=13.0827, lon_val=80.2707, tz_name="Asia
         "sunrise": sunrise_dt.strftime('%I:%M %p').lstrip('0'), "sunset": sunset_dt.strftime('%I:%M %p').lstrip('0'),
         "yoga": daily_yoga, "nakshatra": nak_name, "rasi": daily_rasi_name,
         "ch_naks": ch_naks, "rk": rk_str, "yg": yg_str, "nn": nn_str, "gnn": gnn_str, "schedule": schedule,
-        "current_jd_ut": current_jd_ut # Pass back for the personal engine
+        "current_jd_ut": current_jd_ut
     }
