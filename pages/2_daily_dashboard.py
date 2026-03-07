@@ -126,8 +126,8 @@ with tab1:
 <div class="grid-container">
 <div class="m-card" style="flex-direction: row; align-items: center; padding: 12px;">
 <div style="flex: 1; border-right: 1px solid #eee; padding-right: 12px; text-align: center;">
-<div style="font-size: 32px; font-weight: 300; color: #111; line-height: 1;">{pan['date_en'].split(' ')[0]}</div>
-<div style="font-size: 12px; color: #7f8c8d; font-weight: 400; margin-top: 4px;">{pan['day_en']}<br>{pan['date_en'].split(' ')[1]} {pan['date_en'].split(' ')[2]}</div>
+<div style="font-size: 32px; font-weight: 300; color: #111; line-height: 1;">{pan['day_num']}</div>
+<div style="font-size: 12px; color: #7f8c8d; font-weight: 400; margin-top: 4px;">{pan['day_en']}<br>{pan['month_year_en']}</div>
 </div>
 <div style="flex: 1; padding-left: 12px; text-align: center;">
 <div style="font-size: 32px; font-weight: 300; color: #2c3e50; line-height: 1;">{pan['date_ta']}</div>
@@ -135,7 +135,7 @@ with tab1:
 </div>
 </div>
 <div class="m-card" style="justify-content: center;">
-<div style="font-size: 20px; font-weight: 400; color: #111; margin-bottom: 6px; display:flex; align-items:center;">{moon_icon}{pan['tithi_short']}</div>
+<div style="font-size: 20px; font-weight: 400; color: #111; margin-bottom: 6px; display:flex; align-items:center;">{moon_icon}{pan['tithi']}</div>
 <div style="font-size: 13px; color: #555; margin-bottom: 2px;">{pan['paksha']}</div>
 <div style="font-size: 12px; color: #888;">{pan['countdown']}</div>
 </div>
@@ -150,10 +150,6 @@ with tab1:
 <div class="card-row" style="flex-direction:column; align-items:flex-start;">
 <div style="display:flex; width:100%; justify-content:space-between;"><span class="row-lbl">{lbl['yoga']}</span><span class="row-val">{pan['yoga']}</span></div>
 <div class="time-sub">Ends @ {pan['y_end']} ➔ {pan['y_next']}</div>
-</div>
-<div style="font-size: 10.5px; color: #888; margin-top: 15px; border-top: 1px dashed #eee; padding-top: 10px; line-height: 1.5;">
-<b style="color:#555;">Sunrise Accuracy:</b> Geometric sunrise is accurately calculated for {target_city}'s precise latitude/longitude using Swiss Ephemeris data.<br>
-<b style="color:#555;">Yogas Explained:</b> Nithya Yoga is calculated purely using Sun/Moon angles. <i>Siddha (Success)</i>, <i>Amrutha (Nectar)</i>, and <i>Marana (Caution)</i> Yogas are daily combinations of the Weekday + Star. As the Star shifts at {pan['n_end']}, the daily Yoga shifts with it.
 </div>
 </div>
 </div>
