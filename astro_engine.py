@@ -613,8 +613,8 @@ def get_daily_executive_weather(current_jd_ut, natal_moon_rasi, natal_lagna_rasi
 # --- DAILY PANCHANGAM & EXACT TIMELINE ENGINE ---
 def get_daily_panchangam_metrics(current_jd_ut, natal_moon_lon, lat_val, lon_val, tz_name="Asia/Kolkata", lang="English"):
     """
-    Calculates exact local Sunrise/Sunset, Tamil Moon Phase, bilingual events, 
-    Soolam, Chandrashtama, and the 12-hour daytime Horai schedule.
+    Calculates exact local Sunrise/Sunset, Tamil Solar Month, Lunar Phase Countdown, 
+    Nithya Yoga, Global Chandrashtama, and the 12-hour daytime Horai schedule.
     """
     import swisseph as swe
     from datetime import datetime, timedelta
@@ -652,8 +652,16 @@ def get_daily_panchangam_metrics(current_jd_ut, natal_moon_lon, lat_val, lon_val
     day_duration_hrs = (sunset_jd - sunrise_jd) * 24
     horai_len_hrs = day_duration_hrs / 12
 
-    # 2. Moon Phase & Tithi
+    # 2. Sun Rasi (Tamil Solar Month)
     sun_lon = swe.calc_ut(current_jd_ut, swe.SUN, swe.FLG_SIDEREAL)[0][0]
+    sun_rasi_idx = int(sun_lon / 30) + 1
+    
+    tamil_months_en = {1:"Mesha (Chithirai)", 2:"Rishaba (Vaikasi)", 3:"Mithuna (Aani)", 4:"Kataka (Aadi)", 5:"Simha (Avani)", 6:"Kanya (Purattasi)", 7:"Tula (Aippasi)", 8:"Vrischika (Karthigai)", 9:"Dhanus (Margazhi)", 10:"Makara (Thai)", 11:"Kumbha (Masi)", 12:"Meena (Panguni)"}
+    tamil_months_ta = {1:"மேஷம் (சித்திரை)", 2:"ரிஷபம் (வைகாசி)", 3:"மிதுனம் (ஆனி)", 4:"கடகம் (ஆடி)", 5:"சிம்மம் (ஆவணி)", 6:"கன்னி (புரட்டாசி)", 7:"துலாம் (ஐப்பசி)", 8:"விருச்சிகம் (கார்த்திகை)", 9:"தனுசு (மார்கழி)", 10:"மகரம் (தை)", 11:"கும்பம் (மாசி)", 12:"மீனம் (பங்குனி)"}
+    
+    t_month = tamil_months_en[sun_rasi_idx] if lang == "English" else tamil_months_ta[sun_rasi_idx]
+
+    # 3. Moon Phase, Tithi & Countdown
     moon_lon = swe.calc_ut(current_jd_ut, swe.MOON, swe.FLG_SIDEREAL)[0][0]
     tithi_idx = int((((moon_lon - sun_lon) % 360) / 12) + 1)
     
@@ -665,11 +673,22 @@ def get_daily_panchangam_metrics(current_jd_ut, natal_moon_lon, lat_val, lon_val
     elif tithi_idx == 15: t_name = "Purnima" if lang=="English" else "பௌர்ணமி"
     else: t_name = tithi_names_en.get(t_num, "") if lang=="English" else tithi_names_ta.get(t_num, "")
 
-    paksha = "Waxing (Shukla)" if tithi_idx <= 15 else "Waning (Krishna)"
-    if lang == "Tamil": paksha = "வளர்பிறை" if tithi_idx <= 15 else "தேய்பிறை"
-    moon_phase_str = f"{t_name} ({paksha})"
+    is_waxing = tithi_idx <= 15
+    paksha = "Shukla Paksha" if is_waxing else "Krishna Paksha"
+    if lang == "Tamil": paksha = "வளர்பிறை" if is_waxing else "தேய்பிறை"
+    
+    days_to_target = 15 - tithi_idx if is_waxing else 30 - tithi_idx
+    target_name = "Pournami" if is_waxing else "Amavasya"
+    if lang == "Tamil": target_name = "பௌர்ணமி" if is_waxing else "அமாவாசை"
+    countdown_str = f"{days_to_target} days to {target_name}" if lang=="English" else f"{target_name}க்கு {days_to_target} நாட்கள்"
 
-    # 3. Nakshatra, Tarabalam & Chandrashtama
+    # 4. Nithya Yoga Calculation
+    yogas_en = ["Vishkumbha", "Priti", "Ayushman", "Saubhagya", "Shobhana", "Atiganda", "Sukarma", "Dhriti", "Shula", "Ganda", "Vriddhi", "Dhruva", "Vyaghata", "Harshana", "Vajra", "Siddhi", "Vyatipata", "Variyan", "Parigha", "Shiva", "Siddha", "Sadhya", "Shubha", "Shukla", "Brahma", "Indra", "Vaidhriti"]
+    yogas_ta = ["விஷ்கம்பம்", "பிரீதி", "ஆயுஷ்மான்", "சௌபாக்கியம்", "சோபனம்", "அதிகண்டம்", "சுகர்மம்", "திருதி", "சூலம்", "கண்டம்", "விருத்தி", "துருவம்", "வியாகாதம்", "ஹர்ஷணம்", "வஜ்ரம்", "சித்தி", "வியதிபாதம்", "வரியான்", "பரிகம்", "சிவம்", "சித்தம்", "சாத்தியம்", "சுபம்", "சுக்கிலம்", "பிரம்மா", "இந்திரம்", "வைதிருதி"]
+    yoga_idx = int(((sun_lon + moon_lon) % 360) / (360/27))
+    daily_yoga = yogas_en[yoga_idx] if lang=="English" else yogas_ta[yoga_idx]
+
+    # 5. Nakshatra, Tarabalam & Global Chandrashtama
     nak_en = ["Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra", "Punarvasu", "Pushya", "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", "Hasta", "Chitra", "Swati", "Vishakha", "Anuradha", "Jyeshtha", "Mula", "Purva Ashadha", "Uttara Ashadha", "Shravana", "Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"]
     nak_ta = ["அஸ்வினி", "பரணி", "கிருத்திகை", "ரோகிணி", "மிருகசீரிடம்", "திருவாதிரை", "புனர்பூசம்", "பூசம்", "ஆயில்யம்", "மகம்", "பூரம்", "உத்திரம்", "அஸ்தம்", "சித்திரை", "சுவாதி", "விசாகம்", "அனுஷம்", "கேட்டை", "மூலம்", "பூராடம்", "உத்திராடம்", "திருவோணம்", "அவிட்டம்", "சதயம்", "பூரட்டாதி", "உத்திரட்டாதி", "ரேவதி"]
     
@@ -677,66 +696,38 @@ def get_daily_panchangam_metrics(current_jd_ut, natal_moon_lon, lat_val, lon_val
     natal_nak_idx = int((natal_moon_lon % 360) / (360/27))
     nak_name = nak_en[daily_nak_idx] if lang=="English" else nak_ta[daily_nak_idx]
     
-    # Chandrashtama Check (8th sign from Natal Moon)
-    natal_moon_rasi = int(natal_moon_lon / 30) + 1
+    # Global Chandrashtama (Which Rasi is having Chandrashtama today?)
     daily_moon_rasi = int(moon_lon / 30) + 1
-    is_chandrashtama = (((daily_moon_rasi - natal_moon_rasi) % 12) + 1) == 8
+    ch_rasi_idx = ((daily_moon_rasi + 4) % 12) + 1 # 8th from this sign
+    zodiac_en = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"]
+    zodiac_ta = ["மேஷம்", "ரிஷபம்", "மிதுனம்", "கடகம்", "சிம்மம்", "கன்னி", "துலாம்", "விருச்சிகம்", "தனுசு", "மகரம்", "கும்பம்", "மீனம்"]
+    ch_rasi_name = zodiac_en[ch_rasi_idx-1] if lang=="English" else zodiac_ta[ch_rasi_idx-1]
 
     tara_calc = ((daily_nak_idx - natal_nak_idx) % 9) + 1
-    tara_meanings_en = {1: ("Janma (Average)", "Maintain routine.", "#f39c12"), 2: ("Sampat (Excellent)", "Favorable for wealth.", "#27ae60"), 3: ("Vipat (Caution)", "Avoid major decisions.", "#e74c3c"), 4: ("Kshema (Good)", "Favorable for security.", "#27ae60"), 5: ("Pratyak (Obstacles)", "Expect setbacks.", "#e74c3c"), 6: ("Sadhana (Success)", "Realization of goals.", "#27ae60"), 7: ("Naidhana (Severe)", "Unfavorable for actions.", "#e74c3c"), 8: ("Mitra (Favorable)", "Good for partnerships.", "#2980b9"), 9: ("Parama Mitra (Excellent)", "Deeply supportive day.", "#27ae60")}
-    tara_meanings_ta = {1: ("ஜென்ம (சராசரி)", "வழக்கமான பணிகளை தொடரவும்.", "#f39c12"), 2: ("சம்பத் (சிறப்பு)", "பொருளாதார வளர்ச்சி.", "#27ae60"), 3: ("விபத்து (கவனம்)", "முக்கிய முடிவுகளை தவிர்க்கவும்.", "#e74c3c"), 4: ("க்ஷேம (நன்று)", "பாதுகாப்பு மற்றும் நலம்.", "#27ae60"), 5: ("பிரத்யக் (தடைகள்)", "தாமதங்கள் ஏற்படலாம்.", "#e74c3c"), 6: ("சாதனா (வெற்றி)", "எண்ணங்கள் ஈடேறும்.", "#27ae60"), 7: ("நைதன (கடுமை)", "புதிய செயல்களை தவிர்க்கவும்.", "#e74c3c"), 8: ("மித்ர (சாதகம்)", "கூட்டு முயற்சிகளுக்கு நன்று.", "#2980b9"), 9: ("பரம மித்ர (மிகச் சிறப்பு)", "முழுமையான ஆதரவு கிடைக்கும்.", "#27ae60")}
-    
+    tara_meanings_en = {1: "Janma (Average)", 2: "Sampat (Excellent)", 3: "Vipat (Caution)", 4: "Kshema (Good)", 5: "Pratyak (Obstacles)", 6: "Sadhana (Success)", 7: "Naidhana (Severe)", 8: "Mitra (Favorable)", 9: "Parama Mitra (Excellent)"}
+    tara_meanings_ta = {1: "ஜென்ம (சராசரி)", 2: "சம்பத் (சிறப்பு)", 3: "விபத்து (கவனம்)", 4: "க்ஷேம (நன்று)", 5: "பிரத்யக் (தடைகள்)", 6: "சாதனா (வெற்றி)", 7: "நைதன (கடுமை)", 8: "மித்ர (சாதகம்)", 9: "பரம மித்ர (மிகச் சிறப்பு)"}
     t_dict = tara_meanings_en if lang == "English" else tara_meanings_ta
-    tara_name, tara_desc, tara_color = t_dict[tara_calc]
+    tara_name = t_dict[tara_calc]
 
-    # 4. Standard Offsets for Events (from local sunrise)
-    wd = dt_obj.weekday() # 0=Mon, 6=Sun
-    wd_idx = (wd + 1) % 7 # Shift so Sun=0, Mon=1...
-    
+    # 6. Timings
+    wd = dt_obj.weekday()
+    wd_idx = (wd + 1) % 7 
     rk_start_hrs = {0: 10.5, 1: 1.5, 2: 9.0, 3: 6.0, 4: 7.5, 5: 4.5, 6: 3.0}
     yg_start_hrs = {0: 6.0, 1: 4.5, 2: 3.0, 3: 1.5, 4: 0.0, 5: 9.0, 6: 7.5}
-    ku_start_hrs = {0: 9.0, 1: 7.5, 2: 6.0, 3: 4.5, 4: 3.0, 5: 1.5, 6: 0.0} # Kuligai
     nn_starts = {0: [1.5, 9.5], 1: [0.0, 10.5], 2: [1.5, 10.5], 3: [3.0, 10.5], 4: [4.5, 10.5], 5: [3.5, 10.5], 6: [1.5, 10.5]}
     gnn_starts = {0: [1.5, 4.5], 1: [3.0, 7.5], 2: [4.5, 10.5], 3: [6.0, 1.5], 4: [7.5, 4.5], 5: [6.5, 12.5], 6: [0.0, 3.0]}
 
-    # Soolam (Direction to avoid)
-    soolam_en = {0: ("West", "Jaggery"), 1: ("East", "Yogurt"), 2: ("North", "Milk"), 3: ("North", "Milk"), 4: ("South", "Oil"), 5: ("West", "Jaggery"), 6: ("East", "Yogurt")}
-    soolam_ta = {0: ("மேற்கு", "வெல்லம்"), 1: ("கிழக்கு", "தயிர்"), 2: ("வடக்கு", "பால்"), 3: ("வடக்கு", "பால்"), 4: ("தெற்கு", "எண்ணெய்"), 5: ("மேற்கு", "வெல்லம்"), 6: ("கிழக்கு", "தயிர்")}
-    s_dir, s_rem = soolam_en[wd_idx] if lang=="English" else soolam_ta[wd_idx]
+    def get_time_str(start_offset, duration=1.5):
+        s = sunrise_dt + timedelta(hours=start_offset)
+        e = s + timedelta(hours=duration)
+        return f"{s.strftime('%I:%M %p').lstrip('0')} - {e.strftime('%I:%M %p').lstrip('0')}"
 
-    def format_event(start_offset, duration_hrs, label_en, label_ta, color):
-        s_dt = sunrise_dt + timedelta(hours=start_offset)
-        e_dt = s_dt + timedelta(hours=duration_hrs)
-        lbl = label_en if lang=="English" else label_ta
-        return {"start": s_dt, "end": e_dt, "text": f"{lbl}", "color": color, "time_str": f"{s_dt.strftime('%I:%M%p')} - {e_dt.strftime('%I:%M%p')}"}
+    rk_str = get_time_str(rk_start_hrs[wd_idx], 1.5)
+    yg_str = get_time_str(yg_start_hrs[wd_idx], 1.5)
+    nn_str = "<br>".join([get_time_str(sh, 1.0) for sh in nn_starts[wd_idx]])
+    gnn_str = "<br>".join([get_time_str(sh, 1.0) for sh in gnn_starts[wd_idx]])
 
-    events = []
-    events.append(format_event(rk_start_hrs[wd_idx], 1.5, "Rahu Kalam", "ராகு காலம்", "#c0392b"))
-    events.append(format_event(yg_start_hrs[wd_idx], 1.5, "Yemagandam", "எமகண்டம்", "#d35400"))
-    events.append(format_event(ku_start_hrs[wd_idx], 1.5, "Kuligai", "குளிகை", "#8e44ad"))
-    
-    nn_list = []
-    for s_hr in nn_starts[wd_idx]:
-        ev = format_event(s_hr, 1.0, "Nalla Neram", "நல்ல நேரம்", "#27ae60")
-        events.append(ev)
-        nn_list.append(ev["time_str"])
-        
-    gnn_list = []
-    for s_hr in gnn_starts[wd_idx]:
-        ev = format_event(s_hr, 1.0, "Gowri Nalla Neram", "கௌரி நல்ல நேரம்", "#f39c12")
-        events.append(ev)
-        gnn_list.append(ev["time_str"])
-
-    # Extract Summary Times for Tab 1
-    summary_times = {
-        "Rahu Kalam" if lang=="English" else "ராகு காலம்": events[0]["time_str"],
-        "Yemagandam" if lang=="English" else "எமகண்டம்": events[1]["time_str"],
-        "Kuligai" if lang=="English" else "குளிகை": events[2]["time_str"],
-        "Nalla Neram" if lang=="English" else "நல்ல நேரம்": " & ".join(nn_list),
-        "Gowri Neram" if lang=="English" else "கௌரி நேரம்": " & ".join(gnn_list)
-    }
-
-    # 5. Bilingual Minimalist Horai Structure
+    # 7. Horai Schedule (Tab 2)
     horai_dict = {
         "Sun": {"en": "Sun", "ta": "சூரியன்", "act_en": "Govt / Authority", "act_ta": "அரசு / அதிகாரம்", "color": "#d35400"},
         "Venus": {"en": "Venus", "ta": "சுக்கிரன்", "act_en": "Art / Luxury", "act_ta": "கலை / உறவு", "color": "#8e44ad"},
@@ -752,41 +743,36 @@ def get_daily_panchangam_metrics(current_jd_ut, natal_moon_lon, lat_val, lon_val
     start_idx = day_starts[wd_idx]
     
     schedule = []
-    current_horai_name = "Night Phase"
+    events = [
+        {"start": sunrise_dt + timedelta(hours=rk_start_hrs[wd_idx]), "end": sunrise_dt + timedelta(hours=rk_start_hrs[wd_idx]+1.5), "text": "Rahu" if lang=="English" else "ராகு", "color": "#c0392b"},
+        {"start": sunrise_dt + timedelta(hours=yg_start_hrs[wd_idx]), "end": sunrise_dt + timedelta(hours=yg_start_hrs[wd_idx]+1.5), "text": "Yem" if lang=="English" else "எம", "color": "#d35400"}
+    ]
+    for sh in nn_starts[wd_idx]: events.append({"start": sunrise_dt + timedelta(hours=sh), "end": sunrise_dt + timedelta(hours=sh+1.0), "text": "Nalla" if lang=="English" else "நல்ல", "color": "#27ae60"})
 
     for hour_offset in range(12):
         block_s = sunrise_dt + timedelta(hours=hour_offset * horai_len_hrs)
         block_e = block_s + timedelta(hours=horai_len_hrs)
-        
         lord_key = horai_lords[(start_idx + hour_offset) % 7]
         lord_data = horai_dict[lord_key]
         l_name = lord_data['en'] if lang=="English" else lord_data['ta']
-        l_act = lord_data['act_en'] if lang=="English" else lord_data['act_ta']
-        
-        if block_s <= dt_obj <= block_e:
-            current_horai_name = f"{l_name} Horai" if lang=="English" else f"{l_name} ஓரை"
-
-        time_str = f"{block_s.strftime('%I:%M %p')} - {block_e.strftime('%I:%M %p')}"
         
         active_badges = []
         for ev in events:
-            # Check overlap logic
             if ev["start"] < block_e and ev["end"] > block_s:
                 active_badges.append(ev)
 
         schedule.append({
             "lord": f"{l_name} Horai" if lang=="English" else f"{l_name} ஓரை",
-            "activity": l_act,
-            "time": time_str,
+            "activity": lord_data['act_en'] if lang=="English" else lord_data['act_ta'],
+            "time": f"{block_s.strftime('%I:%M %p').lstrip('0')} - {block_e.strftime('%I:%M %p').lstrip('0')}",
             "color": lord_data['color'],
             "badges": active_badges
         })
 
     return {
-        "moon_phase": moon_phase_str, "nakshatra": nak_name,
-        "tara_name": tara_name, "tara_desc": tara_desc, "tara_color": tara_color,
-        "horai": current_horai_name, "schedule": schedule,
-        "sunrise": sunrise_dt.strftime('%I:%M %p'), "sunset": sunset_dt.strftime('%I:%M %p'),
-        "summary_times": summary_times, "soolam_dir": s_dir, "soolam_rem": s_rem,
-        "is_chandrashtama": is_chandrashtama
+        "tamil_month": t_month, "date_str": dt_obj.strftime('%d'), "day_str": dt_obj.strftime('%A'),
+        "tithi": t_name, "paksha": paksha, "countdown": countdown_str, "is_waxing": is_waxing,
+        "sunrise": sunrise_dt.strftime('%I:%M %p').lstrip('0'), "sunset": sunset_dt.strftime('%I:%M %p').lstrip('0'),
+        "yoga": daily_yoga, "nakshatra": nak_name, "tara_name": tara_name, "ch_rasi_name": ch_rasi_name,
+        "rk": rk_str, "yg": yg_str, "nn": nn_str, "gnn": gnn_str, "schedule": schedule
     }
