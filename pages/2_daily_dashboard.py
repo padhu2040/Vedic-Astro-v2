@@ -1,6 +1,6 @@
 import streamlit as st
 import swisseph as swe
-from datetime import datetime, timezone, time
+from datetime import datetime, timezone, time, date
 from supabase import create_client
 
 from astro_engine import (
@@ -33,49 +33,98 @@ def load_profiles_from_db():
         except: pass
     return profiles
 
+# --- SIDEBAR: Profile Selection ---
 with st.sidebar:
-    LANG = st.radio("Language / மொழி", ["English", "Tamil"], horizontal=True)
-    st.divider()
     st.markdown("### 👤 Personal Strategy")
     saved_profiles = load_profiles_from_db()
-    profile_options = ["(Select Profile...)"] + list(saved_profiles.keys())
+    profile_options = ["(No Profile Selected)"] + list(saved_profiles.keys())
     selected_profile = st.selectbox("Load Saved Profile", profile_options)
     
-    if selected_profile != "(Select Profile...)":
+    if selected_profile != "(No Profile Selected)":
         def_n = selected_profile
         def_dob = saved_profiles[selected_profile]["dob"]
         def_tob = saved_profiles[selected_profile]["tob"]
         def_loc = saved_profiles[selected_profile]["city"]
     else:
-        def_n, def_dob, def_tob, def_loc = "", datetime(2000, 1, 1).date(), time(12, 0), ""
+        def_n, def_dob, def_tob, def_loc = "", date(2000, 1, 1), time(12, 0), ""
 
-# --- 1. INSTANT GENERIC LOAD (Page for all visitors) ---
-st.title("Daily Cosmos" if LANG=="English" else "தினசரி நாள்காட்டி")
-st.markdown("<br>", unsafe_allow_html=True)
+# --- TOP CONTROL BAR (Date, Location, Language) ---
+st.title("Daily Cosmos")
 
-# Default to Chennai if no profile is selected
-lat_val, lon_val, tz_val = 13.0827, 80.2707, "Asia/Kolkata" 
-if def_n:
-    lat_val, lon_val, tz_val = get_location_coordinates(def_loc)
+col1, col2, col3 = st.columns([1.2, 1.5, 1])
+with col1:
+    target_date = st.date_input("📅 Date", date.today())
+with col2:
+    target_city = st.text_input("📍 Location", value=def_loc if def_loc else "Chennai")
+with col3:
+    LANG = st.selectbox("🌐 Language", ["English", "Tamil"])
 
-# Calculate generic data instantly
-pan = get_daily_panchangam_metrics(lat_val, lon_val, tz_val, LANG)
-moon_icon = "🌔" if pan['is_waxing'] else "🌘"
+st.divider()
 
-lbl = {
-    "ast": "Astronomical" if LANG=="English" else "வானியல்",
-    "ausp": "Auspicious Timings" if LANG=="English" else "நல்ல நேரங்கள்",
-    "inausp": "Obstacle Windows" if LANG=="English" else "தடை நேரங்கள்",
-    "horai": "Upcoming Horai" if LANG=="English" else "வரவிருக்கும் ஓரை"
-}
+# --- INSTANT ENGINE EXECUTION ---
+with st.spinner("Calculating orbital mechanics..."):
+    # 1. Resolve Location
+    try:
+        lat_val, lon_val, tz_val = get_location_coordinates(target_city)
+    except:
+        lat_val, lon_val, tz_val = 13.0827, 80.2707, "Asia/Kolkata" # Fallback
 
-# --- THE 6-CARD MINIMALIST GRID ---
-grid_html = f"""
+    # 2. Resolve Profile Elements (If present)
+    natal_lagna_rasi, natal_moon_rasi, natal_moon_lon = None, None, None
+    if def_n:
+        swe.set_sid_mode(swe.SIDM_LAHIRI)
+        birth_dt = datetime.combine(def_dob, def_tob)
+        offset = get_utc_offset(tz_val, birth_dt)
+        ut_hour = (def_tob.hour + (def_tob.minute/60.0)) - offset
+        jd_ut_natal = swe.julday(def_dob.year, def_dob.month, def_dob.day, ut_hour)
+        
+        ascmc = swe.houses_ex(jd_ut_natal, lat_val, lon_val, b'P', swe.FLG_SIDEREAL)[1]
+        natal_lagna_rasi = int(ascmc[0]/30)+1
+        natal_moon_lon = swe.calc_ut(jd_ut_natal, swe.MOON, swe.FLG_SIDEREAL)[0][0]
+        natal_moon_rasi = int(natal_moon_lon/30)+1
+
+    # 3. Call The Engines
+    pan = get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_val, LANG, natal_lagna_rasi, natal_moon_rasi)
+    
+    if def_n:
+        daily_weather = get_daily_executive_weather(pan['current_jd_ut'], natal_moon_rasi, natal_lagna_rasi, LANG)
+
+# --- SETUP TABS (No flashy icons) ---
+t1_name = "Overview" if LANG=="English" else "பஞ்சாங்கம்"
+t2_name = "Horai" if LANG=="English" else "ஓரை"
+t3_name = "Strategy" if LANG=="English" else "வியூகம்"
+tab1, tab2, tab3 = st.tabs([t1_name, t2_name, t3_name])
+
+# --- TAB 1: 6-CARD GRID (Minimalist & Flat) ---
+with tab1:
+    moon_icon = "🌔" if pan['is_waxing'] else "🌘"
+    
+    lbl = {
+        "m_phase": "Moon Phase" if LANG=="English" else "சந்திர நிலை",
+        "sun_yoga": "Sun & Astronomical Yoga" if LANG=="English" else "சூரியன் & யோகம்",
+        "sun_r": "Sunrise" if LANG=="English" else "உதயம்",
+        "sun_s": "Sunset" if LANG=="English" else "அஸ்தமனம்",
+        "yoga": "Nithya Yoga" if LANG=="English" else "நித்திய யோகம்",
+        "tara": "Personal Tarabalam" if LANG=="English" else "தாராபலம்",
+        "nak": "Nakshatra" if LANG=="English" else "நட்சத்திரம்",
+        "ausp": "Auspicious Timings" if LANG=="English" else "நல்ல நேரங்கள்",
+        "nn": "Nalla Neram" if LANG=="English" else "நல்ல நேரம்",
+        "gnn": "Gowri Neram" if LANG=="English" else "கௌரி நேரம்",
+        "inausp": "Obstacle Windows" if LANG=="English" else "தடை நேரங்கள்",
+        "rk": "Rahu Kalam" if LANG=="English" else "ராகு காலம்",
+        "yg": "Yemagandam" if LANG=="English" else "எமகண்டம்"
+    }
+
+    # Tarabalam Row (Only shows if profile is loaded)
+    tara_row = f"""<div class="card-row"><span class="row-lbl">{lbl['tara']}</span><span class="row-val" style="color:{pan['tara_color']};">{pan['tara_name']}</span></div>""" if def_n else ""
+
+    grid_html = f"""
 <style>
-.grid-container {{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 30px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }}
-.m-card {{ background: #ffffff; border: 1px solid #eaeaea; border-radius: 4px; padding: 16px; display: flex; flex-direction: column; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }}
+.grid-container {{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }}
+.m-card {{ background: #ffffff; border: 1px solid #eaeaea; border-radius: 4px; padding: 16px; display: flex; flex-direction: column; box-shadow: 0 1px 2px rgba(0,0,0,0.02); min-height: 120px; }}
 .c-head {{ font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #888; font-weight: 500; margin-bottom: 12px; border-bottom: 1px solid #f9f9f9; padding-bottom: 4px; }}
-.row-item {{ display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }}
+.card-row {{ display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #f7f7f7; padding: 6px 0; }}
+.card-row:last-child {{ border-bottom: none; }}
 .row-lbl {{ font-size: 12.5px; color: #7f8c8d; font-weight: 400; }}
 .row-val {{ font-size: 13.5px; color: #222; font-weight: 500; text-align: right; }}
 </style>
@@ -101,79 +150,94 @@ grid_html = f"""
 
 <div class="m-card">
 <div class="c-head">{lbl['ast']}</div>
-<div class="row-item"><span class="row-lbl">Sunrise / Set</span><span class="row-val">{pan['sunrise']} - {pan['sunset']}</span></div>
-<div class="row-item"><span class="row-lbl">Rasi & Star</span><span class="row-val">{pan['rasi']} / {pan['nakshatra']}</span></div>
-<div class="row-item"><span class="row-lbl">Nithya Yoga</span><span class="row-val">{pan['yoga']}</span></div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;">
+<div class="card-row"><span class="row-lbl">{lbl['sun_r']} / {lbl['sun_s']}</span><span class="row-val">{pan['sunrise']} - {pan['sunset']}</span></div>
+<div class="card-row"><span class="row-lbl">Rasi & Star</span><span class="row-val">{pan['rasi']} / {pan['nakshatra']}</span></div>
+<div class="card-row"><span class="row-lbl">{lbl['yoga']}</span><span class="row-val">{pan['yoga']}</span></div>
+{tara_row}
+</div>
 </div>
 
 <div class="m-card" style="border-top: 2px solid #27ae60;">
 <div class="c-head" style="color: #27ae60;">{lbl['ausp']}</div>
-<div class="row-item"><span class="row-lbl">Nalla Neram</span><span class="row-val">{pan['nn']}</span></div>
-<div class="row-item"><span class="row-lbl">Gowri</span><span class="row-val">{pan['gnn']}</span></div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;">
+<div class="card-row"><span class="row-lbl">{lbl['nn']}</span><span class="row-val">{pan['nn']}</span></div>
+<div class="card-row"><span class="row-lbl">{lbl['gnn']}</span><span class="row-val">{pan['gnn']}</span></div>
+</div>
 </div>
 
-<div class="m-card" style="border-top: 2px solid #c0392b;">
+<div class="m-card" style="border-top: 2px solid #c0392b; grid-column: span 2;">
 <div class="c-head" style="color: #c0392b;">{lbl['inausp']}</div>
-<div class="row-item"><span class="row-lbl">Rahu Kalam</span><span class="row-val">{pan['rk']}</span></div>
-<div class="row-item"><span class="row-lbl">Yemagandam</span><span class="row-val">{pan['yg']}</span></div>
-<div class="row-item" style="margin-top: 8px; border-top: 1px dashed #eee; padding-top: 8px;">
-<span class="row-lbl" style="color:#c0392b;">Chandrashtama</span>
-<span class="row-val" style="font-size: 11px; max-width: 110px;">{pan['ch_naks']}</span>
-</div>
-</div>
-
-<div class="m-card" style="padding: 0;">
-<div class="c-head" style="margin: 16px 16px 8px 16px;">{lbl['horai']}</div>
-<div style="max-height: 125px; overflow-y: auto; padding: 0 16px 16px 16px;">
-"""
-
-# FLATTENED LOOP FIX HERE
-for h in pan["schedule"]:
-    bg_col = "#fdfdfd"
-    border = "none"
-    if h['is_current']:
-        bg_col = "#f0f8ff"
-        border = f"border-left: 3px solid {h['color']};"
-        
-    grid_html += f"""
-<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 6px; background: {bg_col}; {border} border-bottom: 1px solid #f9f9f9;">
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
 <div>
-<div style="font-size: 13.5px; font-weight: 500; color: {h['color']};">{h['lord']}</div>
-<div style="font-size: 11px; color: #888;">{h['activity']}</div>
+<div class="card-row"><span class="row-lbl">{lbl['rk']}</span><span class="row-val">{pan['rk']}</span></div>
+<div class="card-row"><span class="row-lbl">{lbl['yg']}</span><span class="row-val">{pan['yg']}</span></div>
 </div>
-<div style="font-size: 11.5px; color: #444; font-weight: 500;">{h['time']}</div>
+<div style="border-left: 1px dashed #eee; padding-left: 15px;">
+<div class="card-row" style="flex-direction: column; align-items: flex-start; border: none;">
+<span class="row-lbl" style="color:#c0392b; margin-bottom: 4px;">Chandrashtama for:</span>
+<span class="row-val" style="font-size: 12px; text-align: left;">{pan['ch_naks']}</span>
+</div>
+</div>
+</div>
+</div>
+
 </div>
 """
-    
-grid_html += """
-</div>
-</div>
-</div>
-"""
-st.markdown(grid_html, unsafe_allow_html=True)
+    st.markdown(grid_html, unsafe_allow_html=True)
 
 
-# --- 2. PERSONALIZED STRATEGY (Only if profile is selected) ---
-if def_n:
-    st.markdown(f"<h3 style='font-family: sans-serif; font-size: 20px; color: #2c3e50; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-top: 10px;'>🎯 Tactical Strategy: {def_n}</h3>", unsafe_allow_html=True)
+# --- TAB 2: HOURLY PLANNER (Scrollable & Highlighted) ---
+with tab2:
+    msg_h = "Full 12-Hour Horai Planner" if LANG=="English" else "முழு 12 மணிநேர ஓரை நாள்காட்டி"
+    st.markdown(f"<div style='font-family: sans-serif; font-size: 14px; color: #7f8c8d; margin-bottom: 10px;'>{msg_h}</div>", unsafe_allow_html=True)
     
-    with st.spinner("Calculating personal alignment..."):
-        swe.set_sid_mode(swe.SIDM_LAHIRI)
-        birth_dt = datetime.combine(def_dob, def_tob)
-        offset = get_utc_offset(tz_val, birth_dt)
-        ut_hour = (def_tob.hour + (def_tob.minute/60.0)) - offset
-        jd_ut_natal = swe.julday(def_dob.year, def_dob.month, def_dob.day, ut_hour)
+    if def_n:
+        st.markdown("<div style='font-size: 12px; color: #f39c12; margin-bottom: 15px;'><b>⭐ Note:</b> Starred blocks indicate highly favorable timings based on your specific Lagna and Moon Rasi.</div>", unsafe_allow_html=True)
+
+    schedule_html = "<div style='font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif; max-height: 400px; overflow-y: auto; padding-right: 5px;'>"
+    
+    for row in pan["schedule"]:
+        bg_col = "#ffffff"
+        border = "border-bottom: 1px solid #f2f2f2;"
+        indicator = ""
         
-        ascmc = swe.houses_ex(jd_ut_natal, lat_val, lon_val, b'P', swe.FLG_SIDEREAL)[1]
-        natal_lagna_rasi = int(ascmc[0]/30)+1
-        natal_moon_lon = swe.calc_ut(jd_ut_natal, swe.MOON, swe.FLG_SIDEREAL)[0][0]
-        natal_moon_rasi = int(natal_moon_lon/30)+1
+        # Highlight current hour
+        if row['is_current']:
+            bg_col = "#f4f9f4"
+            border = f"border-left: 4px solid {row['color']}; border-bottom: 1px solid #e0e0e0;"
+            indicator = "<span style='font-size: 10px; color: #27ae60; text-transform: uppercase; font-weight: bold; margin-left: 8px;'>(Now)</span>"
+            
+        # Highlight personal power hour
+        if row['is_power']:
+            indicator += " ⭐"
 
-        daily_weather = get_daily_executive_weather(pan['current_jd_ut'], natal_moon_rasi, natal_lagna_rasi, LANG)
+        schedule_html += f"""
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 10px; background-color: {bg_col}; {border} margin-bottom: 4px; border-radius: 4px;">
+<div>
+<div style="font-size: 11px; color: #999; font-weight: 400; margin-bottom: 2px;">{row['time']} {indicator}</div>
+<div style="font-size: 15px; font-weight: 500; color: {row['color']};">{row['lord']}</div>
+</div>
+<div style="text-align: right;">
+<div style="font-size: 12.5px; color: #555; font-weight: 400;">{row['activity']}</div>
+</div>
+</div>
+"""
+    schedule_html += "</div>"
+    st.markdown(schedule_html, unsafe_allow_html=True)
 
+
+# --- TAB 3: TACTICAL STRATEGY (Requires Profile) ---
+with tab3:
+    if not def_n:
+        st.info("👈 Select your profile from the sidebar to generate your personalized tactical strategy.")
+    else:
         focus = daily_weather["focus"]
         comm = daily_weather["communication"]
         
+        s_focus = "Strategic Focus" if LANG=="English" else "வியூகம்"
+        s_comm = "Communication" if LANG=="English" else "தகவல் தொடர்பு"
+
         weather_html = f"""
 <style>
 .t-card {{ background: #fff; border: 1px solid #eaeaea; padding: 18px; border-radius: 4px; margin-bottom: 15px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-shadow: 0 1px 2px rgba(0,0,0,0.01); }}
@@ -184,14 +248,14 @@ if def_n:
 </style>
 
 <div class="t-card" style="border-left: 3px solid {focus['color']};">
-<div class="t-head"><span>Primary Focus</span> <span>Moon in {daily_weather['positions']['Moon']}</span></div>
+<div class="t-head"><span>{s_focus}</span> <span>Moon in {daily_weather['positions']['Moon']}</span></div>
 <div class="t-title" style="color: {focus['color']};">{focus['title']}</div>
 <div class="t-desc">{focus['desc']}</div>
 <div class="t-rem">{focus['remedy']}</div>
 </div>
 
 <div class="t-card" style="border-left: 3px solid #27ae60;">
-<div class="t-head"><span>Communication</span> <span>Mercury in {daily_weather['positions']['Mercury']}</span></div>
+<div class="t-head"><span>{s_comm}</span> <span>Mercury in {daily_weather['positions']['Mercury']}</span></div>
 <div class="t-title" style="color: #2c3e50;">{comm['title']}</div>
 <div class="t-desc">{comm['desc']}</div>
 <div class="t-rem">{comm['remedy']}</div>
