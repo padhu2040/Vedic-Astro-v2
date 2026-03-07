@@ -940,3 +940,127 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
         "nn": nn_str, "gnn": gnn_str, "schedule": schedule,
         "current_jd_ut": current_jd_ut, "tara_name": tara_name, "tara_color": tara_color, "tara_action": tara_act
     }
+
+def get_advanced_personal_metrics(jd_ut_natal, current_jd_ut, lat_val, lon_val, lang="English"):
+    """
+    Calculates Ashtakavarga (Moon BAV), Vimshottari Dasha/Bhukti, and Favorable Directions.
+    """
+    import swisseph as swe
+    from datetime import datetime
+
+    swe.set_sid_mode(swe.SIDM_LAHIRI)
+    
+    # 1. ASHTAKAVARGA (Moon's Bhinnashtakavarga)
+    natal_pos = []
+    # Calculate Natal Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn
+    for p in [swe.SUN, swe.MOON, swe.MARS, swe.MERCURY, swe.JUPITER, swe.VENUS, swe.SATURN]:
+        lon = swe.calc_ut(jd_ut_natal, p, swe.FLG_SIDEREAL)[0][0]
+        natal_pos.append(int(lon/30) + 1) 
+        
+    asc_lon = swe.houses_ex(jd_ut_natal, lat_val, lon_val, b'P', swe.FLG_SIDEREAL)[1][0]
+    natal_pos.append(int(asc_lon/30) + 1)
+    
+    transit_moon_lon = swe.calc_ut(current_jd_ut, swe.MOON, swe.FLG_SIDEREAL)[0][0]
+    t_moon_rasi = int(transit_moon_lon/30) + 1
+    
+    # Standard Bindu Arrays for Moon
+    bindus = [
+        [3, 6, 7, 8, 10, 11],          # Sun
+        [1, 3, 6, 7, 10, 11],          # Moon
+        [2, 3, 5, 6, 9, 10, 11],       # Mars
+        [1, 3, 4, 5, 7, 8, 10, 11],    # Mercury
+        [1, 4, 7, 8, 10, 11, 12],      # Jupiter
+        [3, 4, 5, 7, 9, 10, 11],       # Venus
+        [3, 5, 6, 11],                 # Saturn
+        [3, 6, 10, 11]                 # Ascendant
+    ]
+    
+    bav_score = 0
+    for i in range(8):
+        dist = ((t_moon_rasi - natal_pos[i] + 12) % 12) + 1
+        if dist in bindus[i]:
+            bav_score += 1
+            
+    if bav_score >= 6:
+        bav_title = "High Execution Energy" if lang=="English" else "உயர் செயல்பாட்டு ஆற்றல்"
+        bav_desc = f"Bindu Score: {bav_score}/8. The lunar transit has massive authorization in your chart today. Execute boldly, finalize deals, and take calculated risks."
+        bav_rem = "Maximize output. No remedy needed." if lang=="English" else "முழுமையாக செயல்படவும். பரிகாரம் தேவையில்லை."
+        bav_color = "#27ae60"
+    elif bav_score >= 4:
+        bav_title = "Stable Maintenance" if lang=="English" else "சீரான ஆற்றல்"
+        bav_desc = f"Bindu Score: {bav_score}/8. Average transit strength. Good for maintaining the status quo and steady progress."
+        bav_rem = "Focus on routine tasks." if lang=="English" else "வழக்கமான பணிகளில் கவனம் செலுத்தவும்."
+        bav_color = "#2980b9"
+    else:
+        bav_title = "Low Vitality / Caution" if lang=="English" else "குறைந்த ஆற்றல் / கவனம்"
+        bav_desc = f"Bindu Score: {bav_score}/8. Weak lunar transit for your chart. You may feel drained or encounter unexpected resistance."
+        bav_rem = "Delay major decisions. Focus on strategy." if lang=="English" else "முக்கிய முடிவுகளை ஒத்திவைக்கவும்."
+        bav_color = "#c0392b"
+        
+    # 2. VIMSHOTTARI DASHA / BHUKTI
+    moon_lon = swe.calc_ut(jd_ut_natal, swe.MOON, swe.FLG_SIDEREAL)[0][0]
+    nak_val = moon_lon / (360/27)
+    nak_idx = int(nak_val)
+    nak_frac = nak_val - nak_idx
+    
+    d_en = ["Ketu", "Venus", "Sun", "Moon", "Mars", "Rahu", "Jupiter", "Saturn", "Mercury"]
+    d_ta = ["கேது", "சுக்கிரன்", "சூரியன்", "சந்திரன்", "செவ்வாய்", "ராகு", "குரு", "சனி", "புதன்"]
+    d_lords = d_en if lang=="English" else d_ta
+    d_years = [7, 20, 6, 10, 7, 18, 16, 19, 17]
+    
+    start_idx = nak_idx % 9
+    bal_years = (1.0 - nak_frac) * d_years[start_idx]
+    
+    age_jd = current_jd_ut - jd_ut_natal
+    age_years = age_jd / 365.2425
+    
+    curr_idx = start_idx
+    rem_years = age_years - bal_years
+    
+    if rem_years < 0:
+        md = d_lords[curr_idx]
+        elapsed_in_md = age_years
+        total_md_years = d_years[curr_idx]
+    else:
+        curr_idx = (curr_idx + 1) % 9
+        while rem_years >= d_years[curr_idx]:
+            rem_years -= d_years[curr_idx]
+            curr_idx = (curr_idx + 1) % 9
+        md = d_lords[curr_idx]
+        elapsed_in_md = rem_years
+        total_md_years = d_years[curr_idx]
+        
+    ad_idx = curr_idx
+    elapsed_ad = 0.0
+    while True:
+        ad_len = (total_md_years * d_years[ad_idx]) / 120.0
+        if elapsed_in_md < elapsed_ad + ad_len:
+            ad = d_lords[ad_idx]
+            break
+        elapsed_ad += ad_len
+        ad_idx = (ad_idx + 1) % 9
+        
+    dasha_title = f"{md} Maha Dasha ➔ {ad} Bhukti" if lang=="English" else f"{md} திசை ➔ {ad} புத்தி"
+    d_desc = f"You are currently operating in the major life season of **{md}**, micro-filtered through the period of **{ad}**. All daily astrological weather occurs within this broader context."
+    if lang == "Tamil": d_desc = f"நீங்கள் தற்போது **{md}** திசையிலும், **{ad}** புத்தியிலும் பயணிக்கிறீர்கள்."
+
+    # 3. TACTICAL DIRECTIONS
+    dir_en = {1: "East", 2: "South", 3: "West", 4: "North", 5: "East", 6: "South", 7: "West", 8: "North", 9: "East", 10: "South", 11: "West", 12: "North"}
+    dir_ta = {1: "கிழக்கு", 2: "தெற்கு", 3: "மேற்கு", 4: "வடக்கு", 5: "கிழக்கு", 6: "தெற்கு", 7: "மேற்கு", 8: "வடக்கு", 9: "கிழக்கு", 10: "தெற்கு", 11: "மேற்கு", 12: "வடக்கு"}
+    fav_dir = dir_en[t_moon_rasi] if lang=="English" else dir_ta[t_moon_rasi]
+    
+    dt_curr = swe.revjul(current_jd_ut)
+    wd = datetime(dt_curr[0], dt_curr[1], dt_curr[2]).weekday()
+    s_en = {0:"East", 1:"North", 2:"North", 3:"South", 4:"West", 5:"East", 6:"West"} 
+    s_ta = {0:"கிழக்கு", 1:"வடக்கு", 2:"வடக்கு", 3:"தெற்கு", 4:"மேற்கு", 5:"கிழக்கு", 6:"மேற்கு"}
+    avoid_dir = s_en[wd] if lang=="English" else s_ta[wd]
+    
+    dir_title = "Tactical Favorable Direction" if lang=="English" else "சாதகமான திசை"
+    dir_desc = f"Based on today's lunar transit in your chart, face **{fav_dir}** during critical negotiations or deep work. Conversely, traditional Soolam warns against travel toward the **{avoid_dir}**."
+    if lang == "Tamil": dir_desc = f"இன்றைய கிரக நிலைப்படி, முக்கிய பணிகளை **{fav_dir}** நோக்கி செய்யவும். சூலம் உள்ள திசையான **{avoid_dir}** நோக்கிய பயணங்களை தவிர்க்கவும்."
+    
+    return {
+        "bav_title": bav_title, "bav_desc": bav_desc, "bav_rem": bav_rem, "bav_color": bav_color,
+        "dasha_title": dasha_title, "dasha_desc": d_desc,
+        "dir_title": dir_title, "dir_desc": dir_desc
+    }
