@@ -94,7 +94,6 @@ else:
             with tab1:
                 moon_icon = "🌔" if pan['is_waxing'] else "🌘"
                 
-                # Dictionary for labels based on language
                 lbl = {
                     "m_phase": "Moon Phase" if LANG=="English" else "சந்திர நிலை",
                     "sun_yoga": "Sun & Astronomical Yoga" if LANG=="English" else "சூரியன் & யோகம்",
@@ -126,53 +125,53 @@ else:
 
 <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px;">
 
-    <div class="metric-card">
-        <div class="card-header">{pan['day_str']}</div>
-        <div>
-            <div class="card-title">{pan['date_str']}</div>
-            <div class="card-sub" style="color: #2c3e50;">{pan['tamil_month']}</div>
-        </div>
-    </div>
+<div class="metric-card">
+<div class="card-header">{pan['day_str']}</div>
+<div>
+<div class="card-title">{pan['date_str']}</div>
+<div class="card-sub" style="color: #2c3e50;">{pan['tamil_month']}</div>
+</div>
+</div>
 
-    <div class="metric-card">
-        <div class="card-header">{lbl['m_phase']}</div>
-        <div>
-            <div class="card-title" style="font-size: 22px;">{moon_icon} {pan['tithi']}</div>
-            <div class="card-sub">{pan['paksha']} <span style="color:#95a5a6;">|</span> {pan['countdown']}</div>
-        </div>
-    </div>
+<div class="metric-card">
+<div class="card-header">{lbl['m_phase']}</div>
+<div>
+<div class="card-title" style="font-size: 22px;">{moon_icon} {pan['tithi']}</div>
+<div class="card-sub">{pan['paksha']} <span style="color:#95a5a6;">|</span> {pan['countdown']}</div>
+</div>
+</div>
 
-    <div class="metric-card">
-        <div class="card-header">{lbl['sun_yoga']}</div>
-        <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;">
-            <div class="card-row"><span class="row-lbl">{lbl['sun_r']} / {lbl['sun_s']}</span><span class="row-val">{pan['sunrise']} - {pan['sunset']}</span></div>
-            <div class="card-row"><span class="row-lbl">{lbl['yoga']}</span><span class="row-val">{pan['yoga']}</span></div>
-        </div>
-    </div>
+<div class="metric-card">
+<div class="card-header">{lbl['sun_yoga']}</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;">
+<div class="card-row"><span class="row-lbl">{lbl['sun_r']} / {lbl['sun_s']}</span><span class="row-val">{pan['sunrise']} - {pan['sunset']}</span></div>
+<div class="card-row"><span class="row-lbl">{lbl['yoga']}</span><span class="row-val">{pan['yoga']}</span></div>
+</div>
+</div>
 
-    <div class="metric-card">
-        <div class="card-header">{lbl['tara']}</div>
-        <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;">
-            <div class="card-row"><span class="row-lbl">{lbl['nak']}</span><span class="row-val">{pan['nakshatra']} <span style="color:#7f8c8d; font-weight:400;">({pan['tara_name']})</span></span></div>
-            <div class="card-row"><span class="row-lbl" style="color:#c0392b;">{lbl['ch_alert']}</span><span class="row-val" style="color:#c0392b;">{pan['ch_rasi_name']}</span></div>
-        </div>
-    </div>
+<div class="metric-card">
+<div class="card-header">{lbl['tara']}</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;">
+<div class="card-row"><span class="row-lbl">{lbl['nak']}</span><span class="row-val">{pan['nakshatra']} <span style="color:#7f8c8d; font-weight:400;">({pan['tara_name']})</span></span></div>
+<div class="card-row"><span class="row-lbl" style="color:#c0392b;">{lbl['ch_alert']}</span><span class="row-val" style="color:#c0392b;">{pan['ch_rasi_name']}</span></div>
+</div>
+</div>
 
-    <div class="metric-card" style="border-top: 2px solid #27ae60;">
-        <div class="card-header" style="color: #27ae60;">{lbl['ausp']}</div>
-        <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;">
-            <div class="card-row"><span class="row-lbl">{lbl['nn']}</span><span class="row-val">{pan['nn']}</span></div>
-            <div class="card-row"><span class="row-lbl">{lbl['gnn']}</span><span class="row-val">{pan['gnn']}</span></div>
-        </div>
-    </div>
+<div class="metric-card" style="border-top: 2px solid #27ae60;">
+<div class="card-header" style="color: #27ae60;">{lbl['ausp']}</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;">
+<div class="card-row"><span class="row-lbl">{lbl['nn']}</span><span class="row-val">{pan['nn']}</span></div>
+<div class="card-row"><span class="row-lbl">{lbl['gnn']}</span><span class="row-val">{pan['gnn']}</span></div>
+</div>
+</div>
 
-    <div class="metric-card" style="border-top: 2px solid #c0392b;">
-        <div class="card-header" style="color: #c0392b;">{lbl['inausp']}</div>
-        <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;">
-            <div class="card-row"><span class="row-lbl">{lbl['rk']}</span><span class="row-val">{pan['rk']}</span></div>
-            <div class="card-row"><span class="row-lbl">{lbl['yg']}</span><span class="row-val">{pan['yg']}</span></div>
-        </div>
-    </div>
+<div class="metric-card" style="border-top: 2px solid #c0392b;">
+<div class="card-header" style="color: #c0392b;">{lbl['inausp']}</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;">
+<div class="card-row"><span class="row-lbl">{lbl['rk']}</span><span class="row-val">{pan['rk']}</span></div>
+<div class="card-row"><span class="row-lbl">{lbl['yg']}</span><span class="row-val">{pan['yg']}</span></div>
+</div>
+</div>
 
 </div>
 """
