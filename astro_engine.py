@@ -664,7 +664,7 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
 
     def get_sun_lon(jd): return swe.calc_ut(jd, swe.SUN, swe.FLG_SIDEREAL)[0][0]
     
-    # 2. True Sankramana (Exact Tamil Day Calculation)
+    # 2. True Sankramana (Exact Tamil Day)
     curr_lon = get_sun_lon(current_jd_ut)
     sun_rasi_idx = int(curr_lon / 30) + 1
     jd_sank = current_jd_ut
@@ -678,7 +678,6 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
     day_1_date = sank_dt.date() + timedelta(days=1) if sank_dt.hour >= 18 else sank_dt.date()
     tamil_day = (target_date - day_1_date).days + 1
 
-    # 3. 60-Year Tamil Cycle & Months
     tamil_years_en = ["Prabhava", "Vibhava", "Sukla", "Pramodoota", "Prachorpaththi", "Aangirasa", "Srimuga", "Bhava", "Yuva", "Dhaadhu", "Eesvara", "Vehudhanya", "Pramathi", "Vikrama", "Vishu", "Chitrabhanu", "Subhanu", "Tharana", "Parthiba", "Viya", "Sarvajith", "Sarvadhari", "Virodhi", "Vikruthi", "Kara", "Nandhana", "Vijaya", "Jaya", "Manmatha", "Dhurmuki", "Hevilambi", "Vilambi", "Vikari", "Sarvari", "Plava", "Shubakruth", "Sobakruth", "Krodhi", "Viswavasu", "Parabhava", "Plavanga", "Keelaka", "Saumya", "Sadharana", "Virodhikruth", "Paridhaabi", "Pramaadhisa", "Aanandha", "Rakshasa", "Nala", "Pingala", "Kalayukthi", "Siddharthi", "Raudhri", "Dunmathi", "Dhundhubhi", "Rudhrodhgaari", "Raktakshi", "Krodhana", "Akshaya"]
     tamil_years_ta = ["பிரபவ", "விபவ", "சுக்ல", "பிரமோதூத", "பிரஜோத்பத்தி", "ஆங்கீரச", "ஸ்ரீமுக", "பவ", "யுவ", "தாது", "ஈஸ்வர", "வெகுதான்ய", "பிரமாதி", "விக்ரம", "விஷு", "சித்ரபானு", "சுபானு", "தாரண", "பார்த்திப", "விய", "சர்வஜித்", "சர்வதாரி", "விரோதி", "விக்ருதி", "கர", "நந்தன", "விஜய", "ஜய", "மன்மத", "துன்முகி", "ஹேவிளம்பி", "விளம்பி", "விகாரி", "சார்வரி", "பிலவ", "சுபகிருது", "சோபகிருது", "க்ரோதி", "விஸ்வாவசு", "பராபவ", "பிலவங்க", "கீலக", "சௌம்ய", "சாதாரண", "விரோதிகிருது", "பரிதாபி", "பிரமாதீச", "ஆனந்த", "ராக்ஷச", "நள", "பிங்கள", "காளயுக்தி", "சித்தார்த்தி", "ரௌத்ரி", "துன்மதி", "துந்துபி", "ருத்ரோத்காரி", "ரக்தாக்ஷி", "க்ரோதன", "அக்ஷய"]
     
@@ -694,7 +693,7 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
     tamil_days_dict = {0:"திங்கள்", 1:"செவ்வாய்", 2:"புதன்", 3:"வியாழன்", 4:"வெள்ளி", 5:"சனி", 6:"ஞாயிறு"}
     day_ta = tamil_days_dict[dt_obj.weekday()]
 
-    # 4. Iterative End-Time Calculators
+    # 3. Iterative End-Time Calculators
     def get_tithi(jd): return int(((((swe.calc_ut(jd, swe.MOON, swe.FLG_SIDEREAL)[0][0]) - (swe.calc_ut(jd, swe.SUN, swe.FLG_SIDEREAL)[0][0])) % 360) / 12) + 1)
     def get_nak(jd): return int((swe.calc_ut(jd, swe.MOON, swe.FLG_SIDEREAL)[0][0] % 360) / (360/27))
     def get_rasi(jd): return int(swe.calc_ut(jd, swe.MOON, swe.FLG_SIDEREAL)[0][0] / 30) + 1
@@ -717,7 +716,6 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
     jd_rasi_end, next_r_idx = find_end_time(current_jd_ut, get_rasi, 72)
     jd_yoga_end, next_y_idx = find_end_time(current_jd_ut, get_yoga, 30)
 
-    # Dictionaries
     tithi_names_en = {1:"Prathamai", 2:"Dwitiyai", 3:"Tritiyai", 4:"Chaturthi", 5:"Panchami", 6:"Shashti", 7:"Saptami", 8:"Ashtami", 9:"Navami", 10:"Dasami", 11:"Ekadasi", 12:"Dwadasi", 13:"Thirayodasi", 14:"Chaturdasi"}
     tithi_names_ta = {1:"பிரதமை", 2:"துவிதியை", 3:"திருதியை", 4:"சதுர்த்தி", 5:"பஞ்சமி", 6:"சஷ்டி", 7:"சப்தமி", 8:"அஷ்டமி", 9:"நவமி", 10:"தசமி", 11:"ஏகாதசி", 12:"துவாதசி", 13:"திரயோதசி", 14:"சதுர்த்தசி"}
     
@@ -733,12 +731,50 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
     paksha = "Valarpirai (Shukla Paksham)" if is_waxing else "Theipirai (Krishna Paksham)"
     if lang == "Tamil": paksha = "வளர்பிறை (சுக்கில பட்சம்)" if is_waxing else "தேய்பிறை (கிருஷ்ண பட்சம்)"
     
+    # 4. Amavasai/Pournami & Dasami Countdowns
     days_to_target = 15 - tithi_idx if is_waxing else 30 - tithi_idx
     target_dt = dt_obj + timedelta(days=days_to_target)
     target_name = "Pournami" if is_waxing else "Amavasai"
     if lang == "Tamil": target_name = "பௌர்ணமி" if is_waxing else "அமாவாசை"
     countdown_str = f"{days_to_target}d to {target_name} ({target_dt.strftime('%b %d')})" if lang=="English" else f"{target_name}க்கு {days_to_target} நாள் ({target_dt.strftime('%d %b')})"
 
+    d_to_das = 10 - tithi_idx if tithi_idx < 10 else 25 - tithi_idx if tithi_idx < 25 else 40 - tithi_idx
+    target_das_dt = dt_obj + timedelta(days=d_to_das)
+    dasami_str = f"{d_to_das}d to Dasami ({target_das_dt.strftime('%b %d')})" if lang=="English" else f"தசமிக்கு {d_to_das} நாள் ({target_das_dt.strftime('%d %b')})"
+
+    # 5. Vrata & Deity Engine
+    vrata_name_en, vrata_name_ta = "Standard Day", "சாதாரண நாள்"
+    vrata_icon = "✨"
+    t_mod = tithi_idx % 15
+    if t_mod == 4:
+        vrata_name_en = "Sankatahara Chaturthi" if not is_waxing else "Valarpirai Chaturthi"
+        vrata_name_ta = "சங்கடஹர சதுர்த்தி" if not is_waxing else "வளர்பிறை சதுர்த்தி"
+        vrata_icon = "🐘" 
+    elif t_mod == 6:
+        vrata_name_en, vrata_name_ta, vrata_icon = "Shashti (Lord Murugan)", "சஷ்டி (முருகன்)", "🦚"
+    elif t_mod == 11:
+        vrata_name_en, vrata_name_ta, vrata_icon = "Ekadasi (Lord Perumal)", "ஏகாதசி (பெருமாள்)", "🪔"
+    elif t_mod == 13:
+        vrata_name_en, vrata_name_ta, vrata_icon = "Pradosham (Lord Shiva)", "பிரதோஷம் (சிவன்)", "🔱"
+    elif tithi_idx == 15:
+        vrata_name_en, vrata_name_ta, vrata_icon = "Pournami (Goddess Amman)", "பௌர்ணமி (அம்மன்)", "🌕"
+    elif tithi_idx == 30:
+        vrata_name_en, vrata_name_ta, vrata_icon = "Amavasai (Ancestors)", "அமாவாசை (முன்னோர்கள்)", "🌑"
+    elif t_mod == 8:
+        vrata_name_en, vrata_name_ta, vrata_icon = "Ashtami (Goddess Bhairavi)", "அஷ்டமி (பைரவர்)", "⚔️"
+    elif t_mod == 9:
+        vrata_name_en, vrata_name_ta, vrata_icon = "Navami (Goddess Saraswati)", "நவமி (சரஸ்வதி)", "📖"
+    
+    v_name = vrata_name_en if lang=="English" else vrata_name_ta
+
+    # 6. Basic Subha Muhurtham Check
+    good_tithis = [2,3,5,7,10,11,13]
+    bad_days = [1, 5] # Tue, Sat (0=Mon)
+    is_muhurtham = (t_mod in good_tithis) and (dt_obj.weekday() not in bad_days)
+    muh_str = "Favorable for General Auspicious Tasks" if is_muhurtham else "No Standard Muhurtham Today"
+    if lang == "Tamil": muh_str = "சுப காரியங்களுக்கு உகந்தது" if is_muhurtham else "இன்று சுப முகூர்த்தம் இல்லை"
+
+    # Astronomical & Zodiac Arrays
     yogas_en = ["Vishkumbham", "Priti", "Ayushman", "Saubhagyam", "Shobhanam", "Atigandam", "Sukarmam", "Dhriti", "Shulam", "Gandam", "Vriddhi", "Dhruvam", "Vyaghatam", "Harshanam", "Vajram", "Siddhi", "Vyatipatam", "Variyan", "Parigham", "Shivam", "Siddham", "Sadhyam", "Shubham", "Shuklam", "Brahmam", "Indram", "Vaidhriti"]
     yogas_ta = ["விஷ்கம்பம்", "பிரீதி", "ஆயுஷ்மான்", "சௌபாக்கியம்", "சோபனம்", "அதிகண்டம்", "சுகர்மம்", "திருதி", "சூலம்", "கண்டம்", "விருத்தி", "துருவம்", "வியாகாதம்", "ஹர்ஷணம்", "வஜ்ரம்", "சித்தி", "வியதிபாதம்", "வரியான்", "பரிகம்", "சிவம்", "சித்தம்", "சாத்தியம்", "சுபம்", "சுக்கிலம்", "பிரம்மா", "இந்திரம்", "வைதிருதி"]
     daily_yoga = yogas_en[get_yoga(current_jd_ut)] if lang=="English" else yogas_ta[get_yoga(current_jd_ut)]
@@ -813,7 +849,8 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
         "day_num": dt_obj.strftime('%d'), "month_year_en": dt_obj.strftime('%B %Y'), "day_en": dt_obj.strftime('%A'),
         "date_ta": f"{tamil_day:02d}", "day_ta": day_ta, "tamil_year": t_year, "month_ta": t_month,
         "tithi_short": t_name, "t_end": format_end_time(jd_tithi_end), "t_next": next_t_name,
-        "paksha": paksha, "countdown": countdown_str, "is_waxing": is_waxing,
+        "paksha": paksha, "countdown": countdown_str, "dasami_str": dasami_str, "is_waxing": is_waxing,
+        "v_name": v_name, "v_icon": vrata_icon, "muh_str": muh_str,
         "sunrise": jd_to_local_dt(sunrise_jd).strftime('%I:%M %p').lstrip('0'), "sunset": jd_to_local_dt(sunset_jd).strftime('%I:%M %p').lstrip('0'),
         "yoga": daily_yoga, "y_end": format_end_time(jd_yoga_end), "y_next": next_yoga_name,
         "nakshatra": nak_name, "n_end": format_end_time(jd_nak_end), "n_next": next_nak_name,
