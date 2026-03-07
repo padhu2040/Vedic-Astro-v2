@@ -33,7 +33,6 @@ def load_profiles_from_db():
         except: pass
     return profiles
 
-# --- SIDEBAR: Profile Selection ---
 with st.sidebar:
     st.markdown("### Personal Strategy")
     saved_profiles = load_profiles_from_db()
@@ -48,7 +47,6 @@ with st.sidebar:
     else:
         def_n, def_dob, def_tob, def_loc = "", date(2000, 1, 1), time(12, 0), ""
 
-# --- TOP CONTROL BAR ---
 st.title("Daily Cosmos")
 
 col1, col2, col3 = st.columns([1.2, 1.5, 1])
@@ -61,14 +59,12 @@ with col3:
 
 st.divider()
 
-# --- INSTANT ENGINE EXECUTION ---
-with st.spinner("Calculating orbital mechanics..."):
+with st.spinner("Calculating precision timelines..."):
     try:
         lat_val, lon_val, tz_val = get_location_coordinates(target_city)
     except:
         lat_val, lon_val, tz_val = 13.0827, 80.2707, "Asia/Kolkata"
 
-    # Pre-Initialize all variables to prevent NameErrors!
     natal_lagna_rasi = None
     natal_moon_rasi = None
     natal_moon_lon = None
@@ -85,153 +81,128 @@ with st.spinner("Calculating orbital mechanics..."):
         natal_moon_lon = swe.calc_ut(jd_ut_natal, swe.MOON, swe.FLG_SIDEREAL)[0][0]
         natal_moon_rasi = int(natal_moon_lon/30)+1
 
-    # KEYWORD ARGUMENTS to completely eliminate TypeError
     pan = get_daily_panchangam_metrics(
-        target_date=target_date, 
-        lat_val=lat_val, 
-        lon_val=lon_val, 
-        tz_name=tz_val, 
-        lang=LANG, 
-        user_lagna=natal_lagna_rasi, 
-        user_moon=natal_moon_rasi, 
-        natal_moon_lon=natal_moon_lon
+        target_date=target_date, lat_val=lat_val, lon_val=lon_val, 
+        tz_name=tz_val, lang=LANG, user_lagna=natal_lagna_rasi, 
+        user_moon=natal_moon_rasi, natal_moon_lon=natal_moon_lon
     )
-    
     if def_n:
         daily_weather = get_daily_executive_weather(pan['current_jd_ut'], natal_moon_rasi, natal_lagna_rasi, LANG)
 
-# --- SETUP TABS (No icons) ---
+# --- 5-TAB ARCHITECTURE ---
 t1_name = "Overview" if LANG=="English" else "பஞ்சாங்கம்"
-t2_name = "Horai" if LANG=="English" else "ஓரை"
-t3_name = "Strategy" if LANG=="English" else "வியூகம்"
-tab1, tab2, tab3 = st.tabs([t1_name, t2_name, t3_name])
+t2_name = "Strategy" if LANG=="English" else "வியூகம்"
+t3_name = "Obstacles" if LANG=="English" else "தடைகள்"
+t4_name = "Auspicious" if LANG=="English" else "நல்ல நேரம்"
+t5_name = "Horai" if LANG=="English" else "ஓரை"
 
-# --- TAB 1: 6-CARD GRID (Minimalist & Flat) ---
+tab1, tab2, tab3, tab4, tab5 = st.tabs([t1_name, t2_name, t3_name, t4_name, t5_name])
+
+# --- TAB 1: OVERVIEW (4-Card Astro Grid) ---
 with tab1:
     lbl = {
         "m_phase": "Moon Phase" if LANG=="English" else "சந்திர நிலை",
-        "ast": "Astronomical" if LANG=="English" else "வானியல்",
-        "sun_yoga": "Sun & Astronomical Yoga" if LANG=="English" else "சூரியன் & யோகம்",
+        "ast": "Astronomical Elements" if LANG=="English" else "வானியல்",
         "sun_r": "Sunrise" if LANG=="English" else "உதயம்",
         "sun_s": "Sunset" if LANG=="English" else "அஸ்தமனம்",
         "yoga": "Nithya Yoga" if LANG=="English" else "நித்திய யோகம்",
-        "tara": "Personal Tarabalam" if LANG=="English" else "தாராபலம்",
-        "nak": "Nakshatra" if LANG=="English" else "நட்சத்திரம்",
-        "ausp": "Auspicious Timings" if LANG=="English" else "நல்ல நேரங்கள்",
-        "nn": "Nalla Neram" if LANG=="English" else "நல்ல நேரம்",
-        "gnn": "Gowri Neram" if LANG=="English" else "கௌரி நேரம்",
-        "inausp": "Obstacle Windows" if LANG=="English" else "தடை நேரங்கள்",
-        "rk": "Rahu Kalam" if LANG=="English" else "ராகு காலம்",
-        "yg": "Yemagandam" if LANG=="English" else "எமகண்டம்"
+        "tara": "Personal Tarabalam" if LANG=="English" else "தாராபலம்"
     }
 
-    tara_row = f"""<div class="card-row"><span class="row-lbl">{lbl['tara']}</span><span class="row-val" style="color:{pan['tara_color']};">{pan['tara_name']}</span></div>""" if def_n else ""
-    
-    # Flat CSS Circle for Moon instead of emoji
+    tara_row = f"""<div class="m-card" style="grid-column: span 2;"><div class="c-head">{lbl['tara']}</div><div class="card-row"><span class="row-lbl" style="font-size:14px;">Alignment for your Star</span><span class="row-val" style="color:{pan['tara_color']}; font-size:15px;">{pan['tara_name']}</span></div></div>""" if def_n else ""
     moon_color = "#e0e0e0" if pan['is_waxing'] else "#34495e"
     moon_icon = f"""<div style="width:12px; height:12px; border-radius:50%; background:{moon_color}; border:1px solid #ccc; display:inline-block; margin-right:6px;"></div>"""
 
-    # Flattened HTML to prevent Streamlit Markdown Code Block interception
     grid_html = f"""<style>
 .grid-container {{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }}
 .m-card {{ background: #ffffff; border: 1px solid #eaeaea; border-radius: 4px; padding: 16px; display: flex; flex-direction: column; box-shadow: 0 1px 2px rgba(0,0,0,0.02); min-height: 120px; }}
 .c-head {{ font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #888; font-weight: 500; margin-bottom: 12px; border-bottom: 1px solid #f9f9f9; padding-bottom: 4px; }}
-.card-row {{ display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #f7f7f7; padding: 6px 0; }}
+.card-row {{ display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #f7f7f7; padding: 8px 0; }}
 .card-row:last-child {{ border-bottom: none; }}
 .row-lbl {{ font-size: 12.5px; color: #7f8c8d; font-weight: 400; }}
 .row-val {{ font-size: 13.5px; color: #222; font-weight: 500; text-align: right; }}
+.time-sub {{ font-size: 10.5px; color: #999; width: 100%; text-align: right; margin-top: 3px; font-weight: 400; }}
 </style>
 <div class="grid-container">
 <div class="m-card" style="flex-direction: row; align-items: center; padding: 12px;">
 <div style="flex: 1; border-right: 1px solid #eee; padding-right: 12px; text-align: center;">
-<div style="font-size: 28px; font-weight: 300; color: #111; line-height: 1;">{pan['date_en'].split(' ')[0]}</div>
-<div style="font-size: 12px; color: #7f8c8d; font-weight: 400; margin-top: 4px;">{pan['day_en']}<br>{pan['date_en'].split(' ')[1]}</div>
+<div style="font-size: 32px; font-weight: 300; color: #111; line-height: 1;">{pan['date_en'].split(' ')[0]}</div>
+<div style="font-size: 12px; color: #7f8c8d; font-weight: 400; margin-top: 4px;">{pan['day_en']}<br>{pan['date_en'].split(' ')[1]} {pan['date_en'].split(' ')[2]}</div>
 </div>
 <div style="flex: 1; padding-left: 12px; text-align: center;">
-<div style="font-size: 28px; font-weight: 300; color: #2c3e50; line-height: 1;">{pan['date_ta']}</div>
-<div style="font-size: 12px; color: #7f8c8d; font-weight: 400; margin-top: 4px;">{pan['month_ta']}<br>Month</div>
+<div style="font-size: 32px; font-weight: 300; color: #2c3e50; line-height: 1;">{pan['date_ta']}</div>
+<div style="font-size: 12px; color: #7f8c8d; font-weight: 400; margin-top: 4px;">{pan['day_ta']}<br>{pan['month_ta']}</div>
 </div>
 </div>
 <div class="m-card" style="justify-content: center;">
-<div style="font-size: 20px; font-weight: 400; color: #111; margin-bottom: 6px; display:flex; align-items:center;">{moon_icon}{pan['tithi']}</div>
+<div style="font-size: 20px; font-weight: 400; color: #111; margin-bottom: 6px; display:flex; align-items:center;">{moon_icon}{pan['tithi_short']}</div>
 <div style="font-size: 13px; color: #555; margin-bottom: 2px;">{pan['paksha']}</div>
 <div style="font-size: 12px; color: #888;">{pan['countdown']}</div>
 </div>
-<div class="m-card">
+<div class="m-card" style="grid-column: span 2;">
 <div class="c-head">{lbl['ast']}</div>
-<div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;">
+<div style="flex-grow: 1; display: flex; flex-direction: column;">
 <div class="card-row"><span class="row-lbl">{lbl['sun_r']} / {lbl['sun_s']}</span><span class="row-val">{pan['sunrise']} - {pan['sunset']}</span></div>
-<div class="card-row"><span class="row-lbl">Rasi & Star</span><span class="row-val">{pan['rasi']} / {pan['nakshatra']}</span></div>
-<div class="card-row"><span class="row-lbl">{lbl['yoga']}</span><span class="row-val">{pan['yoga']}</span></div>
+<div class="card-row" style="flex-direction:column; align-items:flex-start;">
+<div style="display:flex; width:100%; justify-content:space-between;"><span class="row-lbl">Rasi & Star</span><span class="row-val">{pan['rasi']} / {pan['nakshatra']}</span></div>
+<div class="time-sub">Star ends @ {pan['n_end']} ➔ {pan['n_next']}<br>Rasi ends @ {pan['r_end']} ➔ {pan['r_next']}</div>
+</div>
+<div class="card-row" style="flex-direction:column; align-items:flex-start;">
+<div style="display:flex; width:100%; justify-content:space-between;"><span class="row-lbl">{lbl['yoga']}</span><span class="row-val">{pan['yoga']}</span></div>
+<div class="time-sub">Ends @ {pan['y_end']} ➔ {pan['y_next']}</div>
+</div>
+<div style="font-size: 10.5px; color: #888; margin-top: 15px; border-top: 1px dashed #eee; padding-top: 10px; line-height: 1.5;">
+<b style="color:#555;">Sunrise Accuracy:</b> Geometric sunrise is accurately calculated for {target_city}'s precise latitude/longitude using Swiss Ephemeris data.<br>
+<b style="color:#555;">Yogas Explained:</b> Nithya Yoga is calculated purely using Sun/Moon angles. <i>Siddha (Success)</i>, <i>Amrutha (Nectar)</i>, and <i>Marana (Caution)</i> Yogas are daily combinations of the Weekday + Star. As the Star shifts at {pan['n_end']}, the daily Yoga shifts with it.
+</div>
+</div>
+</div>
 {tara_row}
-</div>
-</div>
-<div class="m-card" style="border-top: 2px solid #27ae60;">
-<div class="c-head" style="color: #27ae60;">{lbl['ausp']}</div>
-<div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;">
-<div class="card-row"><span class="row-lbl">{lbl['nn']}</span><span class="row-val">{pan['nn']}</span></div>
-<div class="card-row"><span class="row-lbl">{lbl['gnn']}</span><span class="row-val">{pan['gnn']}</span></div>
-</div>
-</div>
-<div class="m-card" style="border-top: 2px solid #c0392b; grid-column: span 2;">
-<div class="c-head" style="color: #c0392b;">{lbl['inausp']}</div>
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-<div>
-<div class="card-row"><span class="row-lbl">{lbl['rk']}</span><span class="row-val">{pan['rk']}</span></div>
-<div class="card-row"><span class="row-lbl">{lbl['yg']}</span><span class="row-val">{pan['yg']}</span></div>
-</div>
-<div style="border-left: 1px dashed #eee; padding-left: 15px;">
-<div class="card-row" style="flex-direction: column; align-items: flex-start; border: none;">
-<span class="row-lbl" style="color:#c0392b; margin-bottom: 4px;">Chandrashtama for:</span>
-<span class="row-val" style="font-size: 12px; text-align: left;">{pan['ch_naks']}</span>
-</div>
-</div>
-</div>
-</div>
 </div>"""
     st.markdown(grid_html, unsafe_allow_html=True)
 
-# --- TAB 2: HOURLY PLANNER ---
+# --- TAB 2: STRATEGY ---
 with tab2:
-    msg_h = "Full 12-Hour Horai Planner" if LANG=="English" else "முழு 12 மணிநேர ஓரை நாள்காட்டி"
-    st.markdown(f"<div style='font-family: sans-serif; font-size: 14px; color: #7f8c8d; margin-bottom: 10px;'>{msg_h}</div>", unsafe_allow_html=True)
-    
-    if def_n:
-        st.markdown("<div style='font-size: 12px; color: #7f8c8d; margin-bottom: 15px;'>Note: Highlighted <span style='background: #2c3e50; color: #fff; padding: 2px 4px; border-radius: 2px; font-size: 9px;'>POWER</span> blocks indicate highly favorable timings based on your specific Lagna and Moon Rasi.</div>", unsafe_allow_html=True)
-
-    schedule_html = "<div style='font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif; max-height: 400px; overflow-y: auto; padding-right: 5px;'>"
-    
-    for row in pan["schedule"]:
-        bg_col = "#ffffff"
-        border = "border-bottom: 1px solid #f2f2f2;"
-        indicator = ""
-        
-        # Flat pill indicators (No Emojis)
-        if row['is_current']:
-            bg_col = "#f9fbf9"
-            border = f"border-left: 3px solid {row['color']}; border-bottom: 1px solid #e0e0e0;"
-            indicator = "<span style='border: 1px solid #27ae60; color: #27ae60; padding: 1px 4px; border-radius: 2px; font-size: 9px; font-weight: 600; margin-left: 8px;'>NOW</span>"
-            
-        if row['is_power']:
-            indicator += " <span style='background: #2c3e50; color: #fff; padding: 2px 4px; border-radius: 2px; font-size: 9px; font-weight: 600; margin-left: 6px;'>POWER</span>"
-
-        schedule_html += f"<div style='display: flex; justify-content: space-between; align-items: center; padding: 12px 10px; background-color: {bg_col}; {border} margin-bottom: 4px; border-radius: 4px;'><div style='display:flex; flex-direction:column;'><span style='font-size: 11px; color: #999; font-weight: 400; margin-bottom: 2px;'>{row['time']} {indicator}</span><span style='font-size: 15px; font-weight: 500; color: {row['color']};'>{row['lord']}</span></div><div style='text-align: right;'><span style='font-size: 12.5px; color: #555; font-weight: 400;'>{row['activity']}</span></div></div>"
-        
-    schedule_html += "</div>"
-    st.markdown(schedule_html, unsafe_allow_html=True)
-
-# --- TAB 3: TACTICAL STRATEGY ---
-with tab3:
     if not def_n:
         st.info("Select your profile from the sidebar to generate your personalized tactical strategy.")
     else:
-        focus = daily_weather["focus"]
-        comm = daily_weather["communication"]
-        
-        s_focus = "Strategic Focus" if LANG=="English" else "வியூகம்"
-        s_comm = "Communication" if LANG=="English" else "தகவல் தொடர்பு"
-
+        focus, comm = daily_weather["focus"], daily_weather["communication"]
         weather_html = f"""<style>.t-card {{ background: #fff; border: 1px solid #eaeaea; padding: 18px; border-radius: 4px; margin-bottom: 15px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-shadow: 0 1px 2px rgba(0,0,0,0.01); }}.t-head {{ font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; font-weight: 500; display: flex; justify-content: space-between; }}.t-title {{ font-size: 17px; font-weight: 500; margin-bottom: 8px; }}.t-desc {{ font-size: 13.5px; color: #444; line-height: 1.5; margin-bottom: 12px; font-weight: 300; }}.t-rem {{ font-size: 12.5px; color: #222; font-style: italic; background: #fafafa; padding: 10px; border-radius: 4px; border: 1px solid #f5f5f5; }}</style>
-<div class="t-card" style="border-left: 3px solid {focus['color']};"><div class="t-head"><span>{s_focus}</span> <span>Moon in {daily_weather['positions']['Moon']}</span></div><div class="t-title" style="color: {focus['color']};">{focus['title']}</div><div class="t-desc">{focus['desc']}</div><div class="t-rem">{focus['remedy']}</div></div>
-<div class="t-card" style="border-left: 3px solid #27ae60;"><div class="t-head"><span>{s_comm}</span> <span>Mercury in {daily_weather['positions']['Mercury']}</span></div><div class="t-title" style="color: #2c3e50;">{comm['title']}</div><div class="t-desc">{comm['desc']}</div><div class="t-rem">{comm['remedy']}</div></div>"""
+<div class="t-card" style="border-left: 3px solid {focus['color']};"><div class="t-head"><span>Strategic Focus</span> <span>Moon in {daily_weather['positions']['Moon']}</span></div><div class="t-title" style="color: {focus['color']};">{focus['title']}</div><div class="t-desc">{focus['desc']}</div><div class="t-rem">{focus['remedy']}</div></div>
+<div class="t-card" style="border-left: 3px solid #27ae60;"><div class="t-head"><span>Communication</span> <span>Mercury in {daily_weather['positions']['Mercury']}</span></div><div class="t-title" style="color: #2c3e50;">{comm['title']}</div><div class="t-desc">{comm['desc']}</div><div class="t-rem">{comm['remedy']}</div></div>"""
         st.markdown(weather_html, unsafe_allow_html=True)
+
+# --- TAB 3: OBSTACLES ---
+with tab3:
+    obs_html = f"""<div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #fff; border: 1px solid #eaeaea; border-top: 3px solid #c0392b; border-radius: 4px; padding: 20px;">
+<div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f7f7f7; padding: 10px 0;"><span style="color: #7f8c8d; font-size: 14px;">Rahu Kalam</span><span style="color: #222; font-weight: 500; font-size: 14px;">{pan['rk']}</span></div>
+<div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f7f7f7; padding: 10px 0;"><span style="color: #7f8c8d; font-size: 14px;">Yemagandam</span><span style="color: #222; font-weight: 500; font-size: 14px;">{pan['yg']}</span></div>
+<div style="padding: 10px 0; margin-top: 10px; border-top: 1px dashed #eee;">
+<div style="color: #c0392b; font-size: 13px; font-weight: bold; margin-bottom: 6px;">Chandrashtama Alert For Nakshatras:</div>
+<div style="color: #333; font-size: 14px;">{pan['ch_naks']}</div>
+</div></div>"""
+    st.markdown(obs_html, unsafe_allow_html=True)
+
+# --- TAB 4: AUSPICIOUS ---
+with tab4:
+    ausp_html = f"""<div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #fff; border: 1px solid #eaeaea; border-top: 3px solid #27ae60; border-radius: 4px; padding: 20px;">
+<div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f7f7f7; padding: 10px 0;"><span style="color: #7f8c8d; font-size: 14px;">Nalla Neram</span><span style="color: #222; font-weight: 500; font-size: 14px; text-align:right;">{pan['nn']}</span></div>
+<div style="display: flex; justify-content: space-between; padding: 10px 0;"><span style="color: #7f8c8d; font-size: 14px;">Gowri Neram</span><span style="color: #222; font-weight: 500; font-size: 14px; text-align:right;">{pan['gnn']}</span></div>
+</div>"""
+    st.markdown(ausp_html, unsafe_allow_html=True)
+
+# --- TAB 5: HORAI (Scrollable & Filtered) ---
+with tab5:
+    if def_n: st.markdown("<div style='font-size: 12px; color: #7f8c8d; margin-bottom: 15px;'>Note: Highlighted <span style='background: #2c3e50; color: #fff; padding: 2px 4px; border-radius: 2px; font-size: 9px;'>POWER</span> blocks indicate highly favorable timings based on your Lagna and Moon Rasi.</div>", unsafe_allow_html=True)
+    schedule_html = "<div style='font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif; max-height: 400px; overflow-y: auto; padding-right: 5px;'>"
+    
+    for row in pan["schedule"]:
+        bg_col, border, indicator = "#ffffff", "border-bottom: 1px solid #f2f2f2;", ""
+        if row['is_current']:
+            bg_col, border = "#f9fbf9", f"border-left: 3px solid {row['color']}; border-bottom: 1px solid #e0e0e0;"
+            indicator = "<span style='border: 1px solid #27ae60; color: #27ae60; padding: 1px 4px; border-radius: 2px; font-size: 9px; font-weight: 600; margin-left: 8px;'>NOW</span>"
+        if row['is_power']:
+            indicator += " <span style='background: #2c3e50; color: #fff; padding: 2px 4px; border-radius: 2px; font-size: 9px; font-weight: 600; margin-left: 6px;'>POWER</span>"
+        schedule_html += f"<div style='display: flex; justify-content: space-between; align-items: center; padding: 12px 10px; background-color: {bg_col}; {border} margin-bottom: 4px; border-radius: 4px;'><div style='display:flex; flex-direction:column;'><span style='font-size: 11px; color: #999; font-weight: 400; margin-bottom: 2px;'>{row['time']} {indicator}</span><span style='font-size: 15px; font-weight: 500; color: {row['color']};'>{row['lord']}</span></div><div style='text-align: right;'><span style='font-size: 12.5px; color: #555; font-weight: 400;'>{row['activity']}</span></div></div>"
+    
+    st.markdown(schedule_html + "</div>", unsafe_allow_html=True)
