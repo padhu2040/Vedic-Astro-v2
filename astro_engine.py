@@ -610,128 +610,151 @@ def get_daily_executive_weather(current_jd_ut, natal_moon_rasi, natal_lagna_rasi
         }
     }
 
-# --- DAILY PANCHANGAM & VERTICAL TIMELINE ENGINE ---
-def get_daily_panchangam_metrics(current_jd_ut, natal_moon_lon, tz_name="Asia/Kolkata"):
+# --- DAILY PANCHANGAM & EXACT TIMELINE ENGINE ---
+def get_daily_panchangam_metrics(current_jd_ut, natal_moon_lon, lat_val, lon_val, tz_name="Asia/Kolkata", lang="English"):
     """
-    Calculates daily Nakshatra, Tarabalam, Tamil Moon Phase, and the 12-hour vertical schedule.
+    Calculates exact local Sunrise/Sunset, Tamil Moon Phase, bilingual events, 
+    and a mathematically accurate 12-hour daytime Horai schedule.
     """
     import swisseph as swe
-    from datetime import datetime
+    from datetime import datetime, timedelta
     import pytz
 
-    # 1. Exact Longitudes & Moon Phase (Tamil Tithi)
-    sun_lon = swe.calc_ut(current_jd_ut, swe.SUN, swe.FLG_SIDEREAL)[0][0]
-    moon_lon = swe.calc_ut(current_jd_ut, swe.MOON, swe.FLG_SIDEREAL)[0][0]
-    
-    tithi_idx = int((((moon_lon - sun_lon) % 360) / 12) + 1)
-    
-    tithi_names = {
-        1: "Prathamai", 2: "Dvitiyai", 3: "Tritiyai", 4: "Chaturthi", 5: "Panchami",
-        6: "Shashti", 7: "Saptami", 8: "Ashtami", 9: "Navami", 10: "Dashami",
-        11: "Ekadashi", 12: "Dvadashi", 13: "Trayodashi", 14: "Chaturdashi"
-    }
-    
-    t_num = tithi_idx if tithi_idx <= 15 else tithi_idx - 15
-    if tithi_idx == 30: t_name = "Amavasai"
-    elif tithi_idx == 15: t_name = "Pournami"
-    else: t_name = tithi_names.get(t_num, "")
-
-    paksha_ta = "Valarpirai" if tithi_idx <= 15 else "Theipirai"
-    moon_phase_ta = f"{paksha_ta}, {t_name}"
-
-    # 2. Nakshatra & Tarabalam
-    NAKSHATRAS = ["Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra", "Punarvasu", "Pushya", "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", "Hasta", "Chitra", "Swati", "Vishakha", "Anuradha", "Jyeshtha", "Mula", "Purva Ashadha", "Uttara Ashadha", "Shravana", "Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"]
-    daily_nak_idx = int((moon_lon % 360) / (360/27))
-    natal_nak_idx = int((natal_moon_lon % 360) / (360/27))
-    
-    tara_calc = ((daily_nak_idx - natal_nak_idx) % 9) + 1
-    tara_meanings = {
-        1: ("Janma (Average)", "Maintain routine.", "#f39c12"),
-        2: ("Sampat (Excellent)", "Favorable for wealth.", "#27ae60"),
-        3: ("Vipat (Caution)", "Avoid major decisions.", "#e74c3c"),
-        4: ("Kshema (Good)", "Favorable for security.", "#27ae60"),
-        5: ("Pratyak (Obstacles)", "Expect setbacks.", "#e74c3c"),
-        6: ("Sadhana (Success)", "Realization of goals.", "#27ae60"),
-        7: ("Naidhana (Severe)", "Unfavorable for actions.", "#e74c3c"),
-        8: ("Mitra (Favorable)", "Good for partnerships.", "#2980b9"),
-        9: ("Parama Mitra (Excellent)", "Deeply supportive day.", "#27ae60")
-    }
-    tara_name, tara_desc, tara_color = tara_meanings[tara_calc]
-
-    # 3. Time Data for the Vertical Grid
     local_tz = pytz.timezone(tz_name)
     dt_obj = datetime.now(local_tz)
-    weekday_idx = dt_obj.weekday() # 0 = Mon, 6 = Sun
-
-    # Nalla Neram (Auspicious Windows)
-    nn_times = {
-        6: [("07:30 AM", "08:30 AM", 7.5, 8.5), ("03:15 PM", "04:15 PM", 15.25, 16.25)],
-        0: [("06:00 AM", "07:30 AM", 6.0, 7.5), ("04:45 PM", "05:45 PM", 16.75, 17.75)],
-        1: [("07:30 AM", "08:30 AM", 7.5, 8.5), ("04:45 PM", "05:45 PM", 16.75, 17.75)],
-        2: [("09:00 AM", "10:00 AM", 9.0, 10.0), ("04:45 PM", "05:45 PM", 16.75, 17.75)],
-        3: [("10:30 AM", "11:30 AM", 10.5, 11.5), ("04:45 PM", "05:45 PM", 16.75, 17.75)],
-        4: [("06:00 AM", "07:30 AM", 6.0, 7.5), ("04:45 PM", "05:45 PM", 16.75, 17.75)],
-        5: [("07:30 AM", "08:30 AM", 7.5, 8.5), ("04:45 PM", "05:45 PM", 16.75, 17.75)]
-    }
-
-    # Rahu Kalam & Yemagandam (Obstacle Windows)
-    rk_times = {6: ("04:30 PM","06:00 PM", 16.5, 18.0), 0: ("07:30 AM","09:00 AM", 7.5, 9.0), 1: ("03:00 PM","04:30 PM", 15.0, 16.5), 2: ("12:00 PM","01:30 PM", 12.0, 13.5), 3: ("01:30 PM","03:00 PM", 13.5, 15.0), 4: ("10:30 AM","12:00 PM", 10.5, 12.0), 5: ("09:00 AM","10:30 AM", 9.0, 10.5)}
-    yg_times = {6: ("12:00 PM","01:30 PM", 12.0, 13.5), 0: ("10:30 AM","12:00 PM", 10.5, 12.0), 1: ("09:00 AM","10:30 AM", 9.0, 10.5), 2: ("07:30 AM","09:00 AM", 7.5, 9.0), 3: ("06:00 AM","07:30 AM", 6.0, 7.5), 4: ("03:00 PM","04:30 PM", 15.0, 16.5), 5: ("01:30 PM","03:00 PM", 13.5, 15.0)}
-
-    # Horai Data Setup
-    horai_lords = ["Sun", "Venus", "Mercury", "Moon", "Saturn", "Jupiter", "Mars"]
-    day_starts = {6:0, 0:3, 1:6, 2:2, 3:5, 4:1, 5:4}
-    start_idx = day_starts[weekday_idx]
     
-    horai_styles = {
-        "Sun": {"bg": "rgba(243, 156, 18, 0.1)", "border": "#f39c12", "icon": "☀️"},
-        "Venus": {"bg": "rgba(155, 89, 182, 0.1)", "border": "#9b59b6", "icon": "💎"},
-        "Mercury": {"bg": "rgba(46, 204, 113, 0.1)", "border": "#2ecc71", "icon": "📊"},
-        "Moon": {"bg": "rgba(189, 195, 199, 0.2)", "border": "#7f8c8d", "icon": "🌙"},
-        "Saturn": {"bg": "rgba(52, 73, 94, 0.1)", "border": "#34495e", "icon": "⚙️"},
-        "Jupiter": {"bg": "rgba(230, 126, 34, 0.1)", "border": "#e67e22", "icon": "🧭"},
-        "Mars": {"bg": "rgba(231, 76, 60, 0.1)", "border": "#e74c3c", "icon": "⚔️"}
-    }
+    # 1. Exact Local Sunrise & Sunset
+    midnight_local = local_tz.localize(datetime(dt_obj.year, dt_obj.month, dt_obj.day, 0, 0, 0))
+    midnight_utc = midnight_local.astimezone(pytz.utc)
+    jd_midnight = swe.julday(midnight_utc.year, midnight_utc.month, midnight_utc.day, midnight_utc.hour + midnight_utc.minute/60.0)
+    
+    swe.set_topo(lon_val, lat_val, 0)
+    rsmi_rise = swe.rise_trans(jd_midnight, swe.SUN, "", swe.CALC_RISE, lon_val, lat_val, 0)
+    sunrise_jd = rsmi_rise[1][0]
+    rsmi_set = swe.rise_trans(sunrise_jd, swe.SUN, "", swe.CALC_SET, lon_val, lat_val, 0)
+    sunset_jd = rsmi_set[1][0]
+    
+    def jd_to_local(jd):
+        y, m, d, h = swe.revjul(jd)
+        hr = int(h)
+        min_val = int((h - hr) * 60)
+        sec = int((((h - hr) * 60) - min_val) * 60)
+        utc_dt = datetime(y, m, d, hr, min_val, sec, tzinfo=pytz.utc)
+        return utc_dt.astimezone(local_tz)
 
-    # Generate the 12-hour structured array
-    hourly_schedule = []
-    current_horai = "Night Phase"
+    sunrise_dt = jd_to_local(sunrise_jd)
+    sunset_dt = jd_to_local(sunset_jd)
+    day_duration_hrs = (sunset_jd - sunrise_jd) * 24
+    horai_len_hrs = day_duration_hrs / 12
+
+    # 2. Moon Phase & Tithi
+    sun_lon = swe.calc_ut(current_jd_ut, swe.SUN, swe.FLG_SIDEREAL)[0][0]
+    moon_lon = swe.calc_ut(current_jd_ut, swe.MOON, swe.FLG_SIDEREAL)[0][0]
+    tithi_idx = int((((moon_lon - sun_lon) % 360) / 12) + 1)
+    
+    tithi_names_en = {1:"Prathama", 2:"Dwitiya", 3:"Tritiya", 4:"Chaturthi", 5:"Panchami", 6:"Shashthi", 7:"Saptami", 8:"Ashtami", 9:"Navami", 10:"Dashami", 11:"Ekadashi", 12:"Dwadashi", 13:"Trayodashi", 14:"Chaturdashi"}
+    tithi_names_ta = {1:"பிரதமை", 2:"துவிதியை", 3:"திருதியை", 4:"சதுர்த்தி", 5:"பஞ்சமி", 6:"சஷ்டி", 7:"சப்தமி", 8:"அஷ்டமி", 9:"நவமி", 10:"தசமி", 11:"ஏகாதசி", 12:"துவாதசி", 13:"திரயோதசி", 14:"சதுர்த்தசி"}
+    
+    t_num = tithi_idx if tithi_idx <= 15 else tithi_idx - 15
+    if tithi_idx == 30: t_name = "Amavasya" if lang=="English" else "அமாவாசை"
+    elif tithi_idx == 15: t_name = "Purnima" if lang=="English" else "பௌர்ணமி"
+    else: t_name = tithi_names_en.get(t_num, "") if lang=="English" else tithi_names_ta.get(t_num, "")
+
+    paksha = "Waxing (Shukla)" if tithi_idx <= 15 else "Waning (Krishna)"
+    if lang == "Tamil": paksha = "வளர்பிறை" if tithi_idx <= 15 else "தேய்பிறை"
+    moon_phase_str = f"{t_name} ({paksha})"
+
+    # 3. Nakshatra & Tarabalam
+    nak_en = ["Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra", "Punarvasu", "Pushya", "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", "Hasta", "Chitra", "Swati", "Vishakha", "Anuradha", "Jyeshtha", "Mula", "Purva Ashadha", "Uttara Ashadha", "Shravana", "Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"]
+    nak_ta = ["அஸ்வினி", "பரணி", "கிருத்திகை", "ரோகிணி", "மிருகசீரிடம்", "திருவாதிரை", "புனர்பூசம்", "பூசம்", "ஆயில்யம்", "மகம்", "பூரம்", "உத்திரம்", "அஸ்தம்", "சித்திரை", "சுவாதி", "விசாகம்", "அனுஷம்", "கேட்டை", "மூலம்", "பூராடம்", "உத்திராடம்", "திருவோணம்", "அவிட்டம்", "சதயம்", "பூரட்டாதி", "உத்திரட்டாதி", "ரேவதி"]
+    
+    daily_nak_idx = int((moon_lon % 360) / (360/27))
+    natal_nak_idx = int((natal_moon_lon % 360) / (360/27))
+    nak_name = nak_en[daily_nak_idx] if lang=="English" else nak_ta[daily_nak_idx]
+    
+    tara_calc = ((daily_nak_idx - natal_nak_idx) % 9) + 1
+    
+    tara_meanings_en = {1: ("Janma (Average)", "Maintain routine.", "#f39c12"), 2: ("Sampat (Excellent)", "Favorable for wealth.", "#27ae60"), 3: ("Vipat (Caution)", "Avoid major decisions.", "#e74c3c"), 4: ("Kshema (Good)", "Favorable for security.", "#27ae60"), 5: ("Pratyak (Obstacles)", "Expect setbacks.", "#e74c3c"), 6: ("Sadhana (Success)", "Realization of goals.", "#27ae60"), 7: ("Naidhana (Severe)", "Unfavorable for actions.", "#e74c3c"), 8: ("Mitra (Favorable)", "Good for partnerships.", "#2980b9"), 9: ("Parama Mitra (Excellent)", "Deeply supportive day.", "#27ae60")}
+    tara_meanings_ta = {1: ("ஜென்ம (சராசரி)", "வழக்கமான பணிகளை தொடரவும்.", "#f39c12"), 2: ("சம்பத் (சிறப்பு)", "பொருளாதார வளர்ச்சி.", "#27ae60"), 3: ("விபத்து (கவனம்)", "முக்கிய முடிவுகளை தவிர்க்கவும்.", "#e74c3c"), 4: ("க்ஷேம (நன்று)", "பாதுகாப்பு மற்றும் நலம்.", "#27ae60"), 5: ("பிரத்யக் (தடைகள்)", "தாமதங்கள் ஏற்படலாம்.", "#e74c3c"), 6: ("சாதனா (வெற்றி)", "எண்ணங்கள் ஈடேறும்.", "#27ae60"), 7: ("நைதன (கடுமை)", "புதிய செயல்களை தவிர்க்கவும்.", "#e74c3c"), 8: ("மித்ர (சாதகம்)", "கூட்டு முயற்சிகளுக்கு நன்று.", "#2980b9"), 9: ("பரம மித்ர (மிகச் சிறப்பு)", "முழுமையான ஆதரவு கிடைக்கும்.", "#27ae60")}
+    
+    t_dict = tara_meanings_en if lang == "English" else tara_meanings_ta
+    tara_name, tara_desc, tara_color = t_dict[tara_calc]
+
+    # 4. Standard Offsets for Events (Calculated dynamically from local sunrise)
+    wd = dt_obj.weekday() # 0=Mon, 6=Sun
+    wd_idx = (wd + 1) % 7 # Shift so Sun=0, Mon=1...
+    
+    rk_start_hrs = {0: 10.5, 1: 1.5, 2: 9.0, 3: 6.0, 4: 7.5, 5: 4.5, 6: 3.0}
+    yg_start_hrs = {0: 6.0, 1: 4.5, 2: 3.0, 3: 1.5, 4: 0.0, 5: 9.0, 6: 7.5}
+    nn_starts = {0: [1.5, 9.5], 1: [0.0, 10.5], 2: [1.5, 10.5], 3: [3.0, 10.5], 4: [4.5, 10.5], 5: [3.5, 10.5], 6: [1.5, 10.5]}
+    gnn_starts = {0: [1.5, 4.5], 1: [3.0, 7.5], 2: [4.5, 10.5], 3: [6.0, 1.5], 4: [7.5, 4.5], 5: [6.5, 12.5], 6: [0.0, 3.0]} # Standard Gowri
+
+    def format_event(start_offset, duration_hrs, label_en, label_ta, color):
+        s_dt = sunrise_dt + timedelta(hours=start_offset)
+        e_dt = s_dt + timedelta(hours=duration_hrs)
+        lbl = label_en if lang=="English" else label_ta
+        return {"start": s_dt, "end": e_dt, "text": f"{lbl}", "color": color}
+
+    events = []
+    events.append(format_event(rk_start_hrs[wd_idx], 1.5, "Rahu Kalam", "ராகு காலம்", "#c0392b"))
+    events.append(format_event(yg_start_hrs[wd_idx], 1.5, "Yemagandam", "எமகண்டம்", "#d35400"))
+    
+    for s_hr in nn_starts[wd_idx]:
+        events.append(format_event(s_hr, 1.0, "Nalla Neram", "நல்ல நேரம்", "#27ae60"))
+    for s_hr in gnn_starts[wd_idx]:
+        events.append(format_event(s_hr, 1.0, "Gowri Nalla Neram", "கௌரி நல்ல நேரம்", "#f39c12"))
+
+    # 5. Bilingual Horai Structure
+    horai_dict = {
+        "Sun": {"en": "Sun", "ta": "சூரியன்", "act_en": "Govt / Power", "act_ta": "அரசு / பணிகள்", "color": "#d35400"},
+        "Venus": {"en": "Venus", "ta": "சுக்கிரன்", "act_en": "Art / Luxury", "act_ta": "ஆபரணம் / கலை", "color": "#8e44ad"},
+        "Mercury": {"en": "Mercury", "ta": "புதன்", "act_en": "Study / Trade", "act_ta": "கல்வி / கணக்கு", "color": "#27ae60"},
+        "Moon": {"en": "Moon", "ta": "சந்திரன்", "act_en": "Travel / Mind", "act_ta": "பயணம் / உணவு", "color": "#2980b9"},
+        "Saturn": {"en": "Saturn", "ta": "சனி", "act_en": "Iron / Labor", "act_ta": "இரும்பு / உழைப்பு", "color": "#2c3e50"},
+        "Jupiter": {"en": "Jupiter", "ta": "குரு", "act_en": "Wealth / Gold", "act_ta": "சுப காரியம்", "color": "#f39c12"},
+        "Mars": {"en": "Mars", "ta": "செவ்வாய்", "act_en": "Land / Courage", "act_ta": "நிலம் / தைரியம்", "color": "#c0392b"}
+    }
+    
+    horai_lords = ["Sun", "Venus", "Mercury", "Moon", "Saturn", "Jupiter", "Mars"]
+    day_starts = {0:0, 1:3, 2:6, 3:2, 4:5, 5:1, 6:4}
+    start_idx = day_starts[wd_idx]
+    
+    schedule = []
+    current_horai_name = "Night Phase"
 
     for hour_offset in range(12):
-        block_start = 6 + hour_offset
-        block_end = block_start + 1
-        time_label = f"{block_start if block_start<=12 else block_start-12}:00 {'AM' if block_start<12 else 'PM'} - {block_end if block_end<=12 else block_end-12}:00 {'AM' if block_end<=11 else 'PM'}"
+        block_s = sunrise_dt + timedelta(hours=hour_offset * horai_len_hrs)
+        block_e = block_s + timedelta(hours=horai_len_hrs)
         
-        lord = horai_lords[(start_idx + hour_offset) % 7]
-        if block_start == dt_obj.hour:
-            current_horai = f"{lord} Horai"
+        lord_key = horai_lords[(start_idx + hour_offset) % 7]
+        lord_data = horai_dict[lord_key]
+        
+        l_name = lord_data['en'] if lang=="English" else lord_data['ta']
+        l_act = lord_data['act_en'] if lang=="English" else lord_data['act_ta']
+        
+        if block_s <= dt_obj <= block_e:
+            current_horai_name = l_name
 
-        badges = []
-        # Check overlaps
-        rh_s_str, rh_e_str, rh_s, rh_e = rk_times[weekday_idx]
-        if rh_s < block_end and rh_e > block_start:
-            badges.append({"text": f"Rahu Kalam ({rh_s_str}-{rh_e_str})", "bg": "rgba(231,76,60,0.1)", "color": "#c0392b"})
-            
-        yh_s_str, yh_e_str, yh_s, yh_e = yg_times[weekday_idx]
-        if yh_s < block_end and yh_e > block_start:
-            badges.append({"text": f"Yemagandam ({yh_s_str}-{yh_e_str})", "bg": "rgba(230,126,34,0.1)", "color": "#d35400"})
-            
-        for (ns_str, ne_str, ns, ne) in nn_times[weekday_idx]:
-            if ns < block_end and ne > block_start:
-                badges.append({"text": f"Nalla Neram ({ns_str}-{ne_str})", "bg": "rgba(46,204,113,0.1)", "color": "#27ae60"})
+        time_str = f"{block_s.strftime('%I:%M %p')} - {block_e.strftime('%I:%M %p')}"
+        
+        # Find intersecting events
+        active_badges = []
+        for ev in events:
+            # If event overlaps this exact block
+            if ev["start"] < block_e and ev["end"] > block_s:
+                active_badges.append(ev)
 
-        hourly_schedule.append({
-            "time": time_label,
-            "lord": f"{horai_styles[lord]['icon']} {lord} Horai",
-            "style": horai_styles[lord],
-            "badges": badges
+        schedule.append({
+            "lord": l_name,
+            "activity": l_act,
+            "time": time_str,
+            "color": lord_data['color'],
+            "badges": active_badges
         })
 
-    # Grab primary Nalla Neram string for the top box
-    nn_str = nn_times[weekday_idx][0][0] + " - " + nn_times[weekday_idx][0][1]
-
     return {
-        "moon_phase_ta": moon_phase_ta, "nakshatra": NAKSHATRAS[daily_nak_idx],
+        "moon_phase": moon_phase_str, "nakshatra": nak_name,
         "tara_name": tara_name, "tara_desc": tara_desc, "tara_color": tara_color,
-        "horai": current_horai, "nalla_neram": nn_str, "schedule": hourly_schedule
+        "horai": current_horai_name, "schedule": schedule,
+        "sunrise": sunrise_dt.strftime('%I:%M %p'), "sunset": sunset_dt.strftime('%I:%M %p')
     }
