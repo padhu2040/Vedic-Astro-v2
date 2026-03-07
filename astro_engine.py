@@ -776,7 +776,6 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
         block_s = sunrise_dt + timedelta(hours=hour_offset * horai_len_hrs)
         block_e = block_s + timedelta(hours=horai_len_hrs)
         
-        # Skip past hours to keep current at the top!
         if is_today and block_e < dt_obj: continue 
             
         lord_key = horai_order[({0:0, 1:3, 2:6, 3:2, 4:5, 5:1, 6:4}[wd_idx] + hour_offset) % 7]
@@ -791,16 +790,38 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
             "is_power": lord_key in power_lords
         })
 
+    # CLEAN, EXPLICIT DICTIONARY EXPORT
     return {
-        "date_en": dt_obj.strftime('%d %B %Y'), "day_en": dt_obj.strftime('%A'),
-        "date_ta": f"{tamil_day:02d}", "day_ta": day_ta, "month_ta": t_month,
-        "tithi_short": t_name, "t_end": jd_to_local_time_str(jd_tithi_end), "t_next": next_t_name,
-        "paksha": paksha, "countdown": countdown_str, "is_waxing": is_waxing,
-        "sunrise": jd_to_local_time_str(sunrise_jd), "sunset": jd_to_local_time_str(sunset_jd),
-        "yoga": daily_yoga, "y_end": jd_to_local_time_str(jd_yoga_end), "y_next": next_yoga_name,
-        "nakshatra": nak_name, "n_end": jd_to_local_time_str(jd_nak_end), "n_next": next_nak_name,
-        "rasi": daily_rasi_name, "r_end": jd_to_local_time_str(jd_rasi_end), "r_next": next_rasi_name,
-        "ch_naks": ch_naks, "rk": get_time_str(rk_start_hrs[wd_idx], 1.5), "yg": get_time_str(yg_start_hrs[wd_idx], 1.5), 
-        "nn": nn_str, "gnn": gnn_str, "schedule": schedule,
-        "current_jd_ut": current_jd_ut, "tara_name": tara_name, "tara_color": tara_color
+        "day_num": dt_obj.strftime('%d'), 
+        "month_year_en": dt_obj.strftime('%B %Y'),
+        "day_en": dt_obj.strftime('%A'),
+        "date_ta": f"{tamil_day:02d}", 
+        "day_ta": day_ta, 
+        "month_ta": t_month,
+        "tithi": t_name, 
+        "t_end": jd_to_local_time_str(jd_tithi_end), 
+        "t_next": next_t_name,
+        "paksha": paksha, 
+        "countdown": countdown_str, 
+        "is_waxing": is_waxing,
+        "sunrise": jd_to_local_time_str(sunrise_jd), 
+        "sunset": jd_to_local_time_str(sunset_jd),
+        "yoga": daily_yoga, 
+        "y_end": jd_to_local_time_str(jd_yoga_end), 
+        "y_next": next_yoga_name,
+        "nakshatra": nak_name, 
+        "n_end": jd_to_local_time_str(jd_nak_end), 
+        "n_next": next_nak_name,
+        "rasi": daily_rasi_name, 
+        "r_end": jd_to_local_time_str(jd_rasi_end), 
+        "r_next": next_rasi_name,
+        "ch_naks": ch_naks, 
+        "rk": get_time_str(rk_start_hrs[wd_idx], 1.5), 
+        "yg": get_time_str(yg_start_hrs[wd_idx], 1.5), 
+        "nn": nn_str, 
+        "gnn": gnn_str, 
+        "schedule": schedule,
+        "current_jd_ut": current_jd_ut, 
+        "tara_name": tara_name, 
+        "tara_color": tara_color
     }
