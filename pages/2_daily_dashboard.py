@@ -83,67 +83,70 @@ grid_html = f"""
 <div class="grid-container">
 
 <div class="m-card" style="flex-direction: row; align-items: center; padding: 12px;">
-    <div style="flex: 1; border-right: 1px solid #eee; padding-right: 12px; text-align: center;">
-        <div style="font-size: 28px; font-weight: 300; color: #111; line-height: 1;">{pan['date_en'].split(' ')[0]}</div>
-        <div style="font-size: 12px; color: #7f8c8d; font-weight: 400; margin-top: 4px;">{pan['day_en']}<br>{pan['date_en'].split(' ')[1]}</div>
-    </div>
-    <div style="flex: 1; padding-left: 12px; text-align: center;">
-        <div style="font-size: 28px; font-weight: 300; color: #2c3e50; line-height: 1;">{pan['date_ta']}</div>
-        <div style="font-size: 12px; color: #7f8c8d; font-weight: 400; margin-top: 4px;">{pan['month_ta']}<br>Month</div>
-    </div>
+<div style="flex: 1; border-right: 1px solid #eee; padding-right: 12px; text-align: center;">
+<div style="font-size: 28px; font-weight: 300; color: #111; line-height: 1;">{pan['date_en'].split(' ')[0]}</div>
+<div style="font-size: 12px; color: #7f8c8d; font-weight: 400; margin-top: 4px;">{pan['day_en']}<br>{pan['date_en'].split(' ')[1]}</div>
+</div>
+<div style="flex: 1; padding-left: 12px; text-align: center;">
+<div style="font-size: 28px; font-weight: 300; color: #2c3e50; line-height: 1;">{pan['date_ta']}</div>
+<div style="font-size: 12px; color: #7f8c8d; font-weight: 400; margin-top: 4px;">{pan['month_ta']}<br>Month</div>
+</div>
 </div>
 
 <div class="m-card" style="justify-content: center;">
-    <div style="font-size: 20px; font-weight: 400; color: #111; margin-bottom: 6px;">{moon_icon} {pan['tithi']}</div>
-    <div style="font-size: 13px; color: #555; margin-bottom: 2px;">{pan['paksha']}</div>
-    <div style="font-size: 12px; color: #888;">{pan['countdown']}</div>
+<div style="font-size: 20px; font-weight: 400; color: #111; margin-bottom: 6px;">{moon_icon} {pan['tithi']}</div>
+<div style="font-size: 13px; color: #555; margin-bottom: 2px;">{pan['paksha']}</div>
+<div style="font-size: 12px; color: #888;">{pan['countdown']}</div>
 </div>
 
 <div class="m-card">
-    <div class="c-head">{lbl['ast']}</div>
-    <div class="row-item"><span class="row-lbl">Sunrise / Set</span><span class="row-val">{pan['sunrise']} - {pan['sunset']}</span></div>
-    <div class="row-item"><span class="row-lbl">Rasi & Star</span><span class="row-val">{pan['rasi']} / {pan['nakshatra']}</span></div>
-    <div class="row-item"><span class="row-lbl">Nithya Yoga</span><span class="row-val">{pan['yoga']}</span></div>
+<div class="c-head">{lbl['ast']}</div>
+<div class="row-item"><span class="row-lbl">Sunrise / Set</span><span class="row-val">{pan['sunrise']} - {pan['sunset']}</span></div>
+<div class="row-item"><span class="row-lbl">Rasi & Star</span><span class="row-val">{pan['rasi']} / {pan['nakshatra']}</span></div>
+<div class="row-item"><span class="row-lbl">Nithya Yoga</span><span class="row-val">{pan['yoga']}</span></div>
 </div>
 
 <div class="m-card" style="border-top: 2px solid #27ae60;">
-    <div class="c-head" style="color: #27ae60;">{lbl['ausp']}</div>
-    <div class="row-item"><span class="row-lbl">Nalla Neram</span><span class="row-val">{pan['nn']}</span></div>
-    <div class="row-item"><span class="row-lbl">Gowri</span><span class="row-val">{pan['gnn']}</span></div>
+<div class="c-head" style="color: #27ae60;">{lbl['ausp']}</div>
+<div class="row-item"><span class="row-lbl">Nalla Neram</span><span class="row-val">{pan['nn']}</span></div>
+<div class="row-item"><span class="row-lbl">Gowri</span><span class="row-val">{pan['gnn']}</span></div>
 </div>
 
 <div class="m-card" style="border-top: 2px solid #c0392b;">
-    <div class="c-head" style="color: #c0392b;">{lbl['inausp']}</div>
-    <div class="row-item"><span class="row-lbl">Rahu Kalam</span><span class="row-val">{pan['rk']}</span></div>
-    <div class="row-item"><span class="row-lbl">Yemagandam</span><span class="row-val">{pan['yg']}</span></div>
-    <div class="row-item" style="margin-top: 8px; border-top: 1px dashed #eee; padding-top: 8px;">
-        <span class="row-lbl" style="color:#c0392b;">Chandrashtama</span>
-        <span class="row-val" style="font-size: 11px; max-width: 110px;">{pan['ch_naks']}</span>
-    </div>
+<div class="c-head" style="color: #c0392b;">{lbl['inausp']}</div>
+<div class="row-item"><span class="row-lbl">Rahu Kalam</span><span class="row-val">{pan['rk']}</span></div>
+<div class="row-item"><span class="row-lbl">Yemagandam</span><span class="row-val">{pan['yg']}</span></div>
+<div class="row-item" style="margin-top: 8px; border-top: 1px dashed #eee; padding-top: 8px;">
+<span class="row-lbl" style="color:#c0392b;">Chandrashtama</span>
+<span class="row-val" style="font-size: 11px; max-width: 110px;">{pan['ch_naks']}</span>
+</div>
 </div>
 
 <div class="m-card" style="padding: 0;">
-    <div class="c-head" style="margin: 16px 16px 8px 16px;">{lbl['horai']}</div>
-    <div style="max-height: 125px; overflow-y: auto; padding: 0 16px 16px 16px;">
+<div class="c-head" style="margin: 16px 16px 8px 16px;">{lbl['horai']}</div>
+<div style="max-height: 125px; overflow-y: auto; padding: 0 16px 16px 16px;">
 """
+
+# FLATTENED LOOP FIX HERE
 for h in pan["schedule"]:
     bg_col = "#fdfdfd"
     border = "none"
     if h['is_current']:
-        bg_col = "#f0f8ff" # Very subtle highlight
+        bg_col = "#f0f8ff"
         border = f"border-left: 3px solid {h['color']};"
         
     grid_html += f"""
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 6px; background: {bg_col}; {border} border-bottom: 1px solid #f9f9f9;">
-            <div>
-                <div style="font-size: 13.5px; font-weight: 500; color: {h['color']};">{h['lord']}</div>
-                <div style="font-size: 11px; color: #888;">{h['activity']}</div>
-            </div>
-            <div style="font-size: 11.5px; color: #444; font-weight: 500;">{h['time']}</div>
-        </div>
-    """
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 6px; background: {bg_col}; {border} border-bottom: 1px solid #f9f9f9;">
+<div>
+<div style="font-size: 13.5px; font-weight: 500; color: {h['color']};">{h['lord']}</div>
+<div style="font-size: 11px; color: #888;">{h['activity']}</div>
+</div>
+<div style="font-size: 11.5px; color: #444; font-weight: 500;">{h['time']}</div>
+</div>
+"""
+    
 grid_html += """
-    </div>
+</div>
 </div>
 </div>
 """
@@ -172,26 +175,26 @@ if def_n:
         comm = daily_weather["communication"]
         
         weather_html = f"""
-        <style>
-        .t-card {{ background: #fff; border: 1px solid #eaeaea; padding: 18px; border-radius: 4px; margin-bottom: 15px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-shadow: 0 1px 2px rgba(0,0,0,0.01); }}
-        .t-head {{ font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; font-weight: 500; display: flex; justify-content: space-between; }}
-        .t-title {{ font-size: 17px; font-weight: 500; margin-bottom: 8px; }}
-        .t-desc {{ font-size: 13.5px; color: #444; line-height: 1.5; margin-bottom: 12px; font-weight: 300; }}
-        .t-rem {{ font-size: 12.5px; color: #222; font-style: italic; background: #fafafa; padding: 10px; border-radius: 4px; border: 1px solid #f5f5f5; }}
-        </style>
+<style>
+.t-card {{ background: #fff; border: 1px solid #eaeaea; padding: 18px; border-radius: 4px; margin-bottom: 15px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-shadow: 0 1px 2px rgba(0,0,0,0.01); }}
+.t-head {{ font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; font-weight: 500; display: flex; justify-content: space-between; }}
+.t-title {{ font-size: 17px; font-weight: 500; margin-bottom: 8px; }}
+.t-desc {{ font-size: 13.5px; color: #444; line-height: 1.5; margin-bottom: 12px; font-weight: 300; }}
+.t-rem {{ font-size: 12.5px; color: #222; font-style: italic; background: #fafafa; padding: 10px; border-radius: 4px; border: 1px solid #f5f5f5; }}
+</style>
 
-        <div class="t-card" style="border-left: 3px solid {focus['color']};">
-            <div class="t-head"><span>Primary Focus</span> <span>Moon in {daily_weather['positions']['Moon']}</span></div>
-            <div class="t-title" style="color: {focus['color']};">{focus['title']}</div>
-            <div class="t-desc">{focus['desc']}</div>
-            <div class="t-rem">{focus['remedy']}</div>
-        </div>
+<div class="t-card" style="border-left: 3px solid {focus['color']};">
+<div class="t-head"><span>Primary Focus</span> <span>Moon in {daily_weather['positions']['Moon']}</span></div>
+<div class="t-title" style="color: {focus['color']};">{focus['title']}</div>
+<div class="t-desc">{focus['desc']}</div>
+<div class="t-rem">{focus['remedy']}</div>
+</div>
 
-        <div class="t-card" style="border-left: 3px solid #27ae60;">
-            <div class="t-head"><span>Communication</span> <span>Mercury in {daily_weather['positions']['Mercury']}</span></div>
-            <div class="t-title" style="color: #2c3e50;">{comm['title']}</div>
-            <div class="t-desc">{comm['desc']}</div>
-            <div class="t-rem">{comm['remedy']}</div>
-        </div>
-        """
+<div class="t-card" style="border-left: 3px solid #27ae60;">
+<div class="t-head"><span>Communication</span> <span>Mercury in {daily_weather['positions']['Mercury']}</span></div>
+<div class="t-title" style="color: #2c3e50;">{comm['title']}</div>
+<div class="t-desc">{comm['desc']}</div>
+<div class="t-rem">{comm['remedy']}</div>
+</div>
+"""
         st.markdown(weather_html, unsafe_allow_html=True)
