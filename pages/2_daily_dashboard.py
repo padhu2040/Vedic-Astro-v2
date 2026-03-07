@@ -5,7 +5,7 @@ from supabase import create_client
 
 from astro_engine import (
     get_location_coordinates, get_utc_offset, get_daily_executive_weather,
-    get_daily_panchangam_metrics, ZODIAC_TA, ZODIAC
+    get_daily_panchangam_metrics, get_advanced_personal_metrics, ZODIAC_TA, ZODIAC
 )
 
 st.set_page_config(page_title="Daily Calendar", layout="centered")
@@ -65,9 +65,8 @@ with st.spinner("Calculating precision timelines..."):
     except:
         lat_val, lon_val, tz_val = 13.0827, 80.2707, "Asia/Kolkata"
 
-    natal_lagna_rasi = None
-    natal_moon_rasi = None
-    natal_moon_lon = None
+    natal_lagna_rasi, natal_moon_rasi, natal_moon_lon = None, None, None
+    jd_ut_natal = None
     
     if def_n:
         swe.set_sid_mode(swe.SIDM_LAHIRI)
@@ -81,13 +80,11 @@ with st.spinner("Calculating precision timelines..."):
         natal_moon_lon = swe.calc_ut(jd_ut_natal, swe.MOON, swe.FLG_SIDEREAL)[0][0]
         natal_moon_rasi = int(natal_moon_lon/30)+1
 
-    pan = get_daily_panchangam_metrics(
-        target_date=target_date, lat_val=lat_val, lon_val=lon_val, 
-        tz_name=tz_val, lang=LANG, user_lagna=natal_lagna_rasi, 
-        user_moon=natal_moon_rasi, natal_moon_lon=natal_moon_lon
-    )
+    pan = get_daily_panchangam_metrics(target_date=target_date, lat_val=lat_val, lon_val=lon_val, tz_name=tz_val, lang=LANG, user_lagna=natal_lagna_rasi, user_moon=natal_moon_rasi, natal_moon_lon=natal_moon_lon)
+    
     if def_n:
         daily_weather = get_daily_executive_weather(pan['current_jd_ut'], natal_moon_rasi, natal_lagna_rasi, LANG)
+        adv_metrics = get_advanced_personal_metrics(jd_ut_natal, pan['current_jd_ut'], lat_val, lon_val, LANG)
 
 # --- 3-TAB CONSOLIDATED ARCHITECTURE ---
 t1_name = "Overview" if LANG=="English" else "பஞ்சாங்கம்"
@@ -96,7 +93,7 @@ t3_name = "Horai" if LANG=="English" else "ஓரை"
 
 tab1, tab2, tab3 = st.tabs([t1_name, t2_name, t3_name])
 
-# --- TAB 1: OVERVIEW (Unified Multi-Card Layout) ---
+# --- TAB 1: OVERVIEW ---
 with tab1:
     lbl = {
         "ast": "Astronomical Elements" if LANG=="English" else "வானியல்",
@@ -128,16 +125,26 @@ with tab1:
 </div>"""
     st.markdown(grid_html, unsafe_allow_html=True)
 
-# --- TAB 2: STRATEGY ---
+
+# --- TAB 2: STRATEGY (Fully Expanded) ---
 with tab2:
     if not def_n:
-        st.info("Select your profile from the sidebar to generate your personalized tactical strategy.")
+        st.info("Select your profile from the sidebar to generate your deep personal analytics.")
     else:
         focus, comm = daily_weather["focus"], daily_weather["communication"]
         weather_html = f"""<style>.t-card {{ background: #fff; border: 1px solid #eaeaea; padding: 18px; border-radius: 4px; margin-bottom: 15px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-shadow: 0 1px 2px rgba(0,0,0,0.01); }}.t-head {{ font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; font-weight: 500; display: flex; justify-content: space-between; }}.t-title {{ font-size: 17px; font-weight: 500; margin-bottom: 8px; }}.t-desc {{ font-size: 13.5px; color: #444; line-height: 1.5; margin-bottom: 12px; font-weight: 300; }}.t-rem {{ font-size: 12.5px; color: #222; font-style: italic; background: #fafafa; padding: 10px; border-radius: 4px; border: 1px solid #f5f5f5; }}</style>
-<div class="t-card" style="border-left: 3px solid {focus['color']};"><div class="t-head"><span>Strategic Focus</span> <span>Moon in {daily_weather['positions']['Moon']}</span></div><div class="t-title" style="color: {focus['color']};">{focus['title']}</div><div class="t-desc">{focus['desc']}</div><div class="t-rem">{focus['remedy']}</div></div>
+
+<div class="t-card" style="border-left: 3px solid {adv_metrics['bav_color']}; background: #fdfdfd;"><div class="t-head"><span>Ashtakavarga Strength</span> <span>Lunar Transit</span></div><div class="t-title" style="color: {adv_metrics['bav_color']};">{adv_metrics['bav_title']}</div><div class="t-desc">{adv_metrics['bav_desc']}</div><div class="t-rem" style="color: {adv_metrics['bav_color']}; background: none; border: none; padding: 0;"><b>Action:</b> {adv_metrics['bav_rem']}</div></div>
+
+<div class="t-card" style="border-left: 3px solid #8e44ad;"><div class="t-head"><span>Current Life Season</span> <span>Vimshottari</span></div><div class="t-title" style="color: #8e44ad;">{adv_metrics['dasha_title']}</div><div class="t-desc">{adv_metrics['dasha_desc']}</div></div>
+
+<div class="t-card" style="border-left: 3px solid #f39c12;"><div class="t-head"><span>Spatial Energy</span> <span>Compass</span></div><div class="t-title" style="color: #d35400;">{adv_metrics['dir_title']}</div><div class="t-desc" style="margin-bottom:0;">{adv_metrics['dir_desc']}</div></div>
+
+<div class="t-card" style="border-left: 3px solid {focus['color']};"><div class="t-head"><span>Daily Execution</span> <span>Moon in {daily_weather['positions']['Moon']}</span></div><div class="t-title" style="color: {focus['color']};">{focus['title']}</div><div class="t-desc">{focus['desc']}</div><div class="t-rem">{focus['remedy']}</div></div>
+
 <div class="t-card" style="border-left: 3px solid #27ae60;"><div class="t-head"><span>Communication</span> <span>Mercury in {daily_weather['positions']['Mercury']}</span></div><div class="t-title" style="color: #2c3e50;">{comm['title']}</div><div class="t-desc">{comm['desc']}</div><div class="t-rem">{comm['remedy']}</div></div>"""
         st.markdown(weather_html, unsafe_allow_html=True)
+
 
 # --- TAB 3: HORAI ---
 with tab3:
