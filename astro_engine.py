@@ -734,6 +734,7 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
 
     tithi_idx = get_tithi(current_jd_ut)
     nak_idx_now = get_nak(current_jd_ut)
+    yoga_idx_now = get_yoga(current_jd_ut)
     t_name, next_t_name = format_tithi(tithi_idx), format_tithi(next_t_idx)
     sr_tithi_name = format_tithi(sr_tithi_idx)
 
@@ -751,9 +752,9 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
     target_das_dt = dt_obj + timedelta(days=d_to_das)
     dasami_str = f"{d_to_das}d to Dasami ({target_das_dt.strftime('%b %d')})" if lang=="English" else f"தசமிக்கு {d_to_das} நாள் ({target_das_dt.strftime('%d %b')})"
 
-    # 5. Advanced Vrata, Deity & Muhurtham Logic
+    # 5. Vrata, Deity & Muhurtham Logic
     good_tithis = [2,3,5,7,10,11,13]
-    bad_days = [1, 5] # Tue, Sat
+    bad_days = [1, 5] 
     t_mod = tithi_idx % 15
     is_muhurtham = (t_mod in good_tithis) and (dt_obj.weekday() not in bad_days)
     
@@ -764,14 +765,13 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
         vrata_name_en, vrata_name_ta = "Subha Muhurtham", "சுப முகூர்த்தம்"
         vrata_icon, v_mantra = "🌿", "Om Sri Maha Ganapataye Namaha" if lang=="English" else "ஓம் ஸ்ரீ மஹா கணபதயே நமஹ"
 
-    # Deep Vrata Detection (Tithi & Nakshatra overrides)
-    if tithi_idx == 29: # Krishna Chaturdashi
+    if tithi_idx == 29: 
         vrata_name_en, vrata_name_ta = "Maadha Shivaratri (Lord Shiva)", "மாத சிவராத்திரி (சிவன்)"
         vrata_icon, v_mantra = "🔱", "Om Namah Shivaya" if lang=="English" else "ஓம் நமசிவாய"
-    elif nak_idx_now == 2: # Krittika
+    elif nak_idx_now == 2: 
         vrata_name_en, vrata_name_ta = "Karthigai (Lord Murugan)", "கார்த்திகை (முருகன்)"
         vrata_icon, v_mantra = "🪔", "Om Saravanabhavaya Namaha" if lang=="English" else "ஓம் சரவணபவாய நமஹ"
-    elif nak_idx_now == 21: # Shravana
+    elif nak_idx_now == 21: 
         vrata_name_en, vrata_name_ta = "Thiruvonam (Lord Perumal)", "திருவோணம் (பெருமாள்)"
         vrata_icon, v_mantra = "🕉️", "Om Namo Narayanaya" if lang=="English" else "ஓம் நமோ நாராயணாய"
     elif t_mod == 4:
@@ -805,7 +805,6 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
 
     muh_str = "Favorable for General Auspicious Tasks" if is_muhurtham else "No Standard Muhurtham Today"
     if lang == "Tamil": muh_str = "சுப காரியங்களுக்கு உகந்தது" if is_muhurtham else "இன்று சுப முகூர்த்தம் இல்லை"
-    
     v_name = vrata_name_en if lang=="English" else vrata_name_ta
 
     # 6. Subakariyam
@@ -813,10 +812,41 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
     subha_ta = ["பயணம், மருந்து, கலை", "கடன் அடைக்க, கடின வேலைகள்", "கடன் தீர்க்க, கடின வேலைகள்", "திருமணம், வீடு கட்ட, விவசாயம்", "பயணம், பெயர் சூட்ட, திருமணம்", "பழையதை அழிக்க, கடின வேலைகள்", "விவசாயம், பயணம், மருந்து", "அனைத்து சுப காரியங்கள், பொன் வாங்க", "வழக்குகள், கடின வேலைகள்", "பித்ரு காரியங்கள், நிலம் வாங்க", "கலை, கேளிக்கை, விவசாயம்", "திருமணம், கிரகப்பிரவேசம்", "கல்வி, கலை, பயணம்", "ஆபரணம் அணிய, கலை, தொழில்", "வியாபாரம், விவசாயம், நட்பு", "ஆடை தயாரிக்க, விவசாயம்", "திருமணம், பயணம், கணக்கு", "இயந்திரங்கள் வாங்க, விவசாயம்", "கட்டிடம், தோட்டம், கடின வேலை", "நீர் சம்பந்தப்பட்ட வேலை, கடன் அடைக்க", "திருமணம், கிரகப்பிரவேசம்", "மருந்து, கல்வி, கிரகப்பிரவேசம்", "வாகனம் வாங்க, வீடு மாற", "மருந்து, கல்வி, பயணம்", "விவசாயம், நீர் வேலைகள்", "திருமணம், கிரகப்பிரவேசம்", "திருமணம், ஆபரணம் வாங்க"]
     suba_str = subha_en[nak_idx_now] if lang == "English" else subha_ta[nak_idx_now]
 
-    yogas_en = ["Vishkumbham", "Priti", "Ayushman", "Saubhagyam", "Shobhanam", "Atigandam", "Sukarmam", "Dhriti", "Shulam", "Gandam", "Vriddhi", "Dhruvam", "Vyaghatam", "Harshanam", "Vajram", "Siddhi", "Vyatipatam", "Variyan", "Parigham", "Shivam", "Siddham", "Sadhyam", "Shubham", "Shuklam", "Brahmam", "Indram", "Vaidhriti"]
-    yogas_ta = ["விஷ்கம்பம்", "பிரீதி", "ஆயுஷ்மான்", "சௌபாக்கியம்", "சோபனம்", "அதிகண்டம்", "சுகர்மம்", "திருதி", "சூலம்", "கண்டம்", "விருத்தி", "துருவம்", "வியாகாதம்", "ஹர்ஷணம்", "வஜ்ரம்", "சித்தி", "வியதிபாதம்", "வரியான்", "பரிகம்", "சிவம்", "சித்தம்", "சாத்தியம்", "சுபம்", "சுக்கிலம்", "பிரம்மா", "இந்திரம்", "வைதிருதி"]
-    daily_yoga = yogas_en[get_yoga(current_jd_ut)] if lang=="English" else yogas_ta[get_yoga(current_jd_ut)]
-    next_yoga_name = yogas_en[next_y_idx] if lang=="English" else yogas_ta[next_y_idx]
+    # 7. Nithya Yogas & Explanations
+    yogas_dict = [
+        {"en":"Vishkumbham", "ta":"விஷ்கம்பம்", "e_act":"Avoid new beginnings. Volatile energy.", "t_act":"புதிய முயற்சிகளைத் தவிர்க்கவும்.", "e_rem":"Remedy: Chant Shiva Mantras.", "t_rem":"பரிகாரம்: சிவ மந்திரம் ஜெபிக்கவும்."},
+        {"en":"Priti", "ta":"பிரீதி", "e_act":"Highly favorable for relationships and agreements.", "t_act":"உறவுகள் மற்றும் ஒப்பந்தங்களுக்கு சிறந்தது.", "e_rem":"", "t_rem":""},
+        {"en":"Ayushman", "ta":"ஆயுஷ்மான்", "e_act":"Excellent for health-related matters and long-term planning.", "t_act":"உடல்நலம் மற்றும் நீண்ட கால திட்டங்களுக்கு உகந்தது.", "e_rem":"", "t_rem":""},
+        {"en":"Saubhagyam", "ta":"சௌபாக்கியம்", "e_act":"Brings good fortune. Excellent for important purchases.", "t_act":"அதிர்ஷ்டம் தரும். முக்கிய பொருட்கள் வாங்க உகந்தது.", "e_rem":"", "t_rem":""},
+        {"en":"Shobhanam", "ta":"சோபனம்", "e_act":"Auspicious for arts, travel, and creative work.", "t_act":"கலை, பயணம் மற்றும் புதிய செயல்களுக்கு உகந்தது.", "e_rem":"", "t_rem":""},
+        {"en":"Atigandam", "ta":"அதிகண்டம்", "e_act":"Prone to severe obstacles. Maintain a low profile.", "t_act":"பெரிய தடைகள் ஏற்படலாம். அமைதி காக்கவும்.", "e_rem":"Remedy: Donate food to the needy.", "t_rem":"பரிகாரம்: ஏழைகளுக்கு உணவளிக்கவும்."},
+        {"en":"Sukarmam", "ta":"சுகர்மம்", "e_act":"Favorable for executing good deeds and charity.", "t_act":"நற்செயல்கள் மற்றும் தான தர்மங்களுக்கு சிறந்தது.", "e_rem":"", "t_rem":""},
+        {"en":"Dhriti", "ta":"திருதி", "e_act":"Good for laying foundations and patient, steady work.", "t_act":"அஸ்திவாரம் அமைக்கவும், நிலையான பணிகளுக்கும் உகந்தது.", "e_rem":"", "t_rem":""},
+        {"en":"Shulam", "ta":"சூலம்", "e_act":"Sharp, argumentative energy. Avoid medical procedures.", "t_act":"வாக்குவாதங்களைத் தவிர்க்கவும். மருத்துவ சிகிச்சைக்கு உகந்ததல்ல.", "e_rem":"Remedy: Worship Lord Murugan.", "t_rem":"பரிகாரம்: முருகனை வழிபடவும்."},
+        {"en":"Gandam", "ta":"கண்டம்", "e_act":"A day of danger or peril. Postpone major events.", "t_act":"ஆபத்தான நாள். முக்கிய நிகழ்வுகளை ஒத்திவைக்கவும்.", "e_rem":"Remedy: Recite Mrityunjaya Mantra.", "t_rem":"பரிகாரம்: மிருத்யுஞ்சய மந்திரம் சொல்லவும்."},
+        {"en":"Vriddhi", "ta":"விருத்தி", "e_act":"Excellent for expansion, wealth generation, and business.", "t_act":"பொருளாதார வளர்ச்சி மற்றும் வியாபாரத்திற்கு மிகச் சிறந்தது.", "e_rem":"", "t_rem":""},
+        {"en":"Dhruvam", "ta":"துருவம்", "e_act":"Stable energy. Perfect for permanent tasks and construction.", "t_act":"நிலையான ஆற்றல். நிரந்தர பணிகளுக்கு உகந்தது.", "e_rem":"", "t_rem":""},
+        {"en":"Vyaghatam", "ta":"வியாகாதம்", "e_act":"Indicates disruption or beatings. Avoid travel.", "t_act":"பயணம் மற்றும் புதிய செயல்களைத் தவிர்க்கவும்.", "e_rem":"Remedy: Feed stray animals.", "t_rem":"பரிகாரம்: விலங்குகளுக்கு உணவளிக்கவும்."},
+        {"en":"Harshanam", "ta":"ஹர்ஷணம்", "e_act":"Joyful and thrilling. Great for socializing and celebrations.", "t_act":"மகிழ்ச்சியான நாள். கொண்டாட்டங்களுக்கு உகந்தது.", "e_rem":"", "t_rem":""},
+        {"en":"Vajram", "ta":"வஜ்ரம்", "e_act":"Hard, impenetrable energy. Good for severe, forceful actions.", "t_act":"கடினமான பணிகளுக்கும், தைரியமான செயல்களுக்கும் சிறந்தது.", "e_rem":"Remedy: Worship Hanuman.", "t_rem":"பரிகாரம்: அனுமனை வழிபடவும்."},
+        {"en":"Siddhi", "ta":"சித்தி", "e_act":"Guarantees success. Favorable for resolving issues.", "t_act":"வெற்றி நிச்சயம். பிரச்சனைகளைத் தீர்க்க உகந்தது.", "e_rem":"", "t_rem":""},
+        {"en":"Vyatipatam", "ta":"வியதிபாதம்", "e_act":"Calamitous energy. Strictly avoid auspicious beginnings.", "t_act":"கடுமையான தடைகள். சுப காரியங்களை முற்றிலும் தவிர்க்கவும்.", "e_rem":"Remedy: Chant Vishnu Sahasranamam.", "t_rem":"பரிகாரம்: விஷ்ணு சஹஸ்ரநாமம் படிக்கவும்."},
+        {"en":"Variyan", "ta":"வரியான்", "e_act":"Excellent for comfort, luxury, and artistic pursuits.", "t_act":"ஆடம்பரம் மற்றும் கலை சார்ந்த பணிகளுக்குச் சிறந்தது.", "e_rem":"", "t_rem":""},
+        {"en":"Parigham", "ta":"பரிகம்", "e_act":"Obstacles like an iron bar. Delays are expected.", "t_act":"தாமதங்கள் மற்றும் தடைகள் ஏற்படும்.", "e_rem":"Remedy: Worship Lord Ganesha.", "t_rem":"பரிகாரம்: விநாயகரை வழிபடவும்."},
+        {"en":"Shivam", "ta":"சிவம்", "e_act":"Highly auspicious. Excellent for spiritual practices.", "t_act":"மிகவும் சுபமானது. ஆன்மீக காரியங்களுக்குச் சிறந்தது.", "e_rem":"", "t_rem":""},
+        {"en":"Siddham", "ta":"சித்தம்", "e_act":"Favorable for securing deals and legal success.", "t_act":"ஒப்பந்தங்கள் மற்றும் சட்ட விவகாரங்களுக்கு சிறந்தது.", "e_rem":"", "t_rem":""},
+        {"en":"Sadhyam", "ta":"சாத்தியம்", "e_act":"Amenable energy. Good for acquiring new skills.", "t_act":"புதிய திறன்களைக் கற்கவும், கல்விக்கும் உகந்தது.", "e_rem":"", "t_rem":""},
+        {"en":"Shubham", "ta":"சுபம்", "e_act":"Auspicious. Excellent for marriages and wealth generation.", "t_act":"திருமணம் மற்றும் சுப காரியங்களுக்கு உகந்தது.", "e_rem":"", "t_rem":""},
+        {"en":"Shuklam", "ta":"சுக்கிலம்", "e_act":"Bright and pure. Best for honest communication.", "t_act":"புனிதமான நாள். உண்மையான பேச்சுவார்த்தைகளுக்குச் சிறந்தது.", "e_rem":"", "t_rem":""},
+        {"en":"Brahmam", "ta":"பிரம்மா", "e_act":"Trustworthy. Excellent for education and high-level decisions.", "t_act":"உயர்மட்ட முடிவுகள் மற்றும் கல்விக்குச் சிறந்தது.", "e_rem":"", "t_rem":""},
+        {"en":"Indram", "ta":"இந்திரம்", "e_act":"Leadership energy. Perfect for government-related work.", "t_act":"அரசு சார்ந்த மற்றும் தலைமைப் பணிகளுக்கு உகந்தது.", "e_rem":"", "t_rem":""},
+        {"en":"Vaidhriti", "ta":"வைதிருதி", "e_act":"Extremely poor support. Maintain status quo.", "t_act":"ஆதரவு குறைவு. புதிய பணிகளைத் தவிர்க்கவும்.", "e_rem":"Remedy: Perform Surya Namaskar.", "t_rem":"பரிகாரம்: சூரிய நமஸ்காரம் செய்யவும்."}
+    ]
+
+    daily_yoga = yogas_dict[yoga_idx_now]["en"] if lang=="English" else yogas_dict[yoga_idx_now]["ta"]
+    next_yoga_name = yogas_dict[next_y_idx]["en"] if lang=="English" else yogas_dict[next_y_idx]["ta"]
+    y_action = yogas_dict[yoga_idx_now]["e_act"] if lang=="English" else yogas_dict[yoga_idx_now]["t_act"]
+    y_remedy = yogas_dict[yoga_idx_now]["e_rem"] if lang=="English" else yogas_dict[yoga_idx_now]["t_rem"]
 
     zodiac_en = ["Mesham", "Rishabam", "Mithunam", "Kadagam", "Simmam", "Kanni", "Thulam", "Viruchigam", "Dhanusu", "Magaram", "Kumbam", "Meenam"]
     zodiac_ta = ["மேஷம்", "ரிஷபம்", "மிதுனம்", "கடகம்", "சிம்மம்", "கன்னி", "துலாம்", "விருச்சிகம்", "தனுசு", "மகரம்", "கும்பம்", "மீனம்"]
@@ -833,13 +863,25 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
     rasi_to_nak_ta = {1: "அஸ்வினி, பரணி, கிருத்திகை", 2: "கிருத்திகை, ரோகிணி, மிருகசீரிடம்", 3: "மிருகசீரிடம், திருவாதிரை, புனர்பூசம்", 4: "புனர்பூசம், பூசம், ஆயில்யம்", 5: "மகம், பூரம், உத்திரம்", 6: "உத்திரம், அஸ்தம், சித்திரை", 7: "சித்திரை, சுவாதி, விசாகம்", 8: "விசாகம், அனுஷம், கேட்டை", 9: "மூலம், பூராடம், உத்திராடம்", 10: "உத்திராடம், திருவோணம், அவிட்டம்", 11: "அவிட்டம், சதயம், பூரட்டாதி", 12: "பூரட்டாதி, உத்திரட்டாதி, ரேவதி"}
     ch_naks = rasi_to_nak_en[ch_rasi_idx] if lang=="English" else rasi_to_nak_ta[ch_rasi_idx]
 
-    tara_name, tara_color = "-", "#95a5a6"
+    # 8. Tarabalam & Actionable Insights
+    tara_name, tara_color, tara_act = "-", "#95a5a6", ""
     if natal_moon_lon is not None:
         natal_nak_idx = int((natal_moon_lon % 360) / (360/27))
         tara_calc = ((nak_idx_now - natal_nak_idx) % 9) + 1
-        tara_meanings_en = {1: "Janma (Average)", 2: "Sampat (Excellent)", 3: "Vipat (Caution)", 4: "Kshema (Good)", 5: "Pratyak (Obstacles)", 6: "Sadhana (Success)", 7: "Naidhana (Severe)", 8: "Mitra (Favorable)", 9: "Parama Mitra (Excellent)"}
-        tara_meanings_ta = {1: "ஜென்ம (சராசரி)", 2: "சம்பத் (சிறப்பு)", 3: "விபத்து (கவனம்)", 4: "க்ஷேம (நன்று)", 5: "பிரத்யக் (தடைகள்)", 6: "சாதனா (வெற்றி)", 7: "நைதன (கடுமை)", 8: "மித்ர (சாதகம்)", 9: "பரம மித்ர (மிகச் சிறப்பு)"}
-        tara_name = (tara_meanings_en if lang == "English" else tara_meanings_ta)[tara_calc]
+        tara_meanings = {
+            1: ("Janma (Average)", "ஜென்ம (சராசரி)", "Maintain routine. Avoid high-risk decisions today.", "வழக்கமான பணிகளை மட்டும் செய்யவும்."),
+            2: ("Sampat (Excellent)", "சம்பத் (சிறப்பு)", "Favorable for financial deals and wealth creation.", "பொருளாதார முதலீடுகளுக்கு உகந்தது."),
+            3: ("Vipat (Caution)", "விபத்து (கவனம்)", "Caution advised. Postpone critical meetings.", "கவனமாக இருக்கவும். முக்கிய முடிவுகளைத் தவிர்க்கவும்."),
+            4: ("Kshema (Good)", "க்ஷேம (நன்று)", "Good for health, recovery, and securing assets.", "உடல்நலம் மற்றும் பாதுகாப்பிற்கு உகந்தது."),
+            5: ("Pratyak (Obstacles)", "பிரத்யக் (தடைகள்)", "Expect delays and sudden obstacles. Be patient.", "தாமதங்கள் ஏற்படலாம். பொறுமை அவசியம்."),
+            6: ("Sadhana (Success)", "சாதனா (வெற்றி)", "Excellent for execution and realizing goals.", "திட்டங்களைச் செயல்படுத்த மிகச் சிறந்தது."),
+            7: ("Naidhana (Severe)", "நைதன (கடுமை)", "Unfavorable for major actions. Focus on inner work.", "புதிய முயற்சிகளைத் தவிர்க்கவும். தியானம் செய்யவும்."),
+            8: ("Mitra (Favorable)", "மித்ர (சாதகம்)", "Highly favorable for partnerships and networking.", "கூட்டு முயற்சிகள் மற்றும் நட்புக்கு உகந்தது."),
+            9: ("Parama Mitra (Excellent)", "பரம மித்ர (மிகச் சிறப்பு)", "Deeply supportive day for all endeavors.", "அனைத்து காரியங்களுக்கும் முழுமையான ஆதரவு கிடைக்கும்.")
+        }
+        t_data = tara_meanings[tara_calc]
+        tara_name = t_data[0] if lang == "English" else t_data[1]
+        tara_act = t_data[2] if lang == "English" else t_data[3]
         tara_color = "#27ae60" if tara_calc in [2,4,6,8,9] else "#e74c3c" if tara_calc in [3,5,7] else "#f39c12"
 
     wd_idx = (dt_obj.weekday() + 1) % 7 
@@ -891,10 +933,10 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
         "paksha": paksha, "countdown": countdown_str, "dasami_str": dasami_str, "is_waxing": is_waxing,
         "v_name": v_name, "v_icon": vrata_icon, "v_mantra": v_mantra, "suba_str": suba_str, "muh_str": muh_str,
         "sunrise": jd_to_local_dt(sunrise_jd).strftime('%I:%M %p').lstrip('0'), "sunset": jd_to_local_dt(sunset_jd).strftime('%I:%M %p').lstrip('0'),
-        "yoga": daily_yoga, "y_end": format_end_time(jd_yoga_end), "y_next": next_yoga_name,
+        "yoga": daily_yoga, "y_end": format_end_time(jd_yoga_end), "y_next": next_yoga_name, "y_action": y_action, "y_remedy": y_remedy,
         "nakshatra": nak_name, "n_end": format_end_time(jd_nak_end), "n_next": next_nak_name,
         "rasi": daily_rasi_name, "r_end": format_end_time(jd_rasi_end), "r_next": next_rasi_name,
         "ch_naks": ch_naks, "rk": get_time_str(rk_start_hrs[wd_idx], 1.5), "yg": get_time_str(yg_start_hrs[wd_idx], 1.5), 
         "nn": nn_str, "gnn": gnn_str, "schedule": schedule,
-        "current_jd_ut": current_jd_ut, "tara_name": tara_name, "tara_color": tara_color
+        "current_jd_ut": current_jd_ut, "tara_name": tara_name, "tara_color": tara_color, "tara_action": tara_act
     }
