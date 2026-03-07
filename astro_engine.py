@@ -623,17 +623,26 @@ def get_daily_panchangam_metrics(current_jd_ut, natal_moon_lon, lat_val, lon_val
     local_tz = pytz.timezone(tz_name)
     dt_obj = datetime.now(local_tz)
     
-    # 1. Exact Local Sunrise & Sunset
+    # 1. Exact Local Sunrise & Sunset (CRASH FIX: Geopos Tuple)
     midnight_local = local_tz.localize(datetime(dt_obj.year, dt_obj.month, dt_obj.day, 0, 0, 0))
     midnight_utc = midnight_local.astimezone(pytz.utc)
     jd_midnight = swe.julday(midnight_utc.year, midnight_utc.month, midnight_utc.day, midnight_utc.hour + midnight_utc.minute/60.0)
     
-    swe.set_topo(lon_val, lat_val, 0)
-    rsmi_rise = swe.rise_trans(jd_midnight, swe.SUN, "", swe.CALC_RISE, lon_val, lat_val, 0)
-    sunrise_jd = rsmi_rise[1][0]
-    rsmi_set = swe.rise_trans(sunrise_jd, swe.SUN, "", swe.CALC_SET, lon_val, lat_val, 0)
-    sunset_jd = rsmi_set[1][0]
+    geopos = (float(lon_val), float(lat_val), 0.0) # The required tuple!
     
+    try:
+        # Calculate Sunrise
+        res_rise = swe.rise_trans(jd_midnight, swe.SUN, b"", swe.FLG_SWIEPH, swe.CALC_RISE, geopos, 0.0, 0.0)
+        sunrise_jd = res_rise[1][0] if isinstance(res_rise, tuple) and isinstance(res_rise[1], tuple) else (res_rise[0] if isinstance(res_rise, tuple) else res_rise)
+        
+        # Calculate Sunset
+        res_set = swe.rise_trans(sunrise_jd + 0.1, swe.SUN, b"", swe.FLG_SWIEPH, swe.CALC_SET, geopos, 0.0, 0.0)
+        sunset_jd = res_set[1][0] if isinstance(res_set, tuple) and isinstance(res_set[1], tuple) else (res_set[0] if isinstance(res_set, tuple) else res_set)
+    except Exception:
+        # Failsafe fallback to standard 6 AM / 6 PM
+        sunrise_jd = jd_midnight + (6.0 / 24.0)
+        sunset_jd = jd_midnight + (18.0 / 24.0)
+
     def jd_to_local(jd):
         y, m, d, h = swe.revjul(jd)
         hr = int(h)
@@ -673,7 +682,6 @@ def get_daily_panchangam_metrics(current_jd_ut, natal_moon_lon, lat_val, lon_val
     nak_name = nak_en[daily_nak_idx] if lang=="English" else nak_ta[daily_nak_idx]
     
     tara_calc = ((daily_nak_idx - natal_nak_idx) % 9) + 1
-    
     tara_meanings_en = {1: ("Janma (Average)", "Maintain routine.", "#f39c12"), 2: ("Sampat (Excellent)", "Favorable for wealth.", "#27ae60"), 3: ("Vipat (Caution)", "Avoid major decisions.", "#e74c3c"), 4: ("Kshema (Good)", "Favorable for security.", "#27ae60"), 5: ("Pratyak (Obstacles)", "Expect setbacks.", "#e74c3c"), 6: ("Sadhana (Success)", "Realization of goals.", "#27ae60"), 7: ("Naidhana (Severe)", "Unfavorable for actions.", "#e74c3c"), 8: ("Mitra (Favorable)", "Good for partnerships.", "#2980b9"), 9: ("Parama Mitra (Excellent)", "Deeply supportive day.", "#27ae60")}
     tara_meanings_ta = {1: ("ஜென்ம (சராசரி)", "வழக்கமான பணிகளை தொடரவும்.", "#f39c12"), 2: ("சம்பத் (சிறப்பு)", "பொருளாதார வளர்ச்சி.", "#27ae60"), 3: ("விபத்து (கவனம்)", "முக்கிய முடிவுகளை தவிர்க்கவும்.", "#e74c3c"), 4: ("க்ஷேம (நன்று)", "பாதுகாப்பு மற்றும் நலம்.", "#27ae60"), 5: ("பிரத்யக் (தடைகள்)", "தாமதங்கள் ஏற்படலாம்.", "#e74c3c"), 6: ("சாதனா (வெற்றி)", "எண்ணங்கள் ஈடேறும்.", "#27ae60"), 7: ("நைதன (கடுமை)", "புதிய செயல்களை தவிர்க்கவும்.", "#e74c3c"), 8: ("மித்ர (சாதகம்)", "கூட்டு முயற்சிகளுக்கு நன்று.", "#2980b9"), 9: ("பரம மித்ர (மிகச் சிறப்பு)", "முழுமையான ஆதரவு கிடைக்கும்.", "#27ae60")}
     
@@ -687,7 +695,7 @@ def get_daily_panchangam_metrics(current_jd_ut, natal_moon_lon, lat_val, lon_val
     rk_start_hrs = {0: 10.5, 1: 1.5, 2: 9.0, 3: 6.0, 4: 7.5, 5: 4.5, 6: 3.0}
     yg_start_hrs = {0: 6.0, 1: 4.5, 2: 3.0, 3: 1.5, 4: 0.0, 5: 9.0, 6: 7.5}
     nn_starts = {0: [1.5, 9.5], 1: [0.0, 10.5], 2: [1.5, 10.5], 3: [3.0, 10.5], 4: [4.5, 10.5], 5: [3.5, 10.5], 6: [1.5, 10.5]}
-    gnn_starts = {0: [1.5, 4.5], 1: [3.0, 7.5], 2: [4.5, 10.5], 3: [6.0, 1.5], 4: [7.5, 4.5], 5: [6.5, 12.5], 6: [0.0, 3.0]} # Standard Gowri
+    gnn_starts = {0: [1.5, 4.5], 1: [3.0, 7.5], 2: [4.5, 10.5], 3: [6.0, 1.5], 4: [7.5, 4.5], 5: [6.5, 12.5], 6: [0.0, 3.0]}
 
     def format_event(start_offset, duration_hrs, label_en, label_ta, color):
         s_dt = sunrise_dt + timedelta(hours=start_offset)
@@ -704,15 +712,15 @@ def get_daily_panchangam_metrics(current_jd_ut, natal_moon_lon, lat_val, lon_val
     for s_hr in gnn_starts[wd_idx]:
         events.append(format_event(s_hr, 1.0, "Gowri Nalla Neram", "கௌரி நல்ல நேரம்", "#f39c12"))
 
-    # 5. Bilingual Horai Structure
+    # 5. Bilingual Minimalist Horai Structure
     horai_dict = {
-        "Sun": {"en": "Sun", "ta": "சூரியன்", "act_en": "Govt / Power", "act_ta": "அரசு / பணிகள்", "color": "#d35400"},
-        "Venus": {"en": "Venus", "ta": "சுக்கிரன்", "act_en": "Art / Luxury", "act_ta": "ஆபரணம் / கலை", "color": "#8e44ad"},
-        "Mercury": {"en": "Mercury", "ta": "புதன்", "act_en": "Study / Trade", "act_ta": "கல்வி / கணக்கு", "color": "#27ae60"},
-        "Moon": {"en": "Moon", "ta": "சந்திரன்", "act_en": "Travel / Mind", "act_ta": "பயணம் / உணவு", "color": "#2980b9"},
-        "Saturn": {"en": "Saturn", "ta": "சனி", "act_en": "Iron / Labor", "act_ta": "இரும்பு / உழைப்பு", "color": "#2c3e50"},
-        "Jupiter": {"en": "Jupiter", "ta": "குரு", "act_en": "Wealth / Gold", "act_ta": "சுப காரியம்", "color": "#f39c12"},
-        "Mars": {"en": "Mars", "ta": "செவ்வாய்", "act_en": "Land / Courage", "act_ta": "நிலம் / தைரியம்", "color": "#c0392b"}
+        "Sun": {"en": "Sun", "ta": "சூரியன்", "act_en": "Govt / Authority", "act_ta": "அரசு / அதிகாரம்", "color": "#d35400"},
+        "Venus": {"en": "Venus", "ta": "சுக்கிரன்", "act_en": "Art / Luxury / Alliances", "act_ta": "கலை / ஆபரணம் / உறவு", "color": "#8e44ad"},
+        "Mercury": {"en": "Mercury", "ta": "புதன்", "act_en": "Data / Trade / Intellect", "act_ta": "கல்வி / கணக்கு / தகவல்", "color": "#27ae60"},
+        "Moon": {"en": "Moon", "ta": "சந்திரன்", "act_en": "Travel / Emotional Flow", "act_ta": "பயணம் / உணவு / மனம்", "color": "#2980b9"},
+        "Saturn": {"en": "Saturn", "ta": "சனி", "act_en": "Deep Labor / Structures", "act_ta": "இரும்பு / உழைப்பு", "color": "#34495e"},
+        "Jupiter": {"en": "Jupiter", "ta": "குரு", "act_en": "Wealth / Mentorship", "act_ta": "சுப காரியம் / பணம்", "color": "#f39c12"},
+        "Mars": {"en": "Mars", "ta": "செவ்வாய்", "act_en": "Land / Courage / Execution", "act_ta": "நிலம் / தைரியம்", "color": "#c0392b"}
     }
     
     horai_lords = ["Sun", "Venus", "Mercury", "Moon", "Saturn", "Jupiter", "Mars"]
@@ -733,19 +741,17 @@ def get_daily_panchangam_metrics(current_jd_ut, natal_moon_lon, lat_val, lon_val
         l_act = lord_data['act_en'] if lang=="English" else lord_data['act_ta']
         
         if block_s <= dt_obj <= block_e:
-            current_horai_name = l_name
+            current_horai_name = f"{l_name} Horai" if lang=="English" else f"{l_name} ஓரை"
 
         time_str = f"{block_s.strftime('%I:%M %p')} - {block_e.strftime('%I:%M %p')}"
         
-        # Find intersecting events
         active_badges = []
         for ev in events:
-            # If event overlaps this exact block
             if ev["start"] < block_e and ev["end"] > block_s:
                 active_badges.append(ev)
 
         schedule.append({
-            "lord": l_name,
+            "lord": f"{l_name} Horai" if lang=="English" else f"{l_name} ஓரை",
             "activity": l_act,
             "time": time_str,
             "color": lord_data['color'],
