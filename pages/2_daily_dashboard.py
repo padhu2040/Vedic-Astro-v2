@@ -88,48 +88,61 @@ else:
 
             # --- TOP METRICS GRID ---
             metric_html = f"""
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
-                <div style="background: #fff; border: 1px solid #eaeaea; border-top: 3px solid {panchangam['tara_color']}; border-radius: 6px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                    <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Tarabalam</div>
-                    <div style="font-size: 13px; font-weight: bold; color: {panchangam['tara_color']};">{panchangam['tara_name']}</div>
-                    <div style="font-size: 11px; color: #666; margin-top: 4px;">{panchangam['tara_desc']}</div>
-                </div>
-                <div style="background: #fff; border: 1px solid #eaeaea; border-top: 3px solid #2c3e50; border-radius: 6px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                    <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Nalla Neram</div>
-                    <div style="font-size: 13px; font-weight: bold; color: #2c3e50;">{panchangam['nalla_neram']}</div>
-                </div>
-                <div style="background: #fff; border: 1px solid #eaeaea; border-top: 3px solid #8e44ad; border-radius: 6px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                    <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Active Horai</div>
-                    <div style="font-size: 15px; font-weight: bold; color: #8e44ad;">{panchangam['horai']}</div>
-                </div>
-                <div style="background: #fff; border: 1px solid #eaeaea; border-top: 3px solid #2980b9; border-radius: 6px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                    <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Moon ({panchangam['nakshatra']})</div>
-                    <div style="font-size: 13px; font-weight: bold; color: #2980b9;">{panchangam['moon_phase_ta']}</div>
-                </div>
-            </div>
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+<div style="background: #fff; border: 1px solid #eaeaea; border-top: 3px solid {panchangam['tara_color']}; border-radius: 6px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+<div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Tarabalam</div>
+<div style="font-size: 13px; font-weight: bold; color: {panchangam['tara_color']};">{panchangam['tara_name']}</div>
+<div style="font-size: 11px; color: #666; margin-top: 4px;">{panchangam['tara_desc']}</div>
+</div>
+<div style="background: #fff; border: 1px solid #eaeaea; border-top: 3px solid #2c3e50; border-radius: 6px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+<div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Nalla Neram</div>
+<div style="font-size: 13px; font-weight: bold; color: #2c3e50;">{panchangam['nalla_neram']}</div>
+</div>
+<div style="background: #fff; border: 1px solid #eaeaea; border-top: 3px solid #8e44ad; border-radius: 6px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+<div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Active Horai</div>
+<div style="font-size: 15px; font-weight: bold; color: #8e44ad;">{panchangam['horai']}</div>
+</div>
+<div style="background: #fff; border: 1px solid #eaeaea; border-top: 3px solid #2980b9; border-radius: 6px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+<div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Moon ({panchangam['nakshatra']})</div>
+<div style="font-size: 13px; font-weight: bold; color: #2980b9;">{panchangam['moon_phase_ta']}</div>
+</div>
+</div>
             """
             st.markdown(metric_html, unsafe_allow_html=True)
 
             # --- TACTICAL WEATHER CARDS ---
             focus = daily_weather["focus"]
             comm = daily_weather["communication"]
+            energy = daily_weather["energy"]
             
-            st.markdown(f"""
-            <div style="font-family: sans-serif;">
-                <div style="background: #fff; border: 1px solid #eaeaea; border-left: 5px solid {focus['color']}; padding: 20px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 15px;">
-                    <div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Strategic Focus:</b> Moon in {daily_weather['positions']['Moon']}</div>
-                    <div style="font-size: 18px; font-weight: bold; color: {focus['color']}; margin-bottom: 10px;">{focus['title']}</div>
-                    <div style="font-size: 14px; color: #444; line-height: 1.6; margin-bottom: 10px;">{focus['desc']}</div>
-                    <div style="font-size: 13px; color: #111; font-style: italic; background: #f9f9f9; padding: 10px; border-radius: 4px;">{focus['remedy']}</div>
-                </div>
-                <div style="background: #fff; border: 1px solid #eaeaea; border-left: 5px solid #27ae60; padding: 20px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 30px;">
-                    <div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Communication:</b> Mercury in {daily_weather['positions']['Mercury']}</div>
-                    <div style="font-size: 18px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">{comm['title']}</div>
-                    <div style="font-size: 14px; color: #444; line-height: 1.6; margin-bottom: 10px;">{comm['desc']}</div>
-                    <div style="font-size: 13px; color: #111; font-style: italic; background: #f9f9f9; padding: 10px; border-radius: 4px;">{comm['remedy']}</div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+            weather_html = f"""
+<div style="font-family: sans-serif;">
+<h3 style="color: #2c3e50; margin-bottom: 15px; font-size: 20px; border-bottom: 2px solid #eee; padding-bottom: 8px;">1. Primary Strategic Focus</h3>
+<div style="background: #fff; border: 1px solid #eaeaea; border-left: 5px solid {focus['color']}; padding: 20px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 25px;">
+<div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Astrological Driver:</b> Moon in {daily_weather['positions']['Moon']}</div>
+<div style="font-size: 18px; font-weight: bold; color: {focus['color']}; margin-bottom: 10px;">{focus['title']}</div>
+<div style="font-size: 14px; color: #444; line-height: 1.6; margin-bottom: 10px;">{focus['desc']}</div>
+<div style="font-size: 13px; color: #111; font-style: italic; background: #f9f9f9; padding: 10px; border-radius: 4px;">{focus['remedy']}</div>
+</div>
+
+<h3 style="color: #2c3e50; margin-bottom: 15px; font-size: 20px; border-bottom: 2px solid #eee; padding-bottom: 8px;">2. Communication & Data Weather</h3>
+<div style="background: #fff; border: 1px solid #eaeaea; border-left: 5px solid #27ae60; padding: 20px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 25px;">
+<div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Astrological Driver:</b> Mercury in {daily_weather['positions']['Mercury']}</div>
+<div style="font-size: 18px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">{comm['title']}</div>
+<div style="font-size: 14px; color: #444; line-height: 1.6; margin-bottom: 10px;">{comm['desc']}</div>
+<div style="font-size: 13px; color: #111; font-style: italic; background: #f9f9f9; padding: 10px; border-radius: 4px;">{comm['remedy']}</div>
+</div>
+
+<h3 style="color: #2c3e50; margin-bottom: 15px; font-size: 20px; border-bottom: 2px solid #eee; padding-bottom: 8px;">3. Executive Vitality & Authority</h3>
+<div style="background: #fff; border: 1px solid #eaeaea; border-left: 5px solid #f39c12; padding: 20px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 30px;">
+<div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Astrological Driver:</b> Sun in {daily_weather['positions']['Sun']}</div>
+<div style="font-size: 18px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">{energy['title']}</div>
+<div style="font-size: 14px; color: #444; line-height: 1.6; margin-bottom: 10px;">{energy['desc']}</div>
+<div style="font-size: 13px; color: #111; font-style: italic; background: #f9f9f9; padding: 10px; border-radius: 4px;">{energy['remedy']}</div>
+</div>
+</div>
+            """
+            st.markdown(weather_html, unsafe_allow_html=True)
 
             # --- THE COSMIC CALENDAR (VERTICAL TIMELINE) ---
             st.markdown("<h3 style='color: #2c3e50; font-family: sans-serif; font-size: 20px; margin-top: 10px; border-bottom: 2px solid #eee; padding-bottom: 8px;'>The Cosmic Calendar (6 AM - 6 PM)</h3>", unsafe_allow_html=True)
@@ -141,11 +154,13 @@ else:
                     badges_html += f"<span style='background: {b['bg']}; color: {b['color']}; font-size: 11px; padding: 3px 6px; border-radius: 4px; font-weight: bold; margin-left: 6px; white-space: nowrap; display: inline-block; margin-bottom: 4px;'>{b['text']}</span>"
                 
                 schedule_html += f"""
-                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; padding: 12px 15px; margin-bottom: 8px; border-radius: 6px; background-color: {row['style']['bg']}; border-left: 4px solid {row['style']['border']}; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-                    <div style="flex: 1; min-width: 100px; font-size: 13px; color: #555; font-weight: bold;">{row['time']}</div>
-                    <div style="flex: 1; min-width: 120px; font-size: 14px; color: #333; font-weight: bold;">{row['lord']}</div>
-                    <div style="flex: 2; text-align: right; line-height: 1.8;">{badges_html}</div>
-                </div>
-                """
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; padding: 12px 15px; margin-bottom: 8px; border-radius: 6px; background-color: {row['style']['bg']}; border-left: 4px solid {row['style']['border']}; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+<div style="flex: 1; min-width: 100px; font-size: 13px; color: #555; font-weight: bold;">{row['time']}</div>
+<div style="flex: 1; min-width: 120px; font-size: 14px; color: #333; font-weight: bold;">{row['lord']}</div>
+<div style="flex: 2; text-align: right; line-height: 1.8;">{badges_html}</div>
+</div>
+"""
             schedule_html += "</div>"
             st.markdown(schedule_html, unsafe_allow_html=True)
+            
+            st.caption("Note: This dashboard calculates transits dynamically based on current UTC time mapping against your exact natal coordinates. Micro-transits (like the Moon) shift every 2.5 days.")
