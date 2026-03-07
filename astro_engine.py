@@ -617,7 +617,7 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
     Includes exact end times for Star, Tithi, Rasi, and Yoga using iterative root-finding.
     """
     import swisseph as swe
-    from datetime import datetime, timedelta, time
+    from datetime import datetime, timedelta, time, timezone
     import pytz
 
     local_tz = pytz.timezone(tz_name)
@@ -644,16 +644,20 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
         sunrise_jd = jd_midnight + (6.0 / 24.0)
         sunset_jd = jd_midnight + (18.0 / 24.0)
 
-    def jd_to_local_time_str(jd):
+    # ROBUST TIME CONVERSION (Fixes the TypeError!)
+    def jd_to_local_dt(jd):
         y, m, d, h = swe.revjul(jd)
         hr = int(h)
         min_val = int((h - hr) * 60)
         sec = int((((h - hr) * 60) - min_val) * 60)
-        utc_dt = datetime(y, m, d, hr, min_val, sec, tzinfo=pytz.utc)
-        return utc_dt.astimezone(local_tz).strftime('%I:%M %p').lstrip('0')
+        utc_dt = datetime(y, m, d, hr, min_val, sec, tzinfo=timezone.utc)
+        return utc_dt.astimezone(local_tz)
 
-    sunrise_dt = local_tz.localize(datetime(*swe.revjul(sunrise_jd)[:5], int((swe.revjul(sunrise_jd)[3] % 1) * 60)))
-    sunset_dt = local_tz.localize(datetime(*swe.revjul(sunset_jd)[:5], int((swe.revjul(sunset_jd)[3] % 1) * 60)))
+    def jd_to_local_time_str(jd):
+        return jd_to_local_dt(jd).strftime('%I:%M %p').lstrip('0')
+
+    sunrise_dt = jd_to_local_dt(sunrise_jd)
+    sunset_dt = jd_to_local_dt(sunset_jd)
     horai_len_hrs = ((sunset_jd - sunrise_jd) * 24) / 12
 
     current_utc = dt_obj.astimezone(pytz.utc)
@@ -734,7 +738,6 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
     nak_name = nak_en[get_nak(current_jd_ut)] if lang=="English" else nak_ta[get_nak(current_jd_ut)]
     next_nak_name = nak_en[next_n_idx] if lang=="English" else nak_ta[next_n_idx]
 
-    # Global Chandrashtama Nakshatras
     ch_rasi_idx = (get_rasi(current_jd_ut) - 8) % 12 + 1
     rasi_to_nak_en = {1: "Ashwini, Bharani, Karthigai", 2: "Karthigai, Rohini, Mirugasiridam", 3: "Mirugasiridam, Thiruvathirai, Punarpoosam", 4: "Punarpoosam, Poosam, Ayilyam", 5: "Magam, Pooram, Uthiram", 6: "Uthiram, Hastham, Chithirai", 7: "Chithirai, Swathi, Visakam", 8: "Visakam, Anusham, Kettai", 9: "Moolam, Pooradam, Uthiradam", 10: "Uthiradam, Thiruvonam, Avittam", 11: "Avittam, Sathayam, Poorattathi", 12: "Poorattathi, Uthirattathi, Revathi"}
     rasi_to_nak_ta = {1: "அஸ்வினி, பரணி, கிருத்திகை", 2: "கிருத்திகை, ரோகிணி, மிருகசீரிடம்", 3: "மிருகசீரிடம், திருவாதிரை, புனர்பூசம்", 4: "புனர்பூசம், பூசம், ஆயில்யம்", 5: "மகம், பூரம், உத்திரம்", 6: "உத்திரம், அஸ்தம், சித்திரை", 7: "சித்திரை, சுவாதி, விசாகம்", 8: "விசாகம், அனுஷம், கேட்டை", 9: "மூலம், பூராடம், உத்திராடம்", 10: "உத்திராடம், திருவோணம், அவிட்டம்", 11: "அவிட்டம், சதயம், பூரட்டாதி", 12: "பூரட்டாதி, உத்திரட்டாதி, ரேவதி"}
@@ -776,6 +779,7 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
         block_s = sunrise_dt + timedelta(hours=hour_offset * horai_len_hrs)
         block_e = block_s + timedelta(hours=horai_len_hrs)
         
+        # Skip past hours to keep current at the top!
         if is_today and block_e < dt_obj: continue 
             
         lord_key = horai_order[({0:0, 1:3, 2:6, 3:2, 4:5, 5:1, 6:4}[wd_idx] + hour_offset) % 7]
@@ -790,7 +794,6 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
             "is_power": lord_key in power_lords
         })
 
-    # CLEAN, EXPLICIT DICTIONARY EXPORT
     return {
         "day_num": dt_obj.strftime('%d'), 
         "month_year_en": dt_obj.strftime('%B %Y'),
@@ -798,7 +801,7 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
         "date_ta": f"{tamil_day:02d}", 
         "day_ta": day_ta, 
         "month_ta": t_month,
-        "tithi": t_name, 
+        "tithi_short": t_name, 
         "t_end": jd_to_local_time_str(jd_tithi_end), 
         "t_next": next_t_name,
         "paksha": paksha, 
