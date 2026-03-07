@@ -81,13 +81,12 @@ with st.spinner("Calculating orbital mechanics..."):
         natal_moon_lon = swe.calc_ut(jd_ut_natal, swe.MOON, swe.FLG_SIDEREAL)[0][0]
         natal_moon_rasi = int(natal_moon_lon/30)+1
 
-    # Pass natal_moon_lon to prevent the crash!
     pan = get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_val, LANG, natal_lagna_rasi, natal_moon_rasi, natal_moon_lon)
     
     if def_n:
         daily_weather = get_daily_executive_weather(pan['current_jd_ut'], natal_moon_rasi, natal_lagna_rasi, LANG)
 
-# --- SETUP TABS (No icons) ---
+# --- SETUP TABS ---
 t1_name = "Overview" if LANG=="English" else "பஞ்சாங்கம்"
 t2_name = "Horai" if LANG=="English" else "ஓரை"
 t3_name = "Strategy" if LANG=="English" else "வியூகம்"
@@ -121,19 +120,8 @@ with tab1:
 <div class="m-card"><div class="c-head">{lbl['ast']}</div><div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;"><div class="card-row"><span class="row-lbl">{lbl['sun_r']} / {lbl['sun_s']}</span><span class="row-val">{pan['sunrise']} - {pan['sunset']}</span></div><div class="card-row"><span class="row-lbl">Rasi & Star</span><span class="row-val">{pan['rasi']} / {pan['nakshatra']}</span></div><div class="card-row"><span class="row-lbl">{lbl['yoga']}</span><span class="row-val">{pan['yoga']}</span></div>{tara_row}</div></div>
 <div class="m-card" style="border-top: 2px solid #27ae60;"><div class="c-head" style="color: #27ae60;">{lbl['ausp']}</div><div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;"><div class="card-row"><span class="row-lbl">{lbl['nn']}</span><span class="row-val">{pan['nn']}</span></div><div class="card-row"><span class="row-lbl">{lbl['gnn']}</span><span class="row-val">{pan['gnn']}</span></div></div></div>
 <div class="m-card" style="border-top: 2px solid #c0392b; grid-column: span 2;"><div class="c-head" style="color: #c0392b;">{lbl['inausp']}</div><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;"><div><div class="card-row"><span class="row-lbl">{lbl['rk']}</span><span class="row-val">{pan['rk']}</span></div><div class="card-row"><span class="row-lbl">{lbl['yg']}</span><span class="row-val">{pan['yg']}</span></div></div><div style="border-left: 1px dashed #eee; padding-left: 15px;"><div class="card-row" style="flex-direction: column; align-items: flex-start; border: none;"><span class="row-lbl" style="color:#c0392b; margin-bottom: 4px;">Chandrashtama for:</span><span class="row-val" style="font-size: 12px; text-align: left;">{pan['ch_naks']}</span></div></div></div></div>
-<div class="m-card" style="padding: 0;"><div class="c-head" style="margin: 16px 16px 8px 16px;">{lbl['horai']}</div><div style="max-height: 125px; overflow-y: auto; padding: 0 16px 16px 16px;">"""
-    
-    for h in pan["schedule"]:
-        bg_col = "#fdfdfd"
-        border = "none"
-        if h['is_current']:
-            bg_col = "#f0f8ff"
-            border = f"border-left: 3px solid {h['color']};"
-        grid_html += f"<div style='display: flex; justify-content: space-between; align-items: center; padding: 8px 6px; background: {bg_col}; {border} border-bottom: 1px solid #f9f9f9;'><div style='display:flex; flex-direction:column;'><span style='font-size: 13.5px; font-weight: 500; color: {h['color']};'>{h['lord']}</span><span style='font-size: 11px; color: #888;'>{h['activity']}</span></div><div style='font-size: 11.5px; color: #444; font-weight: 500;'>{h['time']}</div></div>"
-
-    grid_html += "</div></div></div>"
+</div>"""
     st.markdown(grid_html, unsafe_allow_html=True)
-
 
 # --- TAB 2: HOURLY PLANNER ---
 with tab2:
@@ -141,7 +129,7 @@ with tab2:
     st.markdown(f"<div style='font-family: sans-serif; font-size: 14px; color: #7f8c8d; margin-bottom: 10px;'>{msg_h}</div>", unsafe_allow_html=True)
     
     if def_n:
-        st.markdown("<div style='font-size: 12px; color: #f39c12; margin-bottom: 15px;'><b>Note:</b> Starred blocks indicate highly favorable timings based on your specific Lagna and Moon Rasi.</div>", unsafe_allow_html=True)
+        st.markdown("<div style='font-size: 12px; color: #f39c12; margin-bottom: 15px;'><b>Note:</b> Highlighted [POWER] blocks indicate highly favorable timings based on your specific Lagna and Moon Rasi.</div>", unsafe_allow_html=True)
 
     schedule_html = "<div style='font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif; max-height: 400px; overflow-y: auto; padding-right: 5px;'>"
     
@@ -153,16 +141,15 @@ with tab2:
         if row['is_current']:
             bg_col = "#f4f9f4"
             border = f"border-left: 4px solid {row['color']}; border-bottom: 1px solid #e0e0e0;"
-            indicator = "<span style='font-size: 10px; color: #27ae60; text-transform: uppercase; font-weight: bold; margin-left: 8px;'>(Now)</span>"
+            indicator = "<span style='font-size: 9px; color: #27ae60; border: 1px solid #27ae60; text-transform: uppercase; font-weight: bold; margin-left: 8px; padding: 1px 4px; border-radius: 2px;'>NOW</span>"
             
         if row['is_power']:
-            indicator += " <span style='color:#f39c12; font-size:12px;'>★</span>"
+            indicator += " <span style='font-size: 9px; color: #fff; background: #f39c12; text-transform: uppercase; font-weight: bold; margin-left: 6px; padding: 2px 4px; border-radius: 2px;'>POWER</span>"
 
         schedule_html += f"<div style='display: flex; justify-content: space-between; align-items: center; padding: 12px 10px; background-color: {bg_col}; {border} margin-bottom: 4px; border-radius: 4px;'><div style='display:flex; flex-direction:column;'><span style='font-size: 11px; color: #999; font-weight: 400; margin-bottom: 2px;'>{row['time']} {indicator}</span><span style='font-size: 15px; font-weight: 500; color: {row['color']};'>{row['lord']}</span></div><div style='text-align: right;'><span style='font-size: 12.5px; color: #555; font-weight: 400;'>{row['activity']}</span></div></div>"
         
     schedule_html += "</div>"
     st.markdown(schedule_html, unsafe_allow_html=True)
-
 
 # --- TAB 3: TACTICAL STRATEGY ---
 with tab3:
