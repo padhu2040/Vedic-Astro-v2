@@ -2,8 +2,6 @@ import streamlit as st
 import swisseph as swe
 from datetime import datetime, timezone, time
 from supabase import create_client
-import pandas as pd
-import plotly.express as px
 
 # --- IMPORTS FROM OUR CUSTOM ENGINE ---
 from astro_engine import (
@@ -11,7 +9,7 @@ from astro_engine import (
     get_daily_panchangam_metrics, ZODIAC_TA, ZODIAC
 )
 
-st.set_page_config(page_title="Daily Executive Weather", layout="wide")
+st.set_page_config(page_title="Daily Executive Weather", layout="centered")
 
 @st.cache_resource
 def init_connection():
@@ -90,67 +88,41 @@ else:
 
             # --- TOP METRICS GRID ---
             metric_html = f"""
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
                 <div style="background: #fff; border: 1px solid #eaeaea; border-top: 3px solid {panchangam['tara_color']}; border-radius: 6px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                    <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Personalized Tarabalam</div>
-                    <div style="font-size: 14px; font-weight: bold; color: {panchangam['tara_color']};">{panchangam['tara_name']}</div>
-                    <div style="font-size: 12px; color: #666; margin-top: 4px;">{panchangam['tara_desc']}</div>
+                    <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Tarabalam</div>
+                    <div style="font-size: 13px; font-weight: bold; color: {panchangam['tara_color']};">{panchangam['tara_name']}</div>
+                    <div style="font-size: 11px; color: #666; margin-top: 4px;">{panchangam['tara_desc']}</div>
+                </div>
+                <div style="background: #fff; border: 1px solid #eaeaea; border-top: 3px solid #2c3e50; border-radius: 6px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                    <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Nalla Neram</div>
+                    <div style="font-size: 13px; font-weight: bold; color: #2c3e50;">{panchangam['nalla_neram']}</div>
                 </div>
                 <div style="background: #fff; border: 1px solid #eaeaea; border-top: 3px solid #8e44ad; border-radius: 6px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                    <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Current Active Horai</div>
-                    <div style="font-size: 16px; font-weight: bold; color: #8e44ad;">{panchangam['horai']}</div>
+                    <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Active Horai</div>
+                    <div style="font-size: 15px; font-weight: bold; color: #8e44ad;">{panchangam['horai']}</div>
                 </div>
                 <div style="background: #fff; border: 1px solid #eaeaea; border-top: 3px solid #2980b9; border-radius: 6px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                    <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Daily Moon Phase</div>
-                    <div style="font-size: 14px; font-weight: bold; color: #2980b9;">{panchangam['nakshatra']}</div>
-                    <div style="font-size: 12px; color: #666; margin-top: 4px;">{panchangam['paksha']}</div>
+                    <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Moon ({panchangam['nakshatra']})</div>
+                    <div style="font-size: 13px; font-weight: bold; color: #2980b9;">{panchangam['moon_phase_ta']}</div>
                 </div>
             </div>
             """
             st.markdown(metric_html, unsafe_allow_html=True)
 
-            # --- PLOTLY COSMIC CALENDAR ---
-            st.markdown("<h3 style='color: #2c3e50; font-family: sans-serif; font-size: 20px; margin-top: 10px; border-bottom: 2px solid #eee; padding-bottom: 8px;'>The Cosmic Calendar (6 AM - 6 PM)</h3>", unsafe_allow_html=True)
-            
-            df = pd.DataFrame(panchangam["timeline_data"])
-            
-            # Custom Event Color Mapping
-            color_map = {
-                "Nalla Neram": "#27ae60", # Green
-                "Rahu Kalam": "#e74c3c",  # Red
-                "Yemagandam": "#e67e22",  # Orange
-                "Sun Horai": "#f1c40f", "Moon Horai": "#bdc3c7", "Mars Horai": "#c0392b",
-                "Mercury Horai": "#2ecc71", "Jupiter Horai": "#f39c12", "Venus Horai": "#9b59b6", "Saturn Horai": "#34495e"
-            }
-
-            fig = px.timeline(df, x_start="Start", x_end="Finish", y="Category", color="Event", text="Event", color_discrete_map=color_map)
-            fig.update_yaxes(autorange="reversed", title_text="") # Reverse so Auspicious is on top
-            fig.update_xaxes(tickformat="%I:%M %p", title_text="") # Format time nicely
-            fig.update_layout(
-                showlegend=False, height=300, margin=dict(l=0, r=20, t=20, b=20),
-                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                font=dict(family="Helvetica Neue, sans-serif", size=12, color="#333")
-            )
-            # Make text inside bars white and clean
-            fig.update_traces(textfont_color='white', textposition='inside')
-            
-            st.plotly_chart(fig, use_container_width=True)
-
             # --- TACTICAL WEATHER CARDS ---
-            c1, c2 = st.columns(2)
             focus = daily_weather["focus"]
             comm = daily_weather["communication"]
             
-            # Use raw HTML strings instead of f-strings inside Markdown to avoid code block parsing
             st.markdown(f"""
             <div style="font-family: sans-serif;">
-                <div style="background: #fff; border: 1px solid #eaeaea; border-left: 5px solid {focus['color']}; padding: 20px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 20px;">
+                <div style="background: #fff; border: 1px solid #eaeaea; border-left: 5px solid {focus['color']}; padding: 20px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 15px;">
                     <div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Strategic Focus:</b> Moon in {daily_weather['positions']['Moon']}</div>
                     <div style="font-size: 18px; font-weight: bold; color: {focus['color']}; margin-bottom: 10px;">{focus['title']}</div>
                     <div style="font-size: 14px; color: #444; line-height: 1.6; margin-bottom: 10px;">{focus['desc']}</div>
                     <div style="font-size: 13px; color: #111; font-style: italic; background: #f9f9f9; padding: 10px; border-radius: 4px;">{focus['remedy']}</div>
                 </div>
-                <div style="background: #fff; border: 1px solid #eaeaea; border-left: 5px solid #27ae60; padding: 20px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                <div style="background: #fff; border: 1px solid #eaeaea; border-left: 5px solid #27ae60; padding: 20px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 30px;">
                     <div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Communication:</b> Mercury in {daily_weather['positions']['Mercury']}</div>
                     <div style="font-size: 18px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">{comm['title']}</div>
                     <div style="font-size: 14px; color: #444; line-height: 1.6; margin-bottom: 10px;">{comm['desc']}</div>
@@ -158,3 +130,22 @@ else:
                 </div>
             </div>
             """, unsafe_allow_html=True)
+
+            # --- THE COSMIC CALENDAR (VERTICAL TIMELINE) ---
+            st.markdown("<h3 style='color: #2c3e50; font-family: sans-serif; font-size: 20px; margin-top: 10px; border-bottom: 2px solid #eee; padding-bottom: 8px;'>The Cosmic Calendar (6 AM - 6 PM)</h3>", unsafe_allow_html=True)
+            
+            schedule_html = "<div style='font-family: sans-serif;'>"
+            for row in panchangam["schedule"]:
+                badges_html = ""
+                for b in row["badges"]:
+                    badges_html += f"<span style='background: {b['bg']}; color: {b['color']}; font-size: 11px; padding: 3px 6px; border-radius: 4px; font-weight: bold; margin-left: 6px; white-space: nowrap; display: inline-block; margin-bottom: 4px;'>{b['text']}</span>"
+                
+                schedule_html += f"""
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; padding: 12px 15px; margin-bottom: 8px; border-radius: 6px; background-color: {row['style']['bg']}; border-left: 4px solid {row['style']['border']}; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+                    <div style="flex: 1; min-width: 100px; font-size: 13px; color: #555; font-weight: bold;">{row['time']}</div>
+                    <div style="flex: 1; min-width: 120px; font-size: 14px; color: #333; font-weight: bold;">{row['lord']}</div>
+                    <div style="flex: 2; text-align: right; line-height: 1.8;">{badges_html}</div>
+                </div>
+                """
+            schedule_html += "</div>"
+            st.markdown(schedule_html, unsafe_allow_html=True)
