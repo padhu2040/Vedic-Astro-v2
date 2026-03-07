@@ -612,10 +612,6 @@ def get_daily_executive_weather(current_jd_ut, natal_moon_rasi, natal_lagna_rasi
 
 # --- DAILY PANCHANGAM & EXACT TIMELINE ENGINE ---
 def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Kolkata", lang="English", user_lagna=None, user_moon=None, natal_moon_lon=None):
-    """
-    Calculates precise panchangam for ANY given date and location.
-    Includes exact end times for Star, Tithi, Rasi, and Yoga using iterative root-finding.
-    """
     import swisseph as swe
     from datetime import datetime, timedelta, time, timezone
     import pytz
@@ -629,7 +625,7 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
     else:
         dt_obj = local_tz.localize(datetime.combine(target_date, time(12, 0)))
     
-    # 1. Exact Local Sunrise & Sunset
+    # 1. Sunrise & Sunset
     midnight_local = local_tz.localize(datetime(dt_obj.year, dt_obj.month, dt_obj.day, 0, 0, 0))
     midnight_utc = midnight_local.astimezone(pytz.utc)
     jd_midnight = swe.julday(midnight_utc.year, midnight_utc.month, midnight_utc.day, midnight_utc.hour + midnight_utc.minute/60.0)
@@ -644,7 +640,6 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
         sunrise_jd = jd_midnight + (6.0 / 24.0)
         sunset_jd = jd_midnight + (18.0 / 24.0)
 
-    # ROBUST TIME CONVERSION (Fixes the TypeError!)
     def jd_to_local_dt(jd):
         y, m, d, h = swe.revjul(jd)
         hr = int(h)
@@ -653,22 +648,45 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
         utc_dt = datetime(y, m, d, hr, min_val, sec, tzinfo=timezone.utc)
         return utc_dt.astimezone(local_tz)
 
-    def jd_to_local_time_str(jd):
-        return jd_to_local_dt(jd).strftime('%I:%M %p').lstrip('0')
+    def format_end_time(jd):
+        edt = jd_to_local_dt(jd)
+        t_str = edt.strftime('%I:%M %p').lstrip('0')
+        if edt.date() != target_date:
+            return f"{t_str} ({edt.strftime('%b %d')})"
+        return t_str
 
     sunrise_dt = jd_to_local_dt(sunrise_jd)
     sunset_dt = jd_to_local_dt(sunset_jd)
     horai_len_hrs = ((sunset_jd - sunrise_jd) * 24) / 12
 
     current_utc = dt_obj.astimezone(pytz.utc)
-    current_ut_hour = current_utc.hour + (current_utc.minute/60.0)
-    current_jd_ut = swe.julday(current_utc.year, current_utc.month, current_utc.day, current_ut_hour)
+    current_jd_ut = swe.julday(current_utc.year, current_utc.month, current_utc.day, current_utc.hour + (current_utc.minute/60.0))
 
-    # 2. Sun Rasi, Tamil Month & Day Calculation
-    sun_lon = swe.calc_ut(current_jd_ut, swe.SUN, swe.FLG_SIDEREAL)[0][0]
-    sun_rasi_idx = int(sun_lon / 30) + 1
-    tamil_day = int((sun_lon % 30) / 0.9856) + 1 
+    def get_sun_lon(jd): return swe.calc_ut(jd, swe.SUN, swe.FLG_SIDEREAL)[0][0]
     
+    # 2. True Sankramana (Exact Tamil Day Calculation)
+    curr_lon = get_sun_lon(current_jd_ut)
+    sun_rasi_idx = int(curr_lon / 30) + 1
+    jd_sank = current_jd_ut
+    
+    while int(get_sun_lon(jd_sank) / 30) == (sun_rasi_idx - 1): jd_sank -= 1.0
+    while int(get_sun_lon(jd_sank) / 30) != (sun_rasi_idx - 1): jd_sank += 0.01
+    jd_sank -= 0.01
+    while int(get_sun_lon(jd_sank) / 30) != (sun_rasi_idx - 1): jd_sank += 0.001
+        
+    sank_dt = jd_to_local_dt(jd_sank)
+    day_1_date = sank_dt.date() + timedelta(days=1) if sank_dt.hour >= 18 else sank_dt.date()
+    tamil_day = (target_date - day_1_date).days + 1
+
+    # 3. 60-Year Tamil Cycle & Months
+    tamil_years_en = ["Prabhava", "Vibhava", "Sukla", "Pramodoota", "Prachorpaththi", "Aangirasa", "Srimuga", "Bhava", "Yuva", "Dhaadhu", "Eesvara", "Vehudhanya", "Pramathi", "Vikrama", "Vishu", "Chitrabhanu", "Subhanu", "Tharana", "Parthiba", "Viya", "Sarvajith", "Sarvadhari", "Virodhi", "Vikruthi", "Kara", "Nandhana", "Vijaya", "Jaya", "Manmatha", "Dhurmuki", "Hevilambi", "Vilambi", "Vikari", "Sarvari", "Plava", "Shubakruth", "Sobakruth", "Krodhi", "Viswavasu", "Parabhava", "Plavanga", "Keelaka", "Saumya", "Sadharana", "Virodhikruth", "Paridhaabi", "Pramaadhisa", "Aanandha", "Rakshasa", "Nala", "Pingala", "Kalayukthi", "Siddharthi", "Raudhri", "Dunmathi", "Dhundhubhi", "Rudhrodhgaari", "Raktakshi", "Krodhana", "Akshaya"]
+    tamil_years_ta = ["பிரபவ", "விபவ", "சுக்ல", "பிரமோதூத", "பிரஜோத்பத்தி", "ஆங்கீரச", "ஸ்ரீமுக", "பவ", "யுவ", "தாது", "ஈஸ்வர", "வெகுதான்ய", "பிரமாதி", "விக்ரம", "விஷு", "சித்ரபானு", "சுபானு", "தாரண", "பார்த்திப", "விய", "சர்வஜித்", "சர்வதாரி", "விரோதி", "விக்ருதி", "கர", "நந்தன", "விஜய", "ஜய", "மன்மத", "துன்முகி", "ஹேவிளம்பி", "விளம்பி", "விகாரி", "சார்வரி", "பிலவ", "சுபகிருது", "சோபகிருது", "க்ரோதி", "விஸ்வாவசு", "பராபவ", "பிலவங்க", "கீலக", "சௌம்ய", "சாதாரண", "விரோதிகிருது", "பரிதாபி", "பிரமாதீச", "ஆனந்த", "ராக்ஷச", "நள", "பிங்கள", "காளயுக்தி", "சித்தார்த்தி", "ரௌத்ரி", "துன்மதி", "துந்துபி", "ருத்ரோத்காரி", "ரக்தாக்ஷி", "க்ரோதன", "அக்ஷய"]
+    
+    s_year = dt_obj.year
+    if dt_obj.month <= 4 and sun_rasi_idx >= 10: s_year -= 1
+    ty_idx = (s_year - 1987) % 60
+    t_year = tamil_years_en[ty_idx] if lang == "English" else tamil_years_ta[ty_idx]
+
     tamil_months_en = {1:"Chithirai", 2:"Vaikasi", 3:"Aani", 4:"Aadi", 5:"Avani", 6:"Purattasi", 7:"Aippasi", 8:"Karthigai", 9:"Margazhi", 10:"Thai", 11:"Masi", 12:"Panguni"}
     tamil_months_ta = {1:"சித்திரை", 2:"வைகாசி", 3:"ஆனி", 4:"ஆடி", 5:"ஆவணி", 6:"புரட்டாசி", 7:"ஐப்பசி", 8:"கார்த்திகை", 9:"மார்கழி", 10:"தை", 11:"மாசி", 12:"பங்குனி"}
     t_month = tamil_months_en[sun_rasi_idx] if lang == "English" else tamil_months_ta[sun_rasi_idx]
@@ -676,7 +694,7 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
     tamil_days_dict = {0:"திங்கள்", 1:"செவ்வாய்", 2:"புதன்", 3:"வியாழன்", 4:"வெள்ளி", 5:"சனி", 6:"ஞாயிறு"}
     day_ta = tamil_days_dict[dt_obj.weekday()]
 
-    # 3. Iterative End-Time Calculators
+    # 4. Iterative End-Time Calculators
     def get_tithi(jd): return int(((((swe.calc_ut(jd, swe.MOON, swe.FLG_SIDEREAL)[0][0]) - (swe.calc_ut(jd, swe.SUN, swe.FLG_SIDEREAL)[0][0])) % 360) / 12) + 1)
     def get_nak(jd): return int((swe.calc_ut(jd, swe.MOON, swe.FLG_SIDEREAL)[0][0] % 360) / (360/27))
     def get_rasi(jd): return int(swe.calc_ut(jd, swe.MOON, swe.FLG_SIDEREAL)[0][0] / 30) + 1
@@ -685,15 +703,13 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
     def find_end_time(start_jd, func, max_hours):
         start_val = func(start_jd)
         jd = start_jd
-        step = 1.0 / 24.0 # 1 hour jumps
-        for _ in range(max_hours):
+        for _ in range(max_hours * 2):
+            jd += 0.5
             if func(jd) != start_val: break
-            jd += step
-        jd -= step
-        step = 1.0 / 1440.0 # 1 min refinements
-        for _ in range(120):
+        jd -= 0.5
+        for _ in range(720):
+            jd += (1/1440)
             if func(jd) != start_val: return jd, func(jd)
-            jd += step
         return jd, func(jd)
 
     jd_tithi_end, next_t_idx = find_end_time(current_jd_ut, get_tithi, 30)
@@ -701,7 +717,7 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
     jd_rasi_end, next_r_idx = find_end_time(current_jd_ut, get_rasi, 72)
     jd_yoga_end, next_y_idx = find_end_time(current_jd_ut, get_yoga, 30)
 
-    # Dictionary Lookups
+    # Dictionaries
     tithi_names_en = {1:"Prathamai", 2:"Dwitiyai", 3:"Tritiyai", 4:"Chaturthi", 5:"Panchami", 6:"Shashti", 7:"Saptami", 8:"Ashtami", 9:"Navami", 10:"Dasami", 11:"Ekadasi", 12:"Dwadasi", 13:"Thirayodasi", 14:"Chaturdasi"}
     tithi_names_ta = {1:"பிரதமை", 2:"துவிதியை", 3:"திருதியை", 4:"சதுர்த்தி", 5:"பஞ்சமி", 6:"சஷ்டி", 7:"சப்தமி", 8:"அஷ்டமி", 9:"நவமி", 10:"தசமி", 11:"ஏகாதசி", 12:"துவாதசி", 13:"திரயோதசி", 14:"சதுர்த்தசி"}
     
@@ -779,7 +795,6 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
         block_s = sunrise_dt + timedelta(hours=hour_offset * horai_len_hrs)
         block_e = block_s + timedelta(hours=horai_len_hrs)
         
-        # Skip past hours to keep current at the top!
         if is_today and block_e < dt_obj: continue 
             
         lord_key = horai_order[({0:0, 1:3, 2:6, 3:2, 4:5, 5:1, 6:4}[wd_idx] + hour_offset) % 7]
@@ -795,36 +810,15 @@ def get_daily_panchangam_metrics(target_date, lat_val, lon_val, tz_name="Asia/Ko
         })
 
     return {
-        "day_num": dt_obj.strftime('%d'), 
-        "month_year_en": dt_obj.strftime('%B %Y'),
-        "day_en": dt_obj.strftime('%A'),
-        "date_ta": f"{tamil_day:02d}", 
-        "day_ta": day_ta, 
-        "month_ta": t_month,
-        "tithi_short": t_name, 
-        "t_end": jd_to_local_time_str(jd_tithi_end), 
-        "t_next": next_t_name,
-        "paksha": paksha, 
-        "countdown": countdown_str, 
-        "is_waxing": is_waxing,
-        "sunrise": jd_to_local_time_str(sunrise_jd), 
-        "sunset": jd_to_local_time_str(sunset_jd),
-        "yoga": daily_yoga, 
-        "y_end": jd_to_local_time_str(jd_yoga_end), 
-        "y_next": next_yoga_name,
-        "nakshatra": nak_name, 
-        "n_end": jd_to_local_time_str(jd_nak_end), 
-        "n_next": next_nak_name,
-        "rasi": daily_rasi_name, 
-        "r_end": jd_to_local_time_str(jd_rasi_end), 
-        "r_next": next_rasi_name,
-        "ch_naks": ch_naks, 
-        "rk": get_time_str(rk_start_hrs[wd_idx], 1.5), 
-        "yg": get_time_str(yg_start_hrs[wd_idx], 1.5), 
-        "nn": nn_str, 
-        "gnn": gnn_str, 
-        "schedule": schedule,
-        "current_jd_ut": current_jd_ut, 
-        "tara_name": tara_name, 
-        "tara_color": tara_color
+        "day_num": dt_obj.strftime('%d'), "month_year_en": dt_obj.strftime('%B %Y'), "day_en": dt_obj.strftime('%A'),
+        "date_ta": f"{tamil_day:02d}", "day_ta": day_ta, "tamil_year": t_year, "month_ta": t_month,
+        "tithi_short": t_name, "t_end": format_end_time(jd_tithi_end), "t_next": next_t_name,
+        "paksha": paksha, "countdown": countdown_str, "is_waxing": is_waxing,
+        "sunrise": jd_to_local_dt(sunrise_jd).strftime('%I:%M %p').lstrip('0'), "sunset": jd_to_local_dt(sunset_jd).strftime('%I:%M %p').lstrip('0'),
+        "yoga": daily_yoga, "y_end": format_end_time(jd_yoga_end), "y_next": next_yoga_name,
+        "nakshatra": nak_name, "n_end": format_end_time(jd_nak_end), "n_next": next_nak_name,
+        "rasi": daily_rasi_name, "r_end": format_end_time(jd_rasi_end), "r_next": next_rasi_name,
+        "ch_naks": ch_naks, "rk": get_time_str(rk_start_hrs[wd_idx], 1.5), "yg": get_time_str(yg_start_hrs[wd_idx], 1.5), 
+        "nn": nn_str, "gnn": gnn_str, "schedule": schedule,
+        "current_jd_ut": current_jd_ut, "tara_name": tara_name, "tara_color": tara_color
     }
