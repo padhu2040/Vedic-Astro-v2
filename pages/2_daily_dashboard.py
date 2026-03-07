@@ -101,7 +101,6 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([t1_name, t2_name, t3_name, t4_name, t5_n
 # --- TAB 1: OVERVIEW (4-Card Astro Grid) ---
 with tab1:
     lbl = {
-        "m_phase": "Moon Phase" if LANG=="English" else "சந்திர நிலை",
         "ast": "Astronomical Elements" if LANG=="English" else "வானியல்",
         "sun_r": "Sunrise" if LANG=="English" else "உதயம்",
         "sun_s": "Sunset" if LANG=="English" else "அஸ்தமனம்",
@@ -135,7 +134,7 @@ with tab1:
 </div>
 </div>
 <div class="m-card" style="justify-content: center;">
-<div style="font-size: 20px; font-weight: 400; color: #111; margin-bottom: 6px; display:flex; align-items:center;">{moon_icon}{pan['tithi']}</div>
+<div style="font-size: 20px; font-weight: 400; color: #111; margin-bottom: 6px; display:flex; align-items:center;">{moon_icon}{pan['tithi_short']}</div>
 <div style="font-size: 13px; color: #555; margin-bottom: 2px;">{pan['paksha']}</div>
 <div style="font-size: 12px; color: #888;">{pan['countdown']}</div>
 </div>
