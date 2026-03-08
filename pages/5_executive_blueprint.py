@@ -73,45 +73,39 @@ else:
 .bp-desc {{ font-size: 13.5px; color: #444; line-height: 1.6; font-weight: 300; }}
 .bp-metric {{ font-size: 11px; color: #27ae60; background: #f0fdf4; border: 1px solid #c6f6d5; padding: 3px 8px; border-radius: 2px; font-weight: 600; letter-spacing: 0.5px; }}
 </style>
-
 <div class="bp-grid">
-    <div class="bp-card" style="border-top: 3px solid #f39c12;">
-        <div class="bp-head"><span>01. The Leverage Score</span> <span>Free Will vs Destiny</span></div>
-        <div style="display:flex; align-items:center; margin-bottom:12px;">
-            <div style="font-size:38px; font-weight:300; color:#111; margin-right:15px; line-height:1;">{bp['leverage']['score']}<span style="font-size:16px; color:#888;">/100</span></div>
-            <div class="bp-metric" style="background:#fff3e0; color:#d35400; border-color:#ffe0b2;">{bp['leverage']['tag']}</div>
-        </div>
-        <div class="bp-desc">{bp['leverage']['desc']}</div>
-    </div>
-    
-    <div class="bp-card" style="border-top: 3px solid #8e44ad;">
-        <div class="bp-head"><span>02. {bp['timeline']['title']}</span> <span>Vimshottari Dasha</span></div>
-        <div class="bp-desc" style="margin-top: 5px;">{bp['timeline']['desc']}</div>
-    </div>
-
-    <div class="bp-card" style="border-top: 3px solid #27ae60;">
-        <div class="bp-head"><span>03. Capital Generation</span> <span>2nd Lord: {bp['l2']}</span></div>
-        <div class="bp-title">{bp['wealth']['title']}</div>
-        <div class="bp-desc">{bp['wealth']['desc']}</div>
-    </div>
-    
-    <div class="bp-card" style="border-top: 3px solid #27ae60;">
-        <div class="bp-head"><span>04. Real Estate & Assets</span> <span>4th Lord: {bp['l4']}</span></div>
-        <div class="bp-title">{bp['assets']['title']}</div>
-        <div class="bp-desc">{bp['assets']['desc']}</div>
-    </div>
-
-    <div class="bp-card" style="border-top: 3px solid #2980b9;">
-        <div class="bp-head"><span>05. Professional Trajectory</span> <span>10th Lord: {bp['l10']}</span></div>
-        <div class="bp-title">{bp['career']['title']}</div>
-        <div class="bp-desc">{bp['career']['desc']}</div>
-    </div>
-    
-    <div class="bp-card" style="border-top: 3px solid #c0392b;">
-        <div class="bp-head"><span>06. Partnership Dynamics</span> <span>7th Lord: {bp['l7']}</span></div>
-        <div class="bp-title">{bp['partner']['title']}</div>
-        <div class="bp-desc">{bp['partner']['desc']}</div>
-    </div>
+<div class="bp-card" style="border-top: 3px solid #f39c12;">
+<div class="bp-head"><span>01. The Leverage Score</span> <span>Free Will vs Destiny</span></div>
+<div style="display:flex; align-items:center; margin-bottom:12px;">
+<div style="font-size:38px; font-weight:300; color:#111; margin-right:15px; line-height:1;">{bp['leverage']['score']}<span style="font-size:16px; color:#888;">/100</span></div>
+<div class="bp-metric" style="background:#fff3e0; color:#d35400; border-color:#ffe0b2;">{bp['leverage']['tag']}</div>
+</div>
+<div class="bp-desc">{bp['leverage']['desc']}</div>
+</div>
+<div class="bp-card" style="border-top: 3px solid #8e44ad;">
+<div class="bp-head"><span>02. {bp['timeline']['title']}</span> <span>Vimshottari Dasha</span></div>
+<div class="bp-desc" style="margin-top: 5px;">{bp['timeline']['desc']}</div>
+</div>
+<div class="bp-card" style="border-top: 3px solid #27ae60;">
+<div class="bp-head"><span>03. Capital Generation</span> <span>2nd Lord: {bp['l2']}</span></div>
+<div class="bp-title">{bp['wealth']['title']}</div>
+<div class="bp-desc">{bp['wealth']['desc']}</div>
+</div>
+<div class="bp-card" style="border-top: 3px solid #27ae60;">
+<div class="bp-head"><span>04. Real Estate & Assets</span> <span>4th Lord: {bp['l4']}</span></div>
+<div class="bp-title">{bp['assets']['title']}</div>
+<div class="bp-desc">{bp['assets']['desc']}</div>
+</div>
+<div class="bp-card" style="border-top: 3px solid #2980b9;">
+<div class="bp-head"><span>05. Professional Trajectory</span> <span>10th Lord: {bp['l10']}</span></div>
+<div class="bp-title">{bp['career']['title']}</div>
+<div class="bp-desc">{bp['career']['desc']}</div>
+</div>
+<div class="bp-card" style="border-top: 3px solid #c0392b;">
+<div class="bp-head"><span>06. Partnership Dynamics</span> <span>7th Lord: {bp['l7']}</span></div>
+<div class="bp-title">{bp['partner']['title']}</div>
+<div class="bp-desc">{bp['partner']['desc']}</div>
+</div>
 </div>
 """
         st.markdown(blueprint_html, unsafe_allow_html=True)
