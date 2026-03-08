@@ -172,21 +172,8 @@ if calc_btn:
                 try:
                     genai.configure(api_key=API_KEY)
                     
-                    # --- AUTO-DETECT VALID MODEL ---
-                    # Ask Google what models this API key is allowed to use
-                    valid_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-                    
-                    # Default ultimate fallback
-                    chosen_model = 'gemini-1.0-pro' 
-                    
-                    # Pick the newest/best model available to you
-                    for pref in ['gemini-1.5-flash', 'gemini-1.0-pro', 'gemini-pro']:
-                        if any(pref in m for m in valid_models):
-                            chosen_model = pref
-                            break
-                            
-                    model = genai.GenerativeModel(chosen_model)
-                    # -------------------------------
+                    # Forcing the use of the latest active models to bypass the 404 bug
+                    model = genai.GenerativeModel('gemini-2.5-flash') 
                     
                     json_schema = """
                     {
