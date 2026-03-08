@@ -2,31 +2,51 @@ from fpdf import FPDF
 import re
 
 # --- WEB UI RENDERER: SOUTH INDIAN CHART (HTML/CSS) ---
-def get_south_indian_chart_html(p_pos, lagna_rasi, title="Rasi Chart", lang="English"):
+def get_south_indian_chart_html(p_pos, lagna_rasi, title="Birth Chart (Rasi)", lang="English", user_name=""):
     """
-    Generates a classic, clean South Indian style chart for the Web UI.
-    Matches the perfectly square, 1px-border aesthetic with mint-green planet badges.
+    Generates a traditional South Indian style chart for the Web UI.
+    Features 1px grey borders, corner zodiac names, stacked bold planets, 
+    and a traditional red diagonal strike-through for the Lagna (Ascendant).
     """
     grid = {i: [] for i in range(1, 13)}
     
     # Map planets to houses
     for p, rasi in p_pos.items():
         if rasi in grid:
-            label = p[:2].upper() if p not in ["Lagna", "Rahu", "Ketu"] else p[:2]
-            if p == "Lagna": label = "Asc"
+            # Format to traditional 2-letter capitalization (e.g., SU -> Su)
+            if p == "Lagna": 
+                label = "Asc"
+            elif p in ["Rahu", "Ketu"]:
+                label = p[:2].capitalize()
+            else:
+                label = p[:2].capitalize()
             grid[rasi].append(label)
             
     # Tamil translation mapping for standard labels
     def t(eng_txt):
         if lang == "English": return eng_txt
-        mapping = {"Asc": "லக்", "SU": "சூ", "MO": "சந்", "MA": "செ", "ME": "பு", "JU": "கு", "VE": "சுக்", "SA": "சனி", "Ra": "ரா", "Ke": "கே"}
+        mapping = {"Asc": "லக்", "Su": "சூ", "Mo": "சந்", "Ma": "செ", "Me": "பு", "Ju": "கு", "Ve": "சுக்", "Sa": "சனி", "Ra": "ரா", "Ke": "கே"}
         return mapping.get(eng_txt, eng_txt)
 
+    zodiac_names_en = {1: "Mesha", 2: "Rishabha", 3: "Mithuna", 4: "Kataka", 5: "Simha", 6: "Kanya", 7: "Thula", 8: "Vrischika", 9: "Dhanu", 10: "Makara", 11: "Kumbha", 12: "Meena"}
+    zodiac_names_ta = {1: "மேஷம்", 2: "ரிஷபம்", 3: "மிதுனம்", 4: "கடகம்", 5: "சிம்மம்", 6: "கன்னி", 7: "துலாம்", 8: "விருச்சிகம்", 9: "தனுசு", 10: "மகரம்", 11: "கும்பம்", 12: "மீனம்"}
+    z_names = zodiac_names_ta if lang == "Tamil" else zodiac_names_en
+
     def get_box(rasi_num):
-        # Using the exact mint-green styling from your screenshot
-        planets = "".join([f"<span style='display:inline-block; margin:2px; padding:3px 5px; background:#e8f6f3; color:#16a085; border-radius:3px; font-size:12px; font-weight:bold;'>{t(p)}</span>" for p in grid[rasi_num]])
-        # Background is white, border is handled by the grid gap
-        return f"<div style='background: #ffffff; aspect-ratio: 1/1; min-height: 90px; padding: 6px; display: flex; flex-wrap: wrap; align-content: flex-start;'>{planets}</div>"
+        is_lagna = (rasi_num == lagna_rasi)
+        
+        # Traditional red slanting line for Ascendant (Lagna)
+        if is_lagna:
+            bg_style = "background: linear-gradient(to top right, transparent calc(50% - 1px), rgba(220, 53, 69, 0.6) calc(50% - 1px), rgba(220, 53, 69, 0.6) calc(50% + 1px), transparent calc(50% + 1px)) #ffffff;"
+        else:
+            bg_style = "background: #ffffff;"
+            
+        rasi_name = z_names.get(rasi_num, "")
+        
+        # Bold, black, center-stacked planets
+        planets_formatted = " ".join([f"<span style='display:block;'>{t(p)}</span>" for p in grid[rasi_num]])
+        
+        return f"<div style='position: relative; {bg_style} aspect-ratio: 1/1; min-height: 110px; padding: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center;'><div style='font-size: 11.5px; color: #7f8c8d; position: absolute; top: 6px; left: 8px;'>{rasi_name}</div><div style='font-size: 16px; font-weight: 800; color: #111; line-height: 1.3;'>{planets_formatted}</div></div>"
 
     # Pre-render boxes
     b12, b1, b2, b3 = get_box(12), get_box(1), get_box(2), get_box(3)
@@ -34,11 +54,12 @@ def get_south_indian_chart_html(p_pos, lagna_rasi, title="Rasi Chart", lang="Eng
     b10, b5 = get_box(10), get_box(5)
     b9, b8, b7, b6 = get_box(9), get_box(8), get_box(7), get_box(6)
     
-    # Center div formatting
-    center_div = f"<div style='grid-column: span 2; grid-row: span 2; display: flex; align-items: center; justify-content: center; background: #fdfdfd; font-size: 16px; font-weight: bold; color: #bdc3c7;'>{title}</div>"
+    # Center div formatting with User Name
+    name_html = f"<div style='font-size: 15px; color: #555; font-weight: normal; margin-top: 6px;'>{user_name}</div>" if user_name else ""
+    center_div = f"<div style='grid-column: span 2; grid-row: span 2; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #ffffff;'><div style='font-size: 20px; font-weight: bold; color: #222;'>{title}</div>{name_html}</div>"
     
-    # SINGLE LINE HTML: Uses background-color and gap: 1px to create perfect 1px borders without doubling up
-    html = f"<div style='max-width: 480px; margin: 0 auto; font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;'><div style='text-align: center; margin-bottom: 15px; font-size: 20px; font-weight: bold; color: #2c3e50;'>{title}</div><div style='display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background-color: #d3d3d3; border: 1px solid #d3d3d3;'>{b12}{b1}{b2}{b3}{b11}{center_div}{b4}{b10}{b5}{b9}{b8}{b7}{b6}</div></div>"
+    # SINGLE LINE HTML: Uses background-color and gap: 1px to create perfect traditional borders
+    html = f"<div style='max-width: 520px; margin: 0 auto; font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;'><div style='display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background-color: #999; border: 1px solid #999;'>{b12}{b1}{b2}{b3}{b11}{center_div}{b4}{b10}{b5}{b9}{b8}{b7}{b6}</div></div>"
     
     return html
 
