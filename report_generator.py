@@ -5,8 +5,8 @@ import re
 def get_south_indian_chart_html(p_pos, lagna_rasi, title="Rasi Chart", lang="English", user_name=""):
     """
     Generates a traditional South Indian style chart for the Web UI.
-    Features 1px grey borders, corner zodiac names, stacked bold planets, 
-    and a very subtle red diagonal strike-through for the Lagna (Ascendant).
+    Features 1px grey borders, corner zodiac names, dynamic House (H1, H2) numbers,
+    stacked bold planets, and a very subtle red diagonal strike-through for the Lagna.
     """
     grid = {i: [] for i in range(1, 13)}
     
@@ -35,6 +35,10 @@ def get_south_indian_chart_html(p_pos, lagna_rasi, title="Rasi Chart", lang="Eng
     def get_box(rasi_num):
         is_lagna = (rasi_num == lagna_rasi)
         
+        # Dynamically calculate the House Number (H1, H2, etc.) relative to Lagna
+        house_num = (rasi_num - lagna_rasi + 1) if (rasi_num - lagna_rasi + 1) > 0 else (rasi_num - lagna_rasi + 1) + 12
+        house_label = f"H{house_num}"
+        
         # Traditional, very subtle red slanting line for Ascendant (Lagna)
         if is_lagna:
             bg_style = "background: linear-gradient(to bottom right, transparent calc(50% - 0.5px), rgba(220, 53, 69, 0.3) calc(50% - 0.5px), rgba(220, 53, 69, 0.3) calc(50% + 0.5px), transparent calc(50% + 0.5px)) #ffffff;"
@@ -46,7 +50,8 @@ def get_south_indian_chart_html(p_pos, lagna_rasi, title="Rasi Chart", lang="Eng
         # Bold, black, center-stacked planets
         planets_formatted = "".join([f"<div style='margin-bottom:2px;'>{t(p)}</div>" for p in grid[rasi_num]])
         
-        return f"<div style='position: relative; {bg_style} aspect-ratio: 1/1; min-height: 110px; display: flex; flex-direction: column; justify-content: center; align-items: center;'><div style='font-size: 11.5px; color: #95a5a6; position: absolute; top: 6px; left: 8px;'>{rasi_name}</div><div style='font-size: 16px; font-weight: 800; color: #111; line-height: 1.2;'>{planets_formatted}</div></div>"
+        # Box HTML: Zodiac top-left, House top-right, Planets centered
+        return f"<div style='position: relative; {bg_style} aspect-ratio: 1/1; min-height: 110px; display: flex; flex-direction: column; justify-content: center; align-items: center;'><div style='font-size: 11.5px; color: #95a5a6; position: absolute; top: 6px; left: 8px;'>{rasi_name}</div><div style='font-size: 11px; color: #bdc3c7; font-weight: 600; position: absolute; top: 6px; right: 8px;'>{house_label}</div><div style='font-size: 16px; font-weight: 800; color: #111; line-height: 1.2;'>{planets_formatted}</div></div>"
 
     # Pre-render boxes
     b12, b1, b2, b3 = get_box(12), get_box(1), get_box(2), get_box(3)
