@@ -54,8 +54,30 @@ def calculate_match_chart(dob, tob, lat, lon, tz_str):
     nak_idx = int(moon_lon / 13.333333333)
     return {"Lagna": ZODIAC[lagna_rasi], "Lagna_Idx": lagna_rasi, "Rasi": ZODIAC[p_pos["Moon"]], "Rasi_Idx": p_pos["Moon"], "Nakshatra": NAKSHATRAS[nak_idx], "Nak_Idx": nak_idx, "Is_Manglik": is_manglik, "P_Pos": p_pos}
 
-st.title(":material/favorite: Matchmaking Engine")
-st.markdown("Professional Vedic compatibility using precision Swiss Ephemeris math and AI analysis.")
+def get_executive_insight(key, is_match, lang):
+    """Maps traditional Porutham keys to modern executive insights."""
+    insights = {
+        "Dina": ("Excellent sync in daily routines. Build shared habits.", "Expect friction in daily routines. Give each other independent space."),
+        "Gana": ("Temperaments align beautifully. Synergy is natural.", "Potential for ego clashes. Communication must be structured and objective."),
+        "Mahendra": ("Highly favorable for starting joint ventures or building assets.", "Financial growth relies on individual effort rather than combined synergy."),
+        "Rajju": ("No fatal astrological conflicts. The foundation is highly secure.", "SEVERE RISK: Same Rajju detected. Traditional astrology advises against this union."),
+        "Rasi": ("Worldviews and life trajectories are naturally parallel.", "Conflicting worldviews. Will require constant compromise and diplomacy."),
+        "Rasi Adhipathi": ("Core motivations and planetary rulers are allied.", "Planetary rulers are hostile. Requires conscious effort to align goals."),
+        "Vasiya": ("High natural magnetism and mutual understanding.", "Attraction requires active nurturing; it may not be automatic."),
+        "Stree": ("Strong foundation for long-term prosperity and wealth accumulation.", "Prosperity requires structured financial planning, avoiding impulsive decisions."),
+        "Vedha": ("No energetic blockages detected.", "Energetic affliction present. Proceed with strict caution."),
+        "Nadi": ("Genetic and energetic compatibility is strong.", "Pulse mismatch detected. Health and wellness require extra attention.")
+    }
+    for ik, iv in insights.items():
+        if ik.lower() in key.lower():
+            return iv[0] if is_match else iv[1]
+    
+    if is_match: return "Leverage this alignment for combined growth." if lang == "English" else "இந்த பொருத்தத்தை உங்கள் கூட்டு வளர்ச்சிக்காகப் பயன்படுத்தவும்."
+    return "Requires active communication and boundaries to mitigate friction." if lang == "English" else "கருத்து வேறுபாடுகளைத் தவிர்க்க தெளிவான புரிதல் அவசியம்."
+
+# --- UI START ---
+st.title("Strategic Synergy")
+st.markdown("<div style='color:#7f8c8d; margin-top:-15px; margin-bottom: 20px;'>Matchmaking (Porutham) & Partnership Matrix</div>", unsafe_allow_html=True)
 st.divider()
 
 with st.sidebar:
@@ -72,7 +94,7 @@ profile_options = ["✨ Select Profile...", "✏️ Enter Manually"] + list(save
 col_b, col_g = st.columns(2)
 
 with col_b:
-    st.markdown("### 👨 Partner 1 Details")
+    st.markdown("### 👨 Partner A Details")
     sel_p1 = st.selectbox("Load Profile", profile_options, key="sel_p1")
     if sel_p1 in ["✨ Select Profile...", "✏️ Enter Manually"]: def_n1, def_dob1, def_tob1, def_loc1 = "", datetime(2000, 1, 1).date(), time(12, 0), ""
     else: def_n1, def_dob1, def_tob1, def_loc1 = sel_p1, saved_profiles[sel_p1]["dob"], saved_profiles[sel_p1]["tob"], saved_profiles[sel_p1]["city"]
@@ -84,7 +106,7 @@ with col_b:
     b_loc = st.text_input("City", value=def_loc1, key=f"p1_l_{k1}")
 
 with col_g:
-    st.markdown("### 👩 Partner 2 Details")
+    st.markdown("### 👩 Partner B Details")
     sel_p2 = st.selectbox("Load Profile", profile_options, key="sel_p2")
     if sel_p2 in ["✨ Select Profile...", "✏️ Enter Manually"]: def_n2, def_dob2, def_tob2, def_loc2 = "", datetime(2000, 1, 1).date(), time(12, 0), ""
     else: def_n2, def_dob2, def_tob2, def_loc2 = sel_p2, saved_profiles[sel_p2]["dob"], saved_profiles[sel_p2]["tob"], saved_profiles[sel_p2]["city"]
@@ -98,54 +120,123 @@ with col_g:
 st.divider()
 calc_btn = st.button("Calculate Compatibility with AI Oracle", type="primary", use_container_width=True)
 
+# --- GLOBAL CSS FOR FLAT EXECUTIVE CARDS ---
+css_block = """<style>
+.bp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+.bp-card { background: #ffffff; border: 1px solid #eaeaea; border-radius: 4px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 1px 2px rgba(0,0,0,0.01); }
+.bp-head { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #888; font-weight: 500; margin-bottom: 12px; border-bottom: 1px solid #f9f9f9; padding-bottom: 6px; display: flex; justify-content: space-between; }
+.bp-title { font-size: 17px; font-weight: 500; color: #2c3e50; margin-bottom: 6px; }
+.bp-desc { font-size: 13.5px; color: #444; line-height: 1.5; font-weight: 300; margin-bottom:12px; }
+.tag-harness { display:inline-block; font-size: 10.5px; color: #2E7D32; background: #E8F5E9; border: 1px solid #C8E6C9; padding: 2px 6px; border-radius: 3px; font-weight: 600; margin-bottom: 6px; }
+.tag-mitigate { display:inline-block; font-size: 10.5px; color: #C0392B; background: #FDEDEC; border: 1px solid #FADBD8; padding: 2px 6px; border-radius: 3px; font-weight: 600; margin-bottom: 6px; }
+.insight-text { font-size: 12.5px; color: #222; font-style: italic; background: #fafafa; padding: 10px; border-radius: 4px; border: 1px solid #f5f5f5; }
+</style>"""
+
 if calc_btn:
     if not b_name or not b_loc or not g_name or not g_loc: st.error("Please ensure all Name and City fields are filled out for both partners!")
     else:
         with st.spinner("Calculating exact coordinates & relationship matrix..."):
+            st.markdown(css_block, unsafe_allow_html=True)
+            
             b_lat, b_lon, b_tz = get_location_coordinates(b_loc)
             g_lat, g_lon, g_tz = get_location_coordinates(g_loc)
             
             b_data = calculate_match_chart(b_dob, b_tob, b_lat, b_lon, b_tz)
             g_data = calculate_match_chart(g_dob, g_tob, g_lat, g_lon, g_tz)
             
-            st.markdown("### 🔭 Astronomical Profile")
-            r_c1, r_c2 = st.columns(2)
-            
             b_lagna = ZODIAC_TA.get(b_data['Lagna_Idx'], "") if LANG == "Tamil" else b_data['Lagna']
             b_rasi = ZODIAC_TA.get(b_data['Rasi_Idx'], "") if LANG == "Tamil" else b_data['Rasi']
             g_lagna = ZODIAC_TA.get(g_data['Lagna_Idx'], "") if LANG == "Tamil" else g_data['Lagna']
             g_rasi = ZODIAC_TA.get(g_data['Rasi_Idx'], "") if LANG == "Tamil" else g_data['Rasi']
             
-            with r_c1: st.markdown(f"<div style='background-color: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0;'><h4 style='margin-top:0;'>{b_name}</h4><p><b>Lagna:</b> {b_lagna}<br><b>Rasi:</b> {b_rasi}<br><b>Star:</b> {b_data['Nakshatra']}</p></div>", unsafe_allow_html=True)
-            with r_c2: st.markdown(f"<div style='background-color: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0;'><h4 style='margin-top:0;'>{g_name}</h4><p><b>Lagna:</b> {g_lagna}<br><b>Rasi:</b> {g_rasi}<br><b>Star:</b> {g_data['Nakshatra']}</p></div>", unsafe_allow_html=True)
+            # Upgrade Identity Cards to Executive Style
+            astro_html = f"""
+<div class="bp-grid">
+<div class="bp-card" style="border-top: 3px solid #2980b9;">
+<div class="bp-head"><span>Identity</span> <span>Partner A</span></div>
+<div class="bp-title">{b_name}</div>
+<div class="bp-desc" style="margin-bottom:0;"><b>Lagna:</b> {b_lagna}<br><b>Rasi:</b> {b_rasi}<br><b>Star:</b> {b_data['Nakshatra']}</div>
+</div>
+<div class="bp-card" style="border-top: 3px solid #8e44ad;">
+<div class="bp-head"><span>Identity</span> <span>Partner B</span></div>
+<div class="bp-title">{g_name}</div>
+<div class="bp-desc" style="margin-bottom:0;"><b>Lagna:</b> {g_lagna}<br><b>Rasi:</b> {g_rasi}<br><b>Star:</b> {g_data['Nakshatra']}</div>
+</div>
+</div>"""
+            st.markdown(astro_html, unsafe_allow_html=True)
             
             st.write("")
             chart_c1, chart_c2 = st.columns(2)
-            with chart_c1: st.markdown(get_south_indian_chart_html(b_data['P_Pos'], b_data['Lagna_Idx'], "Rasi Chart", LANG), unsafe_allow_html=True)
-            with chart_c2: st.markdown(get_south_indian_chart_html(g_data['P_Pos'], g_data['Lagna_Idx'], "Rasi Chart", LANG), unsafe_allow_html=True)
+            with chart_c1: st.markdown(get_south_indian_chart_html(b_data['P_Pos'], b_data['Lagna_Idx'], f"{b_name} Rasi Chart", LANG), unsafe_allow_html=True)
+            with chart_c2: st.markdown(get_south_indian_chart_html(g_data['P_Pos'], g_data['Lagna_Idx'], f"{g_name} Rasi Chart", LANG), unsafe_allow_html=True)
                     
             st.write("") 
             score, porutham_results = calculate_10_porutham(b_data['Nak_Idx'], g_data['Nak_Idx'], b_data['Rasi_Idx'], g_data['Rasi_Idx'], b_name, g_name)
             
+            # Upgrade Manglik Card
             m_match = (b_data['Is_Manglik'] == g_data['Is_Manglik'])
-            if m_match: st.markdown(f"<div style='background-color: #f0fdf4; color: #155724; padding: 18px; border-radius: 8px; border-left: 5px solid #27ae60;'><h4>Chevvai (Mars) energy is harmoniously balanced.</h4><p>Both partners share a compatible level of Martian energy, protecting the bond.</p></div>", unsafe_allow_html=True)
-            else: st.markdown(f"<div style='background-color: #fef2f2; color: #991b1b; padding: 18px; border-radius: 8px; border-left: 5px solid #e74c3c;'><h4>Chevvai energy imbalance detected.</h4><p>There is a difference in Chevvai influence. Conscious patience is required to maintain harmony.</p></div>", unsafe_allow_html=True)
+            m_color = "#27ae60" if m_match else "#c0392b"
+            m_tag = "BALANCED" if m_match else "IMBALANCE DETECTED"
+            m_title = "Chevvai (Mars) Dosham"
+            m_desc = "Both partners share a compatible level of Martian energy, protecting the bond." if m_match else "There is a difference in Chevvai influence. Conscious patience is required to maintain harmony."
+            
+            m_html = f"""<div class="bp-grid" style="grid-template-columns: 1fr; margin-top:20px;">
+<div class="bp-card" style="border-left: 3px solid {m_color};">
+<div class="bp-head"><span>Mars Energy</span> <span style="color:{m_color}; font-weight:bold;">{m_tag}</span></div>
+<div class="bp-title">{m_title}</div>
+<div class="bp-desc" style="margin-bottom:0;">{m_desc}</div>
+</div>
+</div>"""
+            st.markdown(m_html, unsafe_allow_html=True)
             
             st.divider()
-            st.markdown(f"<h2 style='text-align: center; margin-bottom: 0;'>Traditional Score: {score} / 10</h2>", unsafe_allow_html=True)
             
+            # Alignment Score Header
+            score_color = "#27ae60" if score >= 6 else "#f39c12" if score >= 4 else "#c0392b"
+            status_tag = "APPROVED" if score >= 6 else "CAUTION" if score >= 4 else "HIGH RISK"
+            score_html = f"""<div class="bp-grid" style="grid-template-columns: 1fr;">
+<div class="bp-card" style="border-top: 3px solid {score_color}; flex-direction:row; justify-content:space-between; align-items:center;">
+<div>
+<div class="bp-head" style="border:none; margin:0; padding:0;">Overall Alignment Score</div>
+<div style="font-size:42px; font-weight:300; color:#111; line-height:1; margin-top:5px;">{score}<span style="font-size:16px; color:#888;">/10</span></div>
+</div>
+<div style="text-align:right;">
+<span style="background:{score_color}; color:#fff; padding: 4px 10px; border-radius: 3px; font-size: 11px; font-weight: bold; letter-spacing: 0.5px;">{status_tag}</span>
+</div>
+</div>
+</div>"""
+            st.markdown(score_html, unsafe_allow_html=True)
+            
+            # Process Porutham Dictionary into Executive Cards
             matched_items = {k: v for k, v in porutham_results.items() if v["match"]}
             unmatched_items = {k: v for k, v in porutham_results.items() if not v["match"]}
             
-            col_matched, col_unmatched = st.columns(2)
-            with col_matched:
-                st.markdown("<h4 style='color: #27ae60;'>Aligned Dimensions</h4>", unsafe_allow_html=True)
-                for k, v in matched_items.items(): st.markdown(f"<div style='background-color: #f8fdf9; padding: 12px; border-radius: 6px; margin-bottom: 10px; border-left: 3px solid #27ae60;'><strong style='color: #155724;'>{k}</strong><div style='font-size: 13px;'>{v['desc']}</div></div>", unsafe_allow_html=True)
-            with col_unmatched:
-                st.markdown("<h4 style='color: #e74c3c;'>Areas for Growth</h4>", unsafe_allow_html=True)
-                for k, v in unmatched_items.items(): st.markdown(f"<div style='background-color: #fff9f9; padding: 12px; border-radius: 6px; margin-bottom: 10px; border-left: 3px solid #e74c3c;'><strong style='color: #991b1b;'>{k}</strong><div style='font-size: 13px;'>{v['desc']}</div></div>", unsafe_allow_html=True)
+            grid_html = """<div class="bp-grid">"""
+            
+            for k, v in porutham_results.items():
+                is_match = v["match"]
+                card_border = "#2E7D32" if is_match else "#C0392B"
+                status_text = "ALIGNED" if is_match else "MISALIGNED"
+                tag_class = "tag-harness" if is_match else "tag-mitigate"
+                tag_label = "HARNESS STRENGTH" if is_match else "MITIGATE RISK"
+                insight = get_executive_insight(k, is_match, LANG)
+
+                grid_html += f"""
+<div class="bp-card" style="border-top: 3px solid {card_border};">
+<div class="bp-head"><span>{k}</span> <span style="color:{card_border}; font-weight:bold;">{status_text}</span></div>
+<div class="bp-desc">{v['desc']}</div>
+<div style="margin-top:auto; padding-top:12px; border-top: 1px dashed #eee;">
+<div class="{tag_class}">{tag_label}</div>
+<div class="insight-text">{insight}</div>
+</div>
+</div>"""
+            
+            grid_html += "</div>"
+            st.markdown(grid_html, unsafe_allow_html=True)
 
             st.divider()
+            
+            # --- AI ORACLE REMAINS UNTOUCHED ---
             API_KEY = st.secrets.get("GEMINI_API_KEY", "")
             if not API_KEY:
                 try:
