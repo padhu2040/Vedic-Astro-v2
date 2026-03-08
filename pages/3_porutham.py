@@ -118,7 +118,6 @@ with col_b:
     else: 
         def_n1, def_dob1, def_tob1, def_loc1 = sel_p1, saved_profiles[sel_p1]["dob"], saved_profiles[sel_p1]["tob"], saved_profiles[sel_p1]["city"]
     
-    # Dynamic keys to ensure Streamlit forces an update when a profile is selected
     k1 = sel_p1.replace(" ", "_") if sel_p1 else "a"
     b_name = st.text_input("Name", value=def_n1, key=f"p1_n_{k1}")
     b_dob = st.date_input("Date of Birth", value=def_dob1, key=f"p1_d_{k1}")
@@ -133,7 +132,6 @@ with col_g:
     else: 
         def_n2, def_dob2, def_tob2, def_loc2 = sel_p2, saved_profiles[sel_p2]["dob"], saved_profiles[sel_p2]["tob"], saved_profiles[sel_p2]["city"]
     
-    # Dynamic keys to ensure Streamlit forces an update when a profile is selected
     k2 = sel_p2.replace(" ", "_") if sel_p2 else "b"
     g_name = st.text_input("Name", value=def_n2, key=f"p2_n_{k2}")
     g_dob = st.date_input("Date of Birth", value=def_dob2, key=f"p2_d_{k2}")
@@ -190,7 +188,7 @@ if calc_btn:
                     {
                         "summary": {
                             "time_forecast": "2 sentences utilizing their current Dasha periods to forecast their relationship timeline over the next 5 years.",
-                            "psychological": "2 sentences written directly to the user (second-person 'you') analyzing their emotional alignment.",
+                            "psychological": "2 sentences analyzing their emotional alignment.",
                             "remedy": "1 highly specific traditional Vedic Upaya (e.g., specific mantra, donation, or gemstone) and 1 psychological adjustment to mitigate their weakest point."
                         },
                         "porutham_insights": {
@@ -199,7 +197,7 @@ if calc_btn:
                             "Mahendra": "1 personalized sentence explaining the mathematical result.",
                             "Rajju": "1 personalized sentence explaining the mathematical result.",
                             "Rasi": "1 personalized sentence explaining the mathematical result.",
-                            "Rasi Adhipathi": "1 personalized sentence explaining the mathematical result.",
+                            "Rasyadhipati": "1 personalized sentence explaining the mathematical result.",
                             "Yoni": "1 personalized sentence explaining the mathematical result.",
                             "Vasya": "1 personalized sentence explaining the mathematical result.",
                             "Stree": "1 personalized sentence explaining the mathematical result.",
@@ -208,12 +206,17 @@ if calc_btn:
                     }
                     """
                     
+                    # NOTE: Shifted to objective 3rd-person instructions
                     prompt = f"""
                     Act as an elite Vedic Astrologer. Analyze {b_name} (Star: {b_data['Nakshatra']}, Moon: {b_data['Rasi']}) and {g_name} (Star: {g_data['Nakshatra']}, Moon: {g_data['Rasi']}).
                     Current Time Data: {b_name} is in {b_data['Dasha']} Mahadasha. {g_name} is in {g_data['Dasha']} Mahadasha.
                     Relationship Context: {rel_status}.
                     
-                    CRITICAL INSTRUCTION: You MUST align your insights with the exact mathematical results of the Porutham engine. Do not praise a Porutham if it is a mismatch. Justify the engine's ruling:
+                    CRITICAL INSTRUCTIONS: 
+                    1. You MUST align your insights with the exact mathematical results below. Do not praise a Porutham if it is a mismatch. Justify the engine's ruling.
+                    2. Write exclusively in an empathetic, objective THIRD-PERSON perspective (e.g., '{b_name} and {g_name} will find...', 'His intense nature...', 'Her grounded approach...'). Do NOT use 'you' or 'your'.
+                    
+                    Mathematical Results:
                     {ai_math_directives}
                     
                     Return ONLY a JSON object strictly following this structure:
@@ -236,17 +239,19 @@ if calc_btn:
                 tag_text = "FAVORABLE" if is_match else "MITIGATE"
                 
                 insight_text = "Analysis unavailable."
+                
+                # FIXED MATCHING LOGIC: Uses exact base word to prevent overlap (e.g. Rasi vs Rasyadhipati)
+                base_key = key.split(' ')[0].strip()
                 if ai_data and 'porutham_insights' in ai_data:
                     for ai_key, ai_val in ai_data['porutham_insights'].items():
-                        # Fuzzy match the AI keys to your porutham result keys
-                        if ai_key.lower()[:4] in key.lower():
+                        if ai_key.lower() == base_key.lower():
                             insight_text = ai_val
                             break
                             
                 # Grab the definition for the bottom of the card
                 def_text = ""
                 for p_key, p_val in PORUTHAM_DEFS.items():
-                    if p_key.lower()[:4] in key.lower():
+                    if p_key.lower() == base_key.lower():
                         def_text = p_val
                         break
                 
@@ -256,17 +261,20 @@ if calc_btn:
             html_grid += '</div>'
             st.markdown(html_grid, unsafe_allow_html=True)
             
-            # 4. Strategic AI Summary Rendering
+            # 4. FIXED: Strategic AI Summary Rendering (Smaller Font Sizes)
             if ai_data and 'summary' in ai_data:
                 st.divider()
                 st.markdown("### Strategic Alignment & Timeline Forecast")
                 col1, col2, col3 = st.columns(3)
                 
-                col1.metric("Psychological Factor", "Aligned" if score >= 6 else "Requires Focus")
-                col1.info(ai_data['summary'].get('psychological', ''))
-                
-                col2.metric("Time Forecast (Dasha)", f"{b_data['Dasha']} / {g_data['Dasha']}")
-                col2.success(ai_data['summary'].get('time_forecast', ''))
-                
-                col3.metric("Remedial Action (Upaya)", "Actionable")
-                col3.warning(ai_data['summary'].get('remedy', ''))
+                with col1:
+                    st.markdown("<div style='font-size: 13px; font-weight: 600; color: #7f8c8d; text-transform: uppercase; margin-bottom: 8px;'>Psychological Alignment</div>", unsafe_allow_html=True)
+                    st.info(ai_data['summary'].get('psychological', ''))
+                    
+                with col2:
+                    st.markdown(f"<div style='font-size: 13px; font-weight: 600; color: #7f8c8d; text-transform: uppercase; margin-bottom: 8px;'>Timeline Forecast ({b_data['Dasha']} / {g_data['Dasha']})</div>", unsafe_allow_html=True)
+                    st.success(ai_data['summary'].get('time_forecast', ''))
+                    
+                with col3:
+                    st.markdown("<div style='font-size: 13px; font-weight: 600; color: #7f8c8d; text-transform: uppercase; margin-bottom: 8px;'>Remedial Action (Upaya)</div>", unsafe_allow_html=True)
+                    st.warning(ai_data['summary'].get('remedy', ''))
