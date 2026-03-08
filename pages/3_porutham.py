@@ -172,7 +172,7 @@ if calc_btn:
                 try:
                     genai.configure(api_key=API_KEY)
                     # Using '-latest' to avoid the 404 version mismatch error
-                    model = genai.GenerativeModel('gemini-1.5-flash-latest') 
+                    model = genai.GenerativeModel('gemini-1.5-flash') 
                     
                     json_schema = """
                     {
