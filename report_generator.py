@@ -5,7 +5,7 @@ import re
 def get_south_indian_chart_html(p_pos, lagna_rasi, title="Rasi Chart", lang="English"):
     """
     Generates a classic, clean South Indian style chart for the Web UI.
-    Flattened into a single-line HTML string to prevent Streamlit's code-block parsing.
+    Matches the perfectly square, 1px-border aesthetic with mint-green planet badges.
     """
     grid = {i: [] for i in range(1, 13)}
     
@@ -23,19 +23,22 @@ def get_south_indian_chart_html(p_pos, lagna_rasi, title="Rasi Chart", lang="Eng
         return mapping.get(eng_txt, eng_txt)
 
     def get_box(rasi_num):
-        planets = "".join([f"<span style='display:inline-block; margin:2px; padding:2px 5px; background:#e0f2f1; color:#1abc9c; border-radius:3px; font-size:11px; font-weight:700;'>{t(p)}</span>" for p in grid[rasi_num]])
-        return f"<div style='border: 1px solid #d3d3d3; height: 90px; padding: 6px; background: #ffffff; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 2px;'>{planets}</div>"
+        # Using the exact mint-green styling from your screenshot
+        planets = "".join([f"<span style='display:inline-block; margin:2px; padding:3px 5px; background:#e8f6f3; color:#16a085; border-radius:3px; font-size:12px; font-weight:bold;'>{t(p)}</span>" for p in grid[rasi_num]])
+        # Background is white, border is handled by the grid gap
+        return f"<div style='background: #ffffff; aspect-ratio: 1/1; min-height: 90px; padding: 6px; display: flex; flex-wrap: wrap; align-content: flex-start;'>{planets}</div>"
 
-    # Pre-render boxes to keep the final HTML string flat
+    # Pre-render boxes
     b12, b1, b2, b3 = get_box(12), get_box(1), get_box(2), get_box(3)
     b11, b4 = get_box(11), get_box(4)
     b10, b5 = get_box(10), get_box(5)
     b9, b8, b7, b6 = get_box(9), get_box(8), get_box(7), get_box(6)
     
-    center_div = f"<div style='grid-column: span 2; grid-row: span 2; display: flex; align-items: center; justify-content: center; background: #fafafa; font-size: 14px; font-weight: 500; color: #bdc3c7; border: 1px solid #d3d3d3;'>{title}</div>"
+    # Center div formatting
+    center_div = f"<div style='grid-column: span 2; grid-row: span 2; display: flex; align-items: center; justify-content: center; background: #fdfdfd; font-size: 16px; font-weight: bold; color: #bdc3c7;'>{title}</div>"
     
-    # KEPT STRICTLY ON ONE LINE so Streamlit doesn't render it as raw code
-    html = f"<div style='max-width: 450px; margin: 0 auto; font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;'><div style='text-align: center; margin-bottom: 15px; font-size: 18px; font-weight: 700; color: #2c3e50;'>{title}</div><div style='display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border: 1px solid #d3d3d3;'>{b12}{b1}{b2}{b3}{b11}{center_div}{b4}{b10}{b5}{b9}{b8}{b7}{b6}</div></div>"
+    # SINGLE LINE HTML: Uses background-color and gap: 1px to create perfect 1px borders without doubling up
+    html = f"<div style='max-width: 480px; margin: 0 auto; font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;'><div style='text-align: center; margin-bottom: 15px; font-size: 20px; font-weight: bold; color: #2c3e50;'>{title}</div><div style='display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background-color: #d3d3d3; border: 1px solid #d3d3d3;'>{b12}{b1}{b2}{b3}{b11}{center_div}{b4}{b10}{b5}{b9}{b8}{b7}{b6}</div></div>"
     
     return html
 
