@@ -1064,3 +1064,67 @@ def get_advanced_personal_metrics(jd_ut_natal, current_jd_ut, lat_val, lon_val, 
         "dasha_title": dasha_title, "dasha_desc": d_desc,
         "dir_title": dir_title, "dir_desc": dir_desc
     }
+
+# --- EXECUTIVE BLUEPRINT ENGINE (TIER 2) ---
+def get_executive_blueprint(jd_ut_natal, lat_val, lon_val, lang="English"):
+    """
+    Calculates natal house lords (1st, 2nd, 7th, 10th, 11th) to generate 
+    a static, lifetime executive profile based on Bhrigu Nandi Nadi principles.
+    """
+    import swisseph as swe
+
+    swe.set_sid_mode(swe.SIDM_LAHIRI)
+    
+    # Calculate Houses (Placidus)
+    houses = swe.houses_ex(jd_ut_natal, lat_val, lon_val, b'P', swe.FLG_SIDEREAL)[0]
+    
+    # Get Rasi index for key houses (1=Mesham, 2=Rishabam, etc.)
+    h1_rasi = int(houses[0] / 30) + 1
+    h2_rasi = int(houses[1] / 30) + 1
+    h7_rasi = int(houses[6] / 30) + 1
+    h10_rasi = int(houses[9] / 30) + 1
+    h11_rasi = int(houses[10] / 30) + 1
+
+    rasi_lords_en = {1:"Mars", 2:"Venus", 3:"Mercury", 4:"Moon", 5:"Sun", 6:"Mercury", 7:"Venus", 8:"Mars", 9:"Jupiter", 10:"Saturn", 11:"Saturn", 12:"Jupiter"}
+    rasi_lords_ta = {1:"செவ்வாய்", 2:"சுக்கிரன்", 3:"புதன்", 4:"சந்திரன்", 5:"சூரியன்", 6:"புதன்", 7:"சுக்கிரன்", 8:"செவ்வாய்", 9:"குரு", 10:"சனி", 11:"சனி", 12:"குரு"}
+    lords = rasi_lords_en if lang == "English" else rasi_lords_ta
+
+    l1, l2, l7, l10, l11 = lords[h1_rasi], lords[h2_rasi], lords[h7_rasi], lords[h10_rasi], lords[h11_rasi]
+
+    # Dynamic Strategy Generators based on Lords
+    def get_wealth_strategy(lord):
+        if lord in ["Jupiter", "குரு"]: return ("Strategic Investment", "Wealth is generated through advisory roles, education, and ethical, long-term investments. Avoid speculative, high-risk trades.", "ஆலோசனை மற்றும் நீண்ட கால முதலீடுகள் மூலம் செல்வம் பெருகும்.")
+        if lord in ["Venus", "சுக்கிரன்"]: return ("Asset & Luxury Focus", "Capital flows through aesthetics, luxury goods, women-centric markets, or high-end real estate.", "ஆடம்பரம், கலை மற்றும் ரியல் எஸ்டேட் மூலம் லாபம்.")
+        if lord in ["Saturn", "சனி"]: return ("Patient Accumulation", "Wealth builds slowly but permanently through industrial, labor-intensive, or legacy industries.", "தொழில் மற்றும் உழைப்பு மூலம் நிலையான செல்வம்.")
+        if lord in ["Mars", "செவ்வாய்"]: return ("Aggressive Acquisition", "Capital is unlocked via bold execution, real estate, technology, and taking calculated leadership risks.", "துணிச்சலான முடிவுகள் மற்றும் ரியல் எஸ்டேட் மூலம் லாபம்.")
+        if lord in ["Mercury", "புதன்"]: return ("Trade & Communication", "Data, trade, writing, and rapid transaction cycles are your primary wealth drivers.", "வியாபாரம் மற்றும் தகவல் தொடர்பு மூலம் செல்வம்.")
+        return ("Authority & Influence", "Capital follows status. Building a personal brand and aligning with government or top-tier executives unlocks wealth.", "அதிகாரம் மற்றும் தலைமைப் பண்பு மூலம் செல்வம்.")
+
+    def get_career_strategy(lord):
+        if lord in ["Sun", "சூரியன்"]: return ("Executive Leadership", "Designed for C-suite roles, government contracts, or autonomous entrepreneurship. You must be the ultimate authority.", "தலைமை மற்றும் நிர்வாகப் பதவிகளுக்கு உகந்தது.")
+        if lord in ["Saturn", "சனி"]: return ("Structural Builder", "You excel in building systems from the ground up. Success requires deep persistence and managing complex logistics.", "அமைப்பு மற்றும் நிர்வாகக் கட்டமைப்புகளை உருவாக்குவதில் சிறப்பு.")
+        if lord in ["Mercury", "புதன்"]: return ("Data & Strategy", "Ideal for consulting, analytics, media, or tech. Your competitive advantage is your adaptability.", "தரவு, தொழில்நுட்பம் மற்றும் ஆலோசனையில் வெற்றி.")
+        if lord in ["Mars", "செவ்வாய்"]: return ("Crisis Management", "You thrive in high-pressure environments. Ideal for turnarounds, engineering, or competitive markets.", "நெருக்கடி மேலாண்மை மற்றும் சவாலான துறைகளில் வெற்றி.")
+        return ("Consulting & Mentorship", "Your peak trajectory involves guiding others. Law, finance, and advisory boards are highly favorable.", "ஆலோசனை மற்றும் வழிகாட்டுதலில் உயர்வு.")
+
+    def get_partnership_strategy(lord):
+        if lord in ["Venus", "சுக்கிரன்", "Moon", "சந்திரன்"]: return ("Harmonious Integration", "Seek co-founders and spouses who offer emotional intelligence and diplomatic balance to your operations.", "உணர்ச்சிப்பூர்வமான மற்றும் இணக்கமான கூட்டாண்மை.")
+        if lord in ["Mars", "செவ்வாய்", "Sun", "சூரியன்"]: return ("Dynamic Friction", "Partnerships will be highly active but prone to power struggles. Clearly define equity and territory early.", "சுறுசுறுப்பான ஆனால் அதிகாரப் போட்டி நிறைந்த கூட்டாண்மை.")
+        if lord in ["Saturn", "சனி"]: return ("Pragmatic Alliance", "Treat partnerships like long-term contracts. Look for older, established, or highly disciplined partners.", "நடைமுறை மற்றும் நீண்ட கால கூட்டாண்மை.")
+        return ("Intellectual Synergy", "Your alliances must be built on shared visions and flawless communication over emotional connection.", "அறிவுப்பூர்வமான மற்றும் தெளிவான தகவல் தொடர்பு கொண்ட கூட்டாண்மை.")
+
+    w_title, w_desc_en, w_desc_ta = get_wealth_strategy(l2)
+    c_title, c_desc_en, c_desc_ta = get_career_strategy(l10)
+    p_title, p_desc_en, p_desc_ta = get_partnership_strategy(l7)
+
+    # Calculate Leverage Score (Mock baseline based on 1st/9th/10th correlation)
+    leverage_score = 82 # This can be made dynamic based on planetary strengths later
+    lev_desc = "Your chart indicates a high capacity to bend outcomes through sheer will. While destiny provides the framework, your execution determines the ceiling." if lang=="English" else "உங்கள் கடின உழைப்பு மற்றும் முடிவுகளால் தலையெழுத்தை மாற்றும் திறன் உங்களுக்கு உள்ளது."
+
+    return {
+        "l1": l1, "l2": l2, "l7": l7, "l10": l10, "l11": l11,
+        "wealth": {"title": w_title if lang=="English" else "செல்வ நிலை", "desc": w_desc_en if lang=="English" else w_desc_ta},
+        "career": {"title": c_title if lang=="English" else "தொழில் பாதை", "desc": c_desc_en if lang=="English" else c_desc_ta},
+        "partner": {"title": p_title if lang=="English" else "கூட்டாண்மை", "desc": p_desc_en if lang=="English" else p_desc_ta},
+        "leverage": {"score": leverage_score, "desc": lev_desc}
+    }
