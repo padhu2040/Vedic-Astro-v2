@@ -171,8 +171,22 @@ if calc_btn:
             if API_KEY:
                 try:
                     genai.configure(api_key=API_KEY)
-                    # Using '-latest' to avoid the 404 version mismatch error
-                    model = genai.GenerativeModel('gemini-pro')
+                    
+                    # --- AUTO-DETECT VALID MODEL ---
+                    # Ask Google what models this API key is allowed to use
+                    valid_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+                    
+                    # Default ultimate fallback
+                    chosen_model = 'gemini-1.0-pro' 
+                    
+                    # Pick the newest/best model available to you
+                    for pref in ['gemini-1.5-flash', 'gemini-1.0-pro', 'gemini-pro']:
+                        if any(pref in m for m in valid_models):
+                            chosen_model = pref
+                            break
+                            
+                    model = genai.GenerativeModel(chosen_model)
+                    # -------------------------------
                     
                     json_schema = """
                     {
