@@ -5,7 +5,7 @@ import re
 def get_south_indian_chart_html(p_pos, lagna_rasi, title="Rasi Chart", lang="English"):
     """
     Generates a classic, clean South Indian style chart for the Web UI.
-    Flatted into a single-line HTML string to prevent Streamlit's code-block parsing.
+    Flattened into a single-line HTML string to prevent Streamlit's code-block parsing.
     """
     grid = {i: [] for i in range(1, 13)}
     
@@ -69,7 +69,7 @@ class ExecutivePDF(FPDF):
         self.ln(5)
 
 def clean_text(text):
-    """Strips HTML tags, Markdown, and unsafe AI Unicode to prevent PDF crashes."""
+    """Aggressively strips HTML, Markdown, and unsafe Unicode to guarantee PDF stability."""
     if not isinstance(text, str):
         return ""
     
@@ -79,23 +79,26 @@ def clean_text(text):
     text = re.sub(r'_(.*?)_', r'\1', text)
     text = re.sub(r'#(.*)', '', text)
     
-    # 2. Sanitize Advanced Unicode (Fixes the PDF font crash)
-    text = text.replace('—', '-') # Em dash
-    text = text.replace('–', '-') # En dash
-    text = text.replace('“', '"').replace('”', '"') # Smart quotes
-    text = text.replace('‘', "'").replace('’', "'") # Smart single quotes
-    text = text.replace('…', '...') # Ellipsis
-    text = text.replace('•', '-') # Bullet points
-    
-    # 3. Absolute fallback: Strip any remaining non-standard characters safely
-    text = text.encode('ascii', 'ignore').decode('ascii')
+    # 2. Sanitize Advanced Unicode (Crucial for FPDF's Helvetica font)
+    replacements = {
+        '—': '-', '–': '-',     # Em/En dashes to standard hyphen
+        '“': '"', '”': '"',     # Smart double quotes to standard quotes
+        '‘': "'", '’': "'",     # Smart single quotes to standard apostrophe
+        '…': '...', '•': '-',   # Ellipsis and bullets
+        '\u200b': '', '\u200e': '' # Invisible zero-width formatting spaces
+    }
+    for k, v in replacements.items():
+        text = text.replace(k, v)
+        
+    # 3. Absolute foolproof fallback: Force to latin-1, ignoring any remaining rogue characters
+    text = text.encode('latin-1', 'ignore').decode('latin-1')
     
     return text.strip()
 
 def generate_pdf_report(**kwargs):
     """
     Compiles all AI and mathematical data into a cohesive, multi-page PDF.
-    Expects kwargs matching the parameters passed from 2_deep_horoscope.py.
+    Expects kwargs matching the parameters passed from your main application files.
     """
     try:
         pdf = ExecutivePDF()
@@ -110,9 +113,9 @@ def generate_pdf_report(**kwargs):
         
         pdf.set_font('helvetica', '', 12)
         pdf.set_text_color(100, 100, 100)
-        pdf.cell(0, 6, f"Lagna (Ascendant): {kwargs.get('lagna_str', '')}", 0, 1, 'C')
-        pdf.cell(0, 6, f"Moon Sign (Rasi): {kwargs.get('moon_str', '')}", 0, 1, 'C')
-        pdf.cell(0, 6, f"Birth Star (Nakshatra): {kwargs.get('star_str', '')}", 0, 1, 'C')
+        pdf.cell(0, 6, f"Lagna (Ascendant): {clean_text(kwargs.get('lagna_str', ''))}", 0, 1, 'C')
+        pdf.cell(0, 6, f"Moon Sign (Rasi): {clean_text(kwargs.get('moon_str', ''))}", 0, 1, 'C')
+        pdf.cell(0, 6, f"Birth Star (Nakshatra): {clean_text(kwargs.get('star_str', ''))}", 0, 1, 'C')
         pdf.ln(10)
 
         # 2. PLANETARY MATRIX (Table)
@@ -134,10 +137,10 @@ def generate_pdf_report(**kwargs):
         pdf.set_font('helvetica', '', 10)
         pdf.set_text_color(50, 50, 50)
         for row in master_table:
-            pdf.cell(col_widths[0], 8, str(row.get('Planet', '')), 1, 0, 'C')
-            pdf.cell(col_widths[1], 8, str(row.get('Rasi', '')), 1, 0, 'C')
-            pdf.cell(col_widths[2], 8, str(row.get('House', '')), 1, 0, 'C')
-            pdf.cell(col_widths[3], 8, str(row.get('Dignity', '')), 1, 0, 'C')
+            pdf.cell(col_widths[0], 8, clean_text(str(row.get('Planet', ''))), 1, 0, 'C')
+            pdf.cell(col_widths[1], 8, clean_text(str(row.get('Rasi', ''))), 1, 0, 'C')
+            pdf.cell(col_widths[2], 8, clean_text(str(row.get('House', ''))), 1, 0, 'C')
+            pdf.cell(col_widths[3], 8, clean_text(str(row.get('Dignity', ''))), 1, 0, 'C')
             pdf.cell(col_widths[4], 8, clean_text(str(row.get('Status', ''))), 1, 0, 'C')
             pdf.ln()
         pdf.ln(10)
@@ -147,17 +150,17 @@ def generate_pdf_report(**kwargs):
         mbti = kwargs.get('mbti_data', {})
         ennea = kwargs.get('ennea_data', {})
         
-        playbook_text = f"Cognitive Framework (MBTI): {mbti.get('code', 'Unknown')}\n\n"
-        playbook_text += f"Core Driver (Atmakaraka): {ennea.get('ak_planet', '')} - {ennea.get('ak_type', '')}\n"
-        playbook_text += f"{clean_text(ennea.get('ak_coaching', ''))}\n\n"
-        playbook_text += f"Execution Wing (Amatyakaraka): {ennea.get('amk_planet', '')}\n"
-        playbook_text += f"{clean_text(ennea.get('amk_coaching', ''))}\n\n"
+        playbook_text = f"Cognitive Framework (MBTI): {clean_text(str(mbti.get('code', 'Unknown')))}\n\n"
+        playbook_text += f"Core Driver (Atmakaraka): {clean_text(str(ennea.get('ak_planet', '')))} - {clean_text(str(ennea.get('ak_type', '')))}\n"
+        playbook_text += f"{clean_text(str(ennea.get('ak_coaching', '')))}\n\n"
+        playbook_text += f"Execution Wing (Amatyakaraka): {clean_text(str(ennea.get('amk_planet', '')))}\n"
+        playbook_text += f"{clean_text(str(ennea.get('amk_coaching', '')))}\n\n"
         
         coaching = kwargs.get('coaching_rules', [])
         if coaching:
             playbook_text += "Executive Rules for Success:\n"
             for i, rule in enumerate(coaching):
-                playbook_text += f"{i+1}. {clean_text(rule)}\n"
+                playbook_text += f"{i+1}. {clean_text(str(rule))}\n"
         
         pdf.chapter_body(playbook_text)
 
@@ -165,12 +168,12 @@ def generate_pdf_report(**kwargs):
         pdf.add_page()
         pdf.chapter_title("Career & Zone of Genius")
         career_list = kwargs.get('career_txt', [])
-        career_body = "\n\n".join([clean_text(item) for item in career_list])
+        career_body = "\n\n".join([clean_text(str(item)) for item in career_list])
         pdf.chapter_body(career_body)
         
         pdf.chapter_title("Karmic Directives (Rahu/Ketu)")
         karmic_list = kwargs.get('karmic_txt', [])
-        karmic_body = "\n\n".join([clean_text(item) for item in karmic_list])
+        karmic_body = "\n\n".join([clean_text(str(item)) for item in karmic_list])
         pdf.chapter_body(karmic_body)
 
         # 5. TIMELINE FORECAST
@@ -195,12 +198,9 @@ def generate_pdf_report(**kwargs):
             pdf.cell(30, 8, clean_text(str(row.get('Mahadasha', ''))), 1, 0, 'C')
             pdf.ln()
 
-        # Output the PDF as a byte string for Streamlit download
-        pdf_output = pdf.output(dest='S')
-        if isinstance(pdf_output, str):
-            pdf_output = pdf_output.encode('latin-1')
-
-        return pdf_output, None
+        # Output the PDF natively as a bytes object for Streamlit's download button
+        pdf_bytes = bytes(pdf.output())
+        return pdf_bytes, None
 
     except Exception as e:
         return None, str(e)
