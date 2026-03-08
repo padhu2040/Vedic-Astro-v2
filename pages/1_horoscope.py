@@ -313,7 +313,6 @@ with st.sidebar:
         def_tob = saved_profiles[selected_profile]["tob"]
         def_loc = saved_profiles[selected_profile]["city"]
 
-    # FIX: Dynamic keys force Streamlit to refresh inputs instantly when a profile is selected
     k = selected_profile.replace(" ", "_") if selected_profile else "manual"
     name_in = st.text_input("Name", value=def_n, key=f"h_name_{k}")
     dob_in = st.date_input("Date of Birth", value=def_dob, min_value=datetime(1950, 1, 1).date(), max_value=datetime.today().date(), key=f"h_dob_{k}")
@@ -423,28 +422,32 @@ if st.session_state.report_generated:
         current_md = pd_info['MD'] if pd_info else None
         coaching_rules = get_coaching_rules(sav_scores, lagna_rasi, current_md, ennea_data['ak_desire'])
 
-        # --- TOP INFO SECTION ---
-        c_left, c_right = st.columns([3, 1])
+        # --- RE-STYLED TOP INFO SECTION ---
         l_name = ZODIAC_TA.get(lagna_rasi, "") if LANG == "Tamil" else ZODIAC[lagna_rasi]
         m_name = ZODIAC_TA.get(moon_rasi, "") if LANG == "Tamil" else ZODIAC[moon_rasi]
         
-        with c_left:
-            st.subheader(f"Analysis for {name_in}" if LANG=="English" else f"ஜோதிட அறிக்கை: {name_in}")
-            st.markdown(f"> **{'லக்னம்' if LANG=='Tamil' else 'Lagna'}:** {l_name} | **{'ராசி' if LANG=='Tamil' else 'Moon'}:** {m_name} | **{'நட்சத்திரம்' if LANG=='Tamil' else 'Star'}:** {nak}")
+        st.subheader(f"Analysis for {name_in}" if LANG=="English" else f"ஜோதிட அறிக்கை: {name_in}")
+        st.markdown(f"<div style='background:#fdfdfd; padding: 12px 18px; border: 1px solid #eaeaea; border-left: 4px solid #3498db; border-radius: 4px; color: #2c3e50; font-size: 15px; margin-bottom: 25px;'><b>{'லக்னம்' if LANG=='Tamil' else 'Lagna'}:</b> {l_name} &nbsp;|&nbsp; <b>{'ராசி' if LANG=='Tamil' else 'Moon'}:</b> {m_name} &nbsp;|&nbsp; <b>{'நட்சத்திரம்' if LANG=='Tamil' else 'Star'}:</b> {nak}</div>", unsafe_allow_html=True)
         
-        with c_right:
-            pdf_bytes, pdf_error = generate_pdf_report(
-                name_in=name_in, p_pos=p_pos, p_d9=p_d9, lagna_rasi=lagna_rasi, sav_scores=sav_scores, 
-                career_txt=career_txt, edu_txt=edu_txt, health_txt=health_txt, love_txt=love_txt, 
-                karmic_txt=karmic_txt, id_data=report_id_data, lagna_str=l_name, moon_str=m_name, 
-                star_str=nak, yogas=yogas, fc=fc, micro_transits=micro_transits, 
-                mahadasha_data=mahadasha_data, master_table=master_table, phases=phases, 
-                pd_info=pd_info, guide=guide, transit_texts=transit_texts, 
-                mbti_data=mbti_data, ennea_data=ennea_data, coaching_rules=coaching_rules, 
-                rahu_h=rahu_h, ketu_h=ketu_h, lang=LANG
-            )
+        # --- PDF GENERATION & SIDEBAR BUTTON ---
+        pdf_bytes, pdf_error = generate_pdf_report(
+            name_in=name_in, p_pos=p_pos, p_d9=p_d9, lagna_rasi=lagna_rasi, sav_scores=sav_scores, 
+            career_txt=career_txt, edu_txt=edu_txt, health_txt=health_txt, love_txt=love_txt, 
+            karmic_txt=karmic_txt, id_data=report_id_data, lagna_str=l_name, moon_str=m_name, 
+            star_str=nak, yogas=yogas, fc=fc, micro_transits=micro_transits, 
+            mahadasha_data=mahadasha_data, master_table=master_table, phases=phases, 
+            pd_info=pd_info, guide=guide, transit_texts=transit_texts, 
+            mbti_data=mbti_data, ennea_data=ennea_data, coaching_rules=coaching_rules, 
+            rahu_h=rahu_h, ketu_h=ketu_h, lang=LANG
+        )
+        
+        with st.sidebar:
+            st.divider()
+            st.markdown("<div style='font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;'>Export Options</div>", unsafe_allow_html=True)
             if pdf_bytes:
-                st.download_button(label="📄 Download PDF Report" if LANG=="English" else "📄 ஜாதகத்தை பதிவிறக்க", data=pdf_bytes, file_name=f"{name_in}_Astro_Report.pdf", mime="application/pdf", type="primary")
+                st.download_button(label="📄 Download Master PDF", data=pdf_bytes, file_name=f"{name_in}_Executive_Blueprint.pdf", mime="application/pdf", type="primary", use_container_width=True)
+            elif pdf_error:
+                st.error(f"PDF failed: {pdf_error}")
 
         # --- UI TABS ---
         tb_lbls = ["Profile & Placements", "Destiny Radar", "Executive Playbook", "Love & Health", "Yogas & Forecast", "Roadmap", "💬 Oracle"]
@@ -548,7 +551,6 @@ if st.session_state.report_generated:
                 active_right = "#2c3e50" if pct_right > 50 else "#dcdcdc"
                 return f'<div style="margin-bottom: 25px; font-family: \'Helvetica Neue\', Helvetica, Arial, sans-serif;"><div style="text-align: center; margin-bottom: 8px;"><div style="font-size: 16px; font-weight: bold; color: #111;">{title}</div><div style="font-size: 13px; color: #555; font-style: italic; margin-top: 4px;">{energy_txt}</div></div><div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; color: #555; margin-bottom: 6px;"><span style="color: {active_left};">{pct_left}% {left_lbl}</span><span style="color: {active_right};">{right_lbl} {pct_right}%</span></div><div style="width: 100%; height: 10px; display: flex; overflow: hidden; gap: 4px;"><div style="width: {pct_left}%; background-color: {active_left}; border-radius: 5px 0 0 5px;"></div><div style="width: {pct_right}%; background-color: {active_right}; border-radius: 0 5px 5px 0;"></div></div></div>'
             
-            # FIXED HTML STRING to prevent Streamlit from interpreting it as a raw code block
             playbook_html = f"""<div style="padding: 10px 0; color: #333; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
 <h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 1: The core drive</h2>
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
