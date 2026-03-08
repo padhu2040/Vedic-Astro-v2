@@ -2,11 +2,11 @@ from fpdf import FPDF
 import re
 
 # --- WEB UI RENDERER: SOUTH INDIAN CHART (HTML/CSS) ---
-def get_south_indian_chart_html(p_pos, lagna_rasi, title="Birth Chart (Rasi)", lang="English", user_name=""):
+def get_south_indian_chart_html(p_pos, lagna_rasi, title="Rasi Chart", lang="English", user_name=""):
     """
     Generates a traditional South Indian style chart for the Web UI.
     Features 1px grey borders, corner zodiac names, stacked bold planets, 
-    and a traditional red diagonal strike-through for the Lagna (Ascendant).
+    and a very subtle red diagonal strike-through for the Lagna (Ascendant).
     """
     grid = {i: [] for i in range(1, 13)}
     
@@ -35,18 +35,18 @@ def get_south_indian_chart_html(p_pos, lagna_rasi, title="Birth Chart (Rasi)", l
     def get_box(rasi_num):
         is_lagna = (rasi_num == lagna_rasi)
         
-        # Traditional red slanting line for Ascendant (Lagna)
+        # Traditional, very subtle red slanting line for Ascendant (Lagna)
         if is_lagna:
-            bg_style = "background: linear-gradient(to top right, transparent calc(50% - 1px), rgba(220, 53, 69, 0.6) calc(50% - 1px), rgba(220, 53, 69, 0.6) calc(50% + 1px), transparent calc(50% + 1px)) #ffffff;"
+            bg_style = "background: linear-gradient(to bottom right, transparent calc(50% - 0.5px), rgba(220, 53, 69, 0.3) calc(50% - 0.5px), rgba(220, 53, 69, 0.3) calc(50% + 0.5px), transparent calc(50% + 0.5px)) #ffffff;"
         else:
             bg_style = "background: #ffffff;"
             
         rasi_name = z_names.get(rasi_num, "")
         
         # Bold, black, center-stacked planets
-        planets_formatted = " ".join([f"<span style='display:block;'>{t(p)}</span>" for p in grid[rasi_num]])
+        planets_formatted = "".join([f"<div style='margin-bottom:2px;'>{t(p)}</div>" for p in grid[rasi_num]])
         
-        return f"<div style='position: relative; {bg_style} aspect-ratio: 1/1; min-height: 110px; padding: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center;'><div style='font-size: 11.5px; color: #7f8c8d; position: absolute; top: 6px; left: 8px;'>{rasi_name}</div><div style='font-size: 16px; font-weight: 800; color: #111; line-height: 1.3;'>{planets_formatted}</div></div>"
+        return f"<div style='position: relative; {bg_style} aspect-ratio: 1/1; min-height: 110px; display: flex; flex-direction: column; justify-content: center; align-items: center;'><div style='font-size: 11.5px; color: #95a5a6; position: absolute; top: 6px; left: 8px;'>{rasi_name}</div><div style='font-size: 16px; font-weight: 800; color: #111; line-height: 1.2;'>{planets_formatted}</div></div>"
 
     # Pre-render boxes
     b12, b1, b2, b3 = get_box(12), get_box(1), get_box(2), get_box(3)
@@ -54,12 +54,12 @@ def get_south_indian_chart_html(p_pos, lagna_rasi, title="Birth Chart (Rasi)", l
     b10, b5 = get_box(10), get_box(5)
     b9, b8, b7, b6 = get_box(9), get_box(8), get_box(7), get_box(6)
     
-    # Center div formatting with User Name
-    name_html = f"<div style='font-size: 15px; color: #555; font-weight: normal; margin-top: 6px;'>{user_name}</div>" if user_name else ""
-    center_div = f"<div style='grid-column: span 2; grid-row: span 2; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #ffffff;'><div style='font-size: 20px; font-weight: bold; color: #222;'>{title}</div>{name_html}</div>"
+    # Center div formatting with Title and User Name
+    name_html = f"<div style='font-size: 15px; color: #7f8c8d; font-weight: normal; margin-top: 6px;'>{user_name}</div>" if user_name else ""
+    center_div = f"<div style='grid-column: span 2; grid-row: span 2; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #ffffff;'><div style='font-size: 20px; font-weight: 800; color: #2c3e50;'>{title}</div>{name_html}</div>"
     
-    # SINGLE LINE HTML: Uses background-color and gap: 1px to create perfect traditional borders
-    html = f"<div style='max-width: 520px; margin: 0 auto; font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;'><div style='display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background-color: #999; border: 1px solid #999;'>{b12}{b1}{b2}{b3}{b11}{center_div}{b4}{b10}{b5}{b9}{b8}{b7}{b6}</div></div>"
+    # SINGLE LINE HTML: Uses background-color and gap: 1px to create perfect crisp borders
+    html = f"<div style='max-width: 520px; margin: 0 auto; font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;'><div style='display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background-color: #cccccc; border: 1px solid #cccccc;'>{b12}{b1}{b2}{b3}{b11}{center_div}{b4}{b10}{b5}{b9}{b8}{b7}{b6}</div></div>"
     
     return html
 
