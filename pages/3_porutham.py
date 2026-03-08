@@ -171,7 +171,8 @@ if calc_btn:
             if API_KEY:
                 try:
                     genai.configure(api_key=API_KEY)
-                    model = genai.GenerativeModel('gemini-1.5-flash', generation_config={"response_mime_type": "application/json"})
+                    # Using '-latest' to avoid the 404 version mismatch error
+                    model = genai.GenerativeModel('gemini-1.5-flash-latest') 
                     
                     json_schema = """
                     {
@@ -198,8 +199,9 @@ if calc_btn:
                     prompt = f"Analyze compatibility between {b_name} (Star: {b_data['Nakshatra']}) and {g_name} (Star: {g_data['Nakshatra']}). Context: {rel_status}.\nReturn a JSON object strictly following this structure:\n{json_schema}"
                     
                     resp = model.generate_content(prompt)
-                    # Safely load the JSON string
-                    ai_data = json.loads(resp.text)
+                    # Clean potential markdown wrap
+                    clean_resp = resp.text.replace('```json', '').replace('```', '').strip()
+                    ai_data = json.loads(clean_resp)
                 except Exception as e:
                     st.warning(f"AI Oracle offline or parsing failed. Using standard insights. ({e})")
 
@@ -218,12 +220,9 @@ if calc_btn:
                 else:
                     insight_text = get_executive_insight(key, is_match, LANG)
                 
-                html_grid += f"""
-                <div class="bp-card">
-                    <div class="bp-head"><span>{key}</span><span class="{tag_class}">{tag_text}</span></div>
-                    <div class="bp-desc">{insight_text}</div>
-                </div>
-                """
+                # IMPORTANT FIX: Kept entirely on one line to stop Streamlit from breaking the HTML parser
+                html_grid += f'<div class="bp-card"><div class="bp-head"><span>{key}</span><span class="{tag_class}">{tag_text}</span></div><div class="bp-desc">{insight_text}</div></div>'
+                
             html_grid += '</div>'
             st.markdown(html_grid, unsafe_allow_html=True)
             
