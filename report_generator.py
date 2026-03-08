@@ -13,7 +13,6 @@ def get_south_indian_chart_html(p_pos, lagna_rasi, title="Rasi Chart", lang="Eng
     # Map planets to houses
     for p, rasi in p_pos.items():
         if rasi in grid:
-            # Format to traditional 2-letter capitalization (e.g., SU -> Su)
             if p == "Lagna": 
                 label = "Asc"
             elif p in ["Rahu", "Ketu"]:
@@ -35,7 +34,6 @@ def get_south_indian_chart_html(p_pos, lagna_rasi, title="Rasi Chart", lang="Eng
     def get_box(rasi_num):
         is_lagna = (rasi_num == lagna_rasi)
         
-        # Dynamically calculate the House Number (H1, H2, etc.) relative to Lagna
         house_num = (rasi_num - lagna_rasi + 1) if (rasi_num - lagna_rasi + 1) > 0 else (rasi_num - lagna_rasi + 1) + 12
         house_label = f"H{house_num}"
         
@@ -50,22 +48,17 @@ def get_south_indian_chart_html(p_pos, lagna_rasi, title="Rasi Chart", lang="Eng
         # Bold, black, center-stacked planets
         planets_formatted = "".join([f"<div style='margin-bottom:2px;'>{t(p)}</div>" for p in grid[rasi_num]])
         
-        # Box HTML: Zodiac top-left, House top-right, Planets centered
         return f"<div style='position: relative; {bg_style} aspect-ratio: 1/1; min-height: 110px; display: flex; flex-direction: column; justify-content: center; align-items: center;'><div style='font-size: 11.5px; color: #95a5a6; position: absolute; top: 6px; left: 8px;'>{rasi_name}</div><div style='font-size: 11px; color: #bdc3c7; font-weight: 600; position: absolute; top: 6px; right: 8px;'>{house_label}</div><div style='font-size: 16px; font-weight: 800; color: #111; line-height: 1.2;'>{planets_formatted}</div></div>"
 
-    # Pre-render boxes
     b12, b1, b2, b3 = get_box(12), get_box(1), get_box(2), get_box(3)
     b11, b4 = get_box(11), get_box(4)
     b10, b5 = get_box(10), get_box(5)
     b9, b8, b7, b6 = get_box(9), get_box(8), get_box(7), get_box(6)
     
-    # Center div formatting with Title and User Name
     name_html = f"<div style='font-size: 15px; color: #7f8c8d; font-weight: normal; margin-top: 6px;'>{user_name}</div>" if user_name else ""
     center_div = f"<div style='grid-column: span 2; grid-row: span 2; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #ffffff;'><div style='font-size: 20px; font-weight: 800; color: #2c3e50;'>{title}</div>{name_html}</div>"
     
-    # SINGLE LINE HTML: Uses background-color and gap: 1px to create perfect crisp borders
     html = f"<div style='max-width: 520px; margin: 0 auto; font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;'><div style='display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background-color: #cccccc; border: 1px solid #cccccc;'>{b12}{b1}{b2}{b3}{b11}{center_div}{b4}{b10}{b5}{b9}{b8}{b7}{b6}</div></div>"
-    
     return html
 
 
@@ -92,52 +85,115 @@ class ExecutivePDF(FPDF):
         self.ln(5)
 
     def chapter_body(self, body):
+        if not body: return
         self.set_font('helvetica', '', 11)
         self.set_text_color(50, 50, 50)
         self.multi_cell(0, 6, body)
         self.ln(5)
+
+    def draw_pdf_chart(self, p_pos, lagna_rasi, title="Birth Chart (Rasi)"):
+        """Draws the physical 4x4 grid chart directly onto the PDF."""
+        # Ensure we have enough space, else add a page
+        if self.get_y() > 150:
+            self.add_page()
+            
+        self.ln(5)
+        start_y = self.get_y()
+        box_w, box_h = 32, 32
+        start_x = (210 - (box_w * 4)) / 2  # Center horizontally on A4
+        
+        grid = {i: [] for i in range(1, 13)}
+        for p, rasi in p_pos.items():
+            if rasi in grid:
+                label = "Asc" if p == "Lagna" else p[:2].capitalize()
+                grid[rasi].append(label)
+                
+        positions = {
+            12: (0, 0), 1: (1, 0), 2: (2, 0), 3: (3, 0),
+            11: (0, 1),                        4: (3, 1),
+            10: (0, 2),                        5: (3, 2),
+            9:  (0, 3), 8: (1, 3), 7: (2, 3), 6: (3, 3)
+        }
+        
+        self.set_draw_color(180, 180, 180)
+        self.set_line_width(0.3)
+        
+        for rasi, (col, row) in positions.items():
+            x = start_x + (col * box_w)
+            y = start_y + (row * box_h)
+            self.rect(x, y, box_w, box_h)
+            
+            # House Number
+            house_num = (rasi - lagna_rasi + 1) if (rasi - lagna_rasi + 1) > 0 else (rasi - lagna_rasi + 1) + 12
+            self.set_xy(x, y + 2)
+            self.set_font('helvetica', '', 7)
+            self.set_text_color(160, 160, 160)
+            self.cell(box_w - 2, 4, f"H{house_num}", 0, 0, 'R')
+            
+            # Planets
+            if grid[rasi]:
+                planets_str = "\n".join(grid[rasi])
+                self.set_xy(x, y + 8)
+                self.set_font('helvetica', 'B', 10)
+                self.set_text_color(20, 20, 20)
+                self.multi_cell(box_w, 5, planets_str, 0, 'C')
+            
+            # Ascendant Red Line
+            if rasi == lagna_rasi:
+                self.set_draw_color(220, 53, 69)
+                self.set_line_width(0.4)
+                self.line(x, y, x + box_w, y + box_h)
+                self.set_draw_color(180, 180, 180) # Reset
+
+        # Center Title
+        self.set_xy(start_x + box_w, start_y + box_h)
+        self.set_font('helvetica', 'B', 14)
+        self.set_text_color(44, 62, 80)
+        self.cell(box_w * 2, box_h * 2, clean_text(title), 0, 0, 'C')
+        
+        self.set_y(start_y + box_h * 4 + 15)
+
 
 def clean_text(text):
     """Aggressively strips HTML, Markdown, and unsafe Unicode to guarantee PDF stability."""
     if not isinstance(text, str):
         return ""
     
-    # 1. Remove HTML and Markdown
     text = re.sub(r'<[^>]+>', '', text)
     text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)
     text = re.sub(r'_(.*?)_', r'\1', text)
     text = re.sub(r'#(.*)', '', text)
     
-    # 2. Sanitize Advanced Unicode (Crucial for FPDF's Helvetica font)
     replacements = {
-        '—': '-', '–': '-',     # Em/En dashes to standard hyphen
-        '“': '"', '”': '"',     # Smart double quotes to standard quotes
-        '‘': "'", '’': "'",     # Smart single quotes to standard apostrophe
-        '…': '...', '•': '-',   # Ellipsis and bullets
-        '\u200b': '', '\u200e': '' # Invisible zero-width formatting spaces
+        '—': '-', '–': '-', '“': '"', '”': '"', '‘': "'", '’': "'", 
+        '…': '...', '•': '-', '\u200b': '', '\u200e': '', '✨': '', '✦': ''
     }
     for k, v in replacements.items():
         text = text.replace(k, v)
         
-    # 3. Absolute foolproof fallback: Force to latin-1, ignoring any remaining rogue characters
     text = text.encode('latin-1', 'ignore').decode('latin-1')
-    
     return text.strip()
 
 def generate_pdf_report(**kwargs):
     """
     Compiles all AI and mathematical data into a cohesive, multi-page PDF.
-    Expects kwargs matching the parameters passed from your main application files.
+    Now includes ALL data from the Deep Horoscope tabs and renders visual grids.
     """
     try:
         pdf = ExecutivePDF()
         pdf.add_page()
         pdf.set_auto_page_break(auto=True, margin=15)
 
-        # 1. PROFILE HEADER
+        client_name = kwargs.get('name_in', 'Client')
+        lagna_rasi = kwargs.get('lagna_rasi', 1)
+        p_pos = kwargs.get('p_pos', {})
+        p_d9 = kwargs.get('p_d9', {})
+        navamsa_lagna = p_d9.get("Lagna", 1)
+
+        # --- 1. PROFILE HEADER ---
         pdf.set_font('helvetica', 'B', 20)
         pdf.set_text_color(44, 62, 80)
-        pdf.cell(0, 10, f"Executive Profile: {kwargs.get('name_in', 'Client')}", 0, 1, 'C')
+        pdf.cell(0, 10, f"Executive Profile: {client_name}", 0, 1, 'C')
         pdf.ln(5)
         
         pdf.set_font('helvetica', '', 12)
@@ -145,13 +201,15 @@ def generate_pdf_report(**kwargs):
         pdf.cell(0, 6, f"Lagna (Ascendant): {clean_text(kwargs.get('lagna_str', ''))}", 0, 1, 'C')
         pdf.cell(0, 6, f"Moon Sign (Rasi): {clean_text(kwargs.get('moon_str', ''))}", 0, 1, 'C')
         pdf.cell(0, 6, f"Birth Star (Nakshatra): {clean_text(kwargs.get('star_str', ''))}", 0, 1, 'C')
-        pdf.ln(10)
+        pdf.ln(5)
 
-        # 2. PLANETARY MATRIX (Table)
+        # --- 2. VISUAL RASI CHART ---
+        pdf.draw_pdf_chart(p_pos, lagna_rasi, title="Birth Chart (Rasi)")
+
+        # --- 3. PLANETARY MATRIX TABLE ---
         pdf.chapter_title("Planetary Core Matrix")
         master_table = kwargs.get('master_table', [])
         
-        # Table Header Styling
         pdf.set_font('helvetica', 'B', 10)
         pdf.set_fill_color(240, 240, 240)
         pdf.set_text_color(44, 62, 80)
@@ -162,7 +220,6 @@ def generate_pdf_report(**kwargs):
             pdf.cell(col_widths[i], 8, header, 1, 0, 'C', 1)
         pdf.ln()
 
-        # Table Row Data
         pdf.set_font('helvetica', '', 10)
         pdf.set_text_color(50, 50, 50)
         for row in master_table:
@@ -174,7 +231,8 @@ def generate_pdf_report(**kwargs):
             pdf.ln()
         pdf.ln(10)
 
-        # 3. EXECUTIVE PLAYBOOK (MBTI & Enneagram)
+        # --- 4. EXECUTIVE PLAYBOOK ---
+        pdf.add_page()
         pdf.chapter_title("Psychological & Strategic Execution")
         mbti = kwargs.get('mbti_data', {})
         ennea = kwargs.get('ennea_data', {})
@@ -193,23 +251,68 @@ def generate_pdf_report(**kwargs):
         
         pdf.chapter_body(playbook_text)
 
-        # 4. CAREER & KARMIC PATH
-        pdf.add_page()
+        # --- 5. CAREER & KARMIC PATH ---
         pdf.chapter_title("Career & Zone of Genius")
         career_list = kwargs.get('career_txt', [])
-        career_body = "\n\n".join([clean_text(str(item)) for item in career_list])
-        pdf.chapter_body(career_body)
+        pdf.chapter_body("\n\n".join([clean_text(str(item)) for item in career_list]))
         
         pdf.chapter_title("Karmic Directives (Rahu/Ketu)")
         karmic_list = kwargs.get('karmic_txt', [])
-        karmic_body = "\n\n".join([clean_text(str(item)) for item in karmic_list])
-        pdf.chapter_body(karmic_body)
+        pdf.chapter_body("\n\n".join([clean_text(str(item)) for item in karmic_list]))
 
-        # 5. TIMELINE FORECAST
+        # --- 6. EDUCATION & INTELLECT ---
+        edu_list = kwargs.get('edu_txt', [])
+        if edu_list:
+            pdf.chapter_title("Intellect & Education")
+            pdf.chapter_body("\n\n".join([clean_text(str(item)) for item in edu_list]))
+
+        # --- 7. LOVE & HEALTH (Includes Navamsa Chart) ---
+        pdf.add_page()
+        pdf.chapter_title("Destiny Chart (Navamsa / D9)")
+        pdf.draw_pdf_chart(p_d9, navamsa_lagna, title="Navamsa Chart")
+
+        love_list = kwargs.get('love_txt', [])
+        if love_list:
+            pdf.chapter_title("Partnerships & Marriage")
+            pdf.chapter_body("\n\n".join([clean_text(str(item)) for item in love_list]))
+
+        health_list = kwargs.get('health_txt', [])
+        if health_list:
+            pdf.chapter_title("Vitality & Health")
+            pdf.chapter_body("\n\n".join([clean_text(str(item)) for item in health_list]))
+
+        # --- 8. YOGAS ---
+        yogas = kwargs.get('yogas', [])
+        if yogas:
+            pdf.add_page()
+            pdf.chapter_title("Key Astrological Yogas")
+            for y in yogas:
+                y_text = f"{clean_text(y.get('Name', ''))} ({clean_text(y.get('Type', ''))})\n"
+                y_text += f"{clean_text(y.get('Description', ''))}\n"
+                pdf.chapter_body(y_text)
+
+        # --- 9. ANNUAL FORECAST ---
+        fc = kwargs.get('fc', {})
+        if fc:
+            pdf.chapter_title("Annual Forecast & Remedy")
+            for cat, data in fc.items():
+                if len(data) == 2:
+                    fc_text = f"[{clean_text(cat)}]\n{clean_text(data[0])}\nRemedy: {clean_text(data[1])}\n"
+                    pdf.chapter_body(fc_text)
+
+        # --- 10. TIMELINE FORECAST ---
+        pdf.add_page()
         pdf.chapter_title("Vimshottari Dasha (Timeline Forecast)")
-        dasha_data = kwargs.get('mahadasha_data', [])
         
-        # Dasha Table Header
+        pd_info = kwargs.get('pd_info', {})
+        if pd_info:
+            pdf.set_font('helvetica', 'B', 11)
+            pdf.set_text_color(22, 160, 133)
+            current_phase_txt = f"Current Phase: {clean_text(pd_info.get('MD', ''))} Mahadasha, {clean_text(pd_info.get('AD', ''))} Antardasha (Until {clean_text(pd_info.get('End', ''))})"
+            pdf.cell(0, 10, current_phase_txt, 0, 1, 'L')
+            pdf.ln(5)
+
+        dasha_data = kwargs.get('mahadasha_data', [])
         pdf.set_font('helvetica', 'B', 10)
         pdf.set_fill_color(240, 240, 240)
         pdf.set_text_color(44, 62, 80)
@@ -218,7 +321,6 @@ def generate_pdf_report(**kwargs):
         pdf.cell(30, 8, "Phase", 1, 0, 'C', 1)
         pdf.ln()
         
-        # Dasha Table Rows
         pdf.set_font('helvetica', '', 10)
         pdf.set_text_color(50, 50, 50)
         for row in dasha_data:
@@ -227,7 +329,7 @@ def generate_pdf_report(**kwargs):
             pdf.cell(30, 8, clean_text(str(row.get('Mahadasha', ''))), 1, 0, 'C')
             pdf.ln()
 
-        # Output the PDF natively as a bytes object for Streamlit's download button
+        # Generate Byte output safely
         pdf_bytes = bytes(pdf.output())
         return pdf_bytes, None
 
