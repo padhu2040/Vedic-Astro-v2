@@ -5,14 +5,17 @@ import json
 import google.generativeai as genai
 from supabase import create_client
 
+# Ensure these match your actual engine file
 from astro_engine import get_location_coordinates, get_utc_offset, calculate_10_porutham, ZODIAC, ZODIAC_TA
 
 NAKSHATRAS = ["Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra", "Punarvasu", "Pushya", "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", "Hasta", "Chitra", "Swati", "Vishakha", "Anuradha", "Jyeshtha", "Mula", "Purva Ashadha", "Uttara Ashadha", "Shravana", "Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"]
 
 @st.cache_resource
 def init_connection():
-    try: return create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
-    except Exception: return None
+    try: 
+        return create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
+    except Exception: 
+        return None
 
 supabase = init_connection()
 
@@ -25,14 +28,16 @@ def load_profiles_from_db():
                 try:
                     name, dob_str, tob_str, city = row["name"], row["dob"], row["tob"], row["city"]
                     parsed_dob = datetime.strptime(dob_str, "%Y-%m-%d").date()
-                    try: parsed_tob = datetime.strptime(tob_str, "%H:%M:%S").time()
-                    except ValueError: parsed_tob = datetime.strptime(tob_str, "%H:%M").time()
+                    try: 
+                        parsed_tob = datetime.strptime(tob_str, "%H:%M:%S").time()
+                    except ValueError: 
+                        parsed_tob = datetime.strptime(tob_str, "%H:%M").time()
                     profiles[name] = {"dob": parsed_dob, "tob": parsed_tob, "city": city}
                 except: pass
         except: pass
     return profiles
 
-# --- NEW: LIGHTWEIGHT DASHA CALCULATOR ---
+# --- LIGHTWEIGHT DASHA CALCULATOR ---
 def get_current_dasha(moon_lon, dob):
     DASHA_LORDS = ["Ketu", "Venus", "Sun", "Moon", "Mars", "Rahu", "Jupiter", "Saturn", "Mercury"]
     DASHA_YEARS = [7, 20, 6, 10, 7, 18, 16, 19, 17]
@@ -108,27 +113,37 @@ col_b, col_g = st.columns(2)
 with col_b:
     st.markdown("##### Partner A (Subject)")
     sel_p1 = st.selectbox("Load Profile (A)", profile_options, key="sel_p1", label_visibility="collapsed")
-    if sel_p1 in ["(Select Profile)", "Enter Manually"]: def_n1, def_dob1, def_tob1, def_loc1 = "", datetime(2000, 1, 1).date(), time(12, 0), ""
-    else: def_n1, def_dob1, def_tob1, def_loc1 = sel_p1, saved_profiles[sel_p1]["dob"], saved_profiles[sel_p1]["tob"], saved_profiles[sel_p1]["city"]
-    b_name = st.text_input("Name", value=def_n1, key="p1_n")
-    b_dob = st.date_input("Date of Birth", value=def_dob1, key="p1_d")
-    b_tob = st.time_input("Time of Birth", value=def_tob1, key="p1_t")
-    b_loc = st.text_input("City", value=def_loc1, key="p1_l")
+    if sel_p1 in ["(Select Profile)", "Enter Manually"]: 
+        def_n1, def_dob1, def_tob1, def_loc1 = "", datetime(2000, 1, 1).date(), time(12, 0), ""
+    else: 
+        def_n1, def_dob1, def_tob1, def_loc1 = sel_p1, saved_profiles[sel_p1]["dob"], saved_profiles[sel_p1]["tob"], saved_profiles[sel_p1]["city"]
+    
+    # Dynamic keys to ensure Streamlit forces an update when a profile is selected
+    k1 = sel_p1.replace(" ", "_") if sel_p1 else "a"
+    b_name = st.text_input("Name", value=def_n1, key=f"p1_n_{k1}")
+    b_dob = st.date_input("Date of Birth", value=def_dob1, key=f"p1_d_{k1}")
+    b_tob = st.time_input("Time of Birth", value=def_tob1, key=f"p1_t_{k1}")
+    b_loc = st.text_input("City", value=def_loc1, key=f"p1_l_{k1}")
 
 with col_g:
     st.markdown("##### Partner B (Counterpart)")
     sel_p2 = st.selectbox("Load Profile (B)", profile_options, key="sel_p2", label_visibility="collapsed")
-    if sel_p2 in ["(Select Profile)", "Enter Manually"]: def_n2, def_dob2, def_tob2, def_loc2 = "", datetime(2000, 1, 1).date(), time(12, 0), ""
-    else: def_n2, def_dob2, def_tob2, def_loc2 = sel_p2, saved_profiles[sel_p2]["dob"], saved_profiles[sel_p2]["tob"], saved_profiles[sel_p2]["city"]
-    g_name = st.text_input("Name", value=def_n2, key="p2_n")
-    g_dob = st.date_input("Date of Birth", value=def_dob2, key="p2_d")
-    g_tob = st.time_input("Time of Birth", value=def_tob2, key="p2_t")
-    g_loc = st.text_input("City", value=def_loc2, key="p2_l")
+    if sel_p2 in ["(Select Profile)", "Enter Manually"]: 
+        def_n2, def_dob2, def_tob2, def_loc2 = "", datetime(2000, 1, 1).date(), time(12, 0), ""
+    else: 
+        def_n2, def_dob2, def_tob2, def_loc2 = sel_p2, saved_profiles[sel_p2]["dob"], saved_profiles[sel_p2]["tob"], saved_profiles[sel_p2]["city"]
+    
+    # Dynamic keys to ensure Streamlit forces an update when a profile is selected
+    k2 = sel_p2.replace(" ", "_") if sel_p2 else "b"
+    g_name = st.text_input("Name", value=def_n2, key=f"p2_n_{k2}")
+    g_dob = st.date_input("Date of Birth", value=def_dob2, key=f"p2_d_{k2}")
+    g_tob = st.time_input("Time of Birth", value=def_tob2, key=f"p2_t_{k2}")
+    g_loc = st.text_input("City", value=def_loc2, key=f"p2_l_{k2}")
 
 st.divider()
 calc_btn = st.button("Generate Executive Synergy Report", type="primary", use_container_width=True)
 
-# --- UPDATED CSS WITH DEFINITION CLASS ---
+# --- GLOBAL CSS FOR FLAT EXECUTIVE CARDS ---
 css_block = """<style>
 .bp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
 .bp-card { background: #ffffff; border: 1px solid #eaeaea; border-radius: 4px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 1px 2px rgba(0,0,0,0.01); }
@@ -142,11 +157,12 @@ css_block = """<style>
 
 if calc_btn:
     if not b_name or not b_loc or not g_name or not g_loc: 
-        st.error("Please ensure all fields are filled out!")
+        st.error("Please ensure all Name and City fields are filled out!")
     else:
         with st.spinner("Calculating dashas, math matrices, and querying Deep AI Oracle..."):
             st.markdown(css_block, unsafe_allow_html=True)
             
+            # 1. Coordinate & Astrological Calculations
             b_lat, b_lon, b_tz = get_location_coordinates(b_loc)
             g_lat, g_lon, g_tz = get_location_coordinates(g_loc)
             
@@ -155,12 +171,13 @@ if calc_btn:
             
             score, porutham_results = calculate_10_porutham(b_data['Nak_Idx'], g_data['Nak_Idx'], b_data['Rasi_Idx'], g_data['Rasi_Idx'], b_name, g_name)
 
-            # Build explicit instructions so the AI doesn't contradict the math
+            # Build explicit instructions so the AI respects the exact math
             ai_math_directives = ""
             for key, res in porutham_results.items():
                 status = "FAVORABLE MATCH" if res.get('match') else "CHALLENGING MISMATCH (Needs Mitigation)"
                 ai_math_directives += f"- {key}: The mathematical result is a {status}. Explain why based on their stars.\n"
 
+            # 2. Advanced AI Fetching
             API_KEY = st.secrets.get("GEMINI_API_KEY", "")
             ai_data = None
             
@@ -207,8 +224,9 @@ if calc_btn:
                     clean_resp = resp.text.replace('```json', '').replace('```', '').strip()
                     ai_data = json.loads(clean_resp)
                 except Exception as e:
-                    st.warning(f"AI Oracle offline or parsing failed.")
+                    st.warning(f"AI Oracle offline or parsing failed. Using standard insights.")
 
+            # 3. Output Rendering
             st.subheader(f"Compatibility Score: {score}/10")
             
             html_grid = '<div class="bp-grid">'
@@ -220,22 +238,25 @@ if calc_btn:
                 insight_text = "Analysis unavailable."
                 if ai_data and 'porutham_insights' in ai_data:
                     for ai_key, ai_val in ai_data['porutham_insights'].items():
+                        # Fuzzy match the AI keys to your porutham result keys
                         if ai_key.lower()[:4] in key.lower():
                             insight_text = ai_val
                             break
                             
-                # Get the definition for the bottom of the card
+                # Grab the definition for the bottom of the card
                 def_text = ""
                 for p_key, p_val in PORUTHAM_DEFS.items():
                     if p_key.lower()[:4] in key.lower():
                         def_text = p_val
                         break
                 
+                # Single line string building to protect the HTML parser
                 html_grid += f'<div class="bp-card"><div class="bp-head"><span>{key}</span><span class="{tag_class}">{tag_text}</span></div><div class="bp-desc">{insight_text}</div><div class="bp-def">{def_text}</div></div>'
                 
             html_grid += '</div>'
             st.markdown(html_grid, unsafe_allow_html=True)
             
+            # 4. Strategic AI Summary Rendering
             if ai_data and 'summary' in ai_data:
                 st.divider()
                 st.markdown("### Strategic Alignment & Timeline Forecast")
