@@ -5,7 +5,7 @@ import json
 import google.generativeai as genai
 from supabase import create_client
 
-# Ensure these imports are correctly pointing to your actual engine file
+# Ensure these imports match your actual engine file
 from astro_engine import get_location_coordinates, get_utc_offset, calculate_10_porutham, ZODIAC, ZODIAC_TA
 
 NAKSHATRAS = ["Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra", "Punarvasu", "Pushya", "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", "Hasta", "Chitra", "Swati", "Vishakha", "Anuradha", "Jyeshtha", "Mula", "Purva Ashadha", "Uttara Ashadha", "Shravana", "Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"]
@@ -133,7 +133,6 @@ with col_g:
 
 st.divider()
 
-# THIS DEFINES THE BUTTON that was causing the NameError!
 calc_btn = st.button("Generate Executive Synergy Report", type="primary", use_container_width=True)
 
 # --- GLOBAL CSS FOR FLAT EXECUTIVE CARDS ---
@@ -164,43 +163,50 @@ if calc_btn:
             
             score, porutham_results = calculate_10_porutham(b_data['Nak_Idx'], g_data['Nak_Idx'], b_data['Rasi_Idx'], g_data['Rasi_Idx'], b_name, g_name)
 
-            # 2. AI Fetching
+            # 2. Advanced AI Fetching
             API_KEY = st.secrets.get("GEMINI_API_KEY", "")
             ai_data = None
             
             if API_KEY:
                 try:
                     genai.configure(api_key=API_KEY)
-                    
-                    # Forcing the use of the latest active models to bypass the 404 bug
                     model = genai.GenerativeModel('gemini-2.5-flash') 
                     
                     json_schema = """
                     {
                         "summary": {
-                            "psychological": "2 sentences on psychological alignment.",
-                            "wealth": "2 sentences on financial synergy.",
-                            "harnessing": "2 sentences on how to balance their dynamic."
+                            "psychological": "2 sentences written directly to the user (second-person 'you') analyzing their emotional and psychological alignment with their partner.",
+                            "wealth": "2 sentences analyzing their combined financial and domestic potential.",
+                            "harnessing": "2 sentences of highly specific advice on how to balance their dynamic, including 1 traditional or modern psychological remedy."
                         },
                         "porutham_insights": {
-                            "Dina": "1 sentence on Dina (Health/Daily Routine).",
-                            "Gana": "1 sentence on Gana (Temperament).",
-                            "Mahendra": "1 sentence on Wealth & Progeny.",
-                            "Rajju": "1 sentence on Rajju (Longevity/Destiny).",
-                            "Rasi": "1 sentence on Rasi compatibility.",
-                            "Rasi Adhipathi": "1 sentence on planetary rulers.",
-                            "Vasiya": "1 sentence on natural magnetism.",
-                            "Stree": "1 sentence on prosperity.",
-                            "Vedha": "1 sentence on energy blockages.",
-                            "Nadi": "1 sentence on health/genetic alignment."
+                            "Dina": "1 highly personalized sentence using their names about their daily health and routine.",
+                            "Gana": "1 highly personalized sentence using their names about their temperament clash/sync.",
+                            "Mahendra": "1 highly personalized sentence using their names about wealth and progeny.",
+                            "Rajju": "1 highly personalized sentence using their names about long-term destiny.",
+                            "Rasi": "1 highly personalized sentence using their names about their worldviews.",
+                            "Rasi Adhipathi": "1 highly personalized sentence using their names about their planetary rulers.",
+                            "Vasiya": "1 highly personalized sentence using their names about their magnetic attraction.",
+                            "Stree": "1 highly personalized sentence using their names about domestic prosperity.",
+                            "Vedha": "1 highly personalized sentence using their names about energetic blockages.",
+                            "Nadi": "1 highly personalized sentence using their names about genetic/health compatibility."
                         }
                     }
                     """
                     
-                    prompt = f"Analyze compatibility between {b_name} (Star: {b_data['Nakshatra']}) and {g_name} (Star: {g_data['Nakshatra']}). Context: {rel_status}.\nReturn a JSON object strictly following this structure:\n{json_schema}"
+                    prompt = f"""
+                    Act as an elite, empathetic Vedic Astrologer and Relationship Coach. 
+                    Analyze the compatibility between the primary user, {b_name} (Birth Star: {b_data['Nakshatra']}), 
+                    and their partner, {g_name} (Birth Star: {g_data['Nakshatra']}). 
+                    Relationship Context: {rel_status}. 
+                    
+                    Use warm, direct, second-person language (e.g., 'You and {g_name}'). Do not use generic textbook definitions; be highly specific to their exact star combinations.
+                    
+                    Return ONLY a JSON object strictly following this structure:
+                    {json_schema}
+                    """
                     
                     resp = model.generate_content(prompt)
-                    # Clean potential markdown wrap
                     clean_resp = resp.text.replace('```json', '').replace('```', '').strip()
                     ai_data = json.loads(clean_resp)
                 except Exception as e:
@@ -215,13 +221,17 @@ if calc_btn:
                 tag_class = "tag-harness" if is_match else "tag-mitigate"
                 tag_text = "FAVORABLE" if is_match else "MITIGATE"
                 
-                # Use AI insight if successfully loaded, else fallback to static dictionary
-                if ai_data and 'porutham_insights' in ai_data and key in ai_data['porutham_insights']:
-                    insight_text = ai_data['porutham_insights'][key]
-                else:
+                # Fuzzy matching to map the AI's standard keys to your detailed porutham result keys
+                insight_text = None
+                if ai_data and 'porutham_insights' in ai_data:
+                    for ai_key, ai_val in ai_data['porutham_insights'].items():
+                        if ai_key.lower() in key.lower():
+                            insight_text = ai_val
+                            break
+                            
+                if not insight_text:
                     insight_text = get_executive_insight(key, is_match, LANG)
                 
-                # IMPORTANT FIX: Kept entirely on one line to stop Streamlit from breaking the HTML parser
                 html_grid += f'<div class="bp-card"><div class="bp-head"><span>{key}</span><span class="{tag_class}">{tag_text}</span></div><div class="bp-desc">{insight_text}</div></div>'
                 
             html_grid += '</div>'
