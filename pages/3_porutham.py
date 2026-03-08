@@ -103,7 +103,7 @@ with st.sidebar:
     LANG = st.radio("Language / மொழி", ["English", "Tamil"], horizontal=True, label_visibility="collapsed")
     st.divider()
 
-rel_status = st.radio("Context", ["Exploring a Match", "Already Married / Committed"], horizontal=True, label_visibility="collapsed")
+rel_status = st.radio("Context", ["Exploring a Match", "Already Married / Committed", "Business Partnership / Co-Founders"], horizontal=True, label_visibility="collapsed")
 st.write("")
 
 saved_profiles = load_profiles_from_db()
@@ -190,6 +190,15 @@ if calc_btn:
                     genai.configure(api_key=API_KEY)
                     model = genai.GenerativeModel('gemini-2.5-flash') 
                     
+                    # --- NEW: DYNAMIC PERSONA & CONTEXT ---
+                    if "Business" in rel_status:
+                        persona = "Elite Vedic Astrologer and Executive Business Coach"
+                        context_directive = "CRITICAL: Interpret all metrics (Dina, Mahendra, Stree, etc.) strictly for professional synergy, operational workflow, wealth generation, and boardroom dynamics. Do NOT mention romance, marriage, or domestic life."
+                    else:
+                        persona = "Elite Vedic Astrologer and Modern Relationship Counselor"
+                        context_directive = "CRITICAL: Interpret all metrics for romantic, domestic, and long-term marital harmony."
+                    # --------------------------------------
+
                     json_schema = """
                     {
                         "summary": {
@@ -213,14 +222,16 @@ if calc_btn:
                     """
                     
                     prompt = f"""
-                    Act as an elite Vedic Astrologer and Modern Relationship Counselor. Analyze {b_name} (Star: {b_data['Nakshatra']}, Moon: {b_data['Rasi']}) and {g_name} (Star: {g_data['Nakshatra']}, Moon: {g_data['Rasi']}).
+                    Act as an {persona}. Analyze {b_name} (Star: {b_data['Nakshatra']}, Moon: {b_data['Rasi']}) and {g_name} (Star: {g_data['Nakshatra']}, Moon: {g_data['Rasi']}).
                     Current Time Data: {b_name} is in {b_data['Dasha']} Mahadasha. {g_name} is in {g_data['Dasha']} Mahadasha.
                     Relationship Context: {rel_status}.
                     
+                    {context_directive}
+                    
                     CRITICAL INSTRUCTIONS: 
-                    1. EMPATHY & TONE: Write in an objective, deeply empathetic THIRD-PERSON perspective. Do NOT use harsh, robotic language. Reframe mismatches as "opportunities for growth" or areas requiring "conscious nurturing."
+                    1. EMPATHY & TONE: Write in an objective, deeply empathetic THIRD-PERSON perspective. Do NOT use harsh, robotic language. Reframe mismatches as "opportunities for growth" or areas requiring "conscious navigation."
                     2. MATH ALIGNMENT: You MUST base your insights on the exact mathematical results below.
-                    3. REMEDIES: The remedy section MUST include both an ancient Vedic text/mantra solution and a modern psychological tool.
+                    3. REMEDIES: The remedy section MUST include both an ancient Vedic text/mantra solution and a modern practical tool.
                     4. FORMATTING: Return plain text within the JSON values. Do NOT use bullet points or markdown formatting.
                     
                     Mathematical Results:
