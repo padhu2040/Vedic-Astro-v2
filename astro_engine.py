@@ -1187,3 +1187,114 @@ def get_executive_blueprint(jd_ut_natal, lat_val, lon_val, lang="English"):
         "timeline": {"title": t_title, "desc": t_desc},
         "leverage": {"score": score, "tag": agency_tag, "desc": lev_desc}
     }
+
+# --- MATCHMAKING ENGINE (PORUTHAM) ---
+def get_porutham_metrics(jd_girl, jd_boy, lang="English"):
+    """
+    Calculates the core traditional Tamil 10-Porutham between two profiles
+    and outputs strategic business/partnership insights.
+    """
+    import swisseph as swe
+
+    swe.set_sid_mode(swe.SIDM_LAHIRI)
+
+    # Calculate Moon Longitudes
+    g_moon = swe.calc_ut(jd_girl, swe.MOON, swe.FLG_SIDEREAL)[0][0]
+    b_moon = swe.calc_ut(jd_boy, swe.MOON, swe.FLG_SIDEREAL)[0][0]
+
+    # Calculate Nakshatra (0-26) and Rasi (0-11)
+    g_nak = int(g_moon / (360/27))
+    b_nak = int(b_moon / (360/27))
+    
+    g_rasi = int(g_moon / 30)
+    b_rasi = int(b_moon / 30)
+
+    # Nakshatra Names
+    nak_en = ["Ashwini", "Bharani", "Karthigai", "Rohini", "Mirugasiridam", "Thiruvathirai", "Punarpoosam", "Poosam", "Ayilyam", "Magam", "Pooram", "Uthiram", "Hastham", "Chithirai", "Swathi", "Visakam", "Anusham", "Kettai", "Moolam", "Pooradam", "Uthiradam", "Thiruvonam", "Avittam", "Sathayam", "Poorattathi", "Uthirattathi", "Revathi"]
+    nak_ta = ["அஸ்வினி", "பரணி", "கிருத்திகை", "ரோகிணி", "மிருகசீரிடம்", "திருவாதிரை", "புனர்பூசம்", "பூசம்", "ஆயில்யம்", "மகம்", "பூரம்", "உத்திரம்", "அஸ்தம்", "சித்திரை", "சுவாதி", "விசாகம்", "அனுஷம்", "கேட்டை", "மூலம்", "பூராடம்", "உத்திராடம்", "திருவோணம்", "அவிட்டம்", "சதயம்", "பூரட்டாதி", "உத்திரட்டாதி", "ரேவதி"]
+    
+    g_star = nak_en[g_nak] if lang=="English" else nak_ta[g_nak]
+    b_star = nak_en[b_nak] if lang=="English" else nak_ta[b_nak]
+
+    score = 0
+    results = []
+
+    # 1. Dina Porutham (Health & Longevity)
+    count = ((b_nak - g_nak + 27) % 27) + 1
+    dina_match = (count % 9) in [2, 4, 6, 8, 0]
+    if dina_match: score += 1
+    results.append({
+        "name": "Dina (Health & Synergy)" if lang=="English" else "தினப் பொருத்தம் (ஆரோக்கியம்)",
+        "match": dina_match,
+        "desc": "Indicates day-to-day operational harmony and physical wellness." if lang=="English" else "அன்றாட வாழ்வில் இருவருக்கும் இடையிலான ஆரோக்கியம் மற்றும் ஒற்றுமையைக் குறிக்கிறது.",
+        "harness" if dina_match else "mitigate": "Excellent sync in daily routines. Build shared habits." if dina_match else "Expect friction in daily routines. Give each other independent space."
+    })
+
+    # 2. Gana Porutham (Temperament)
+    deva = [0, 4, 6, 7, 12, 14, 16, 21, 26]
+    manushya = [1, 3, 5, 10, 11, 19, 20, 24, 25]
+    
+    g_gana = "Deva" if g_nak in deva else "Manushya" if g_nak in manushya else "Rakshasa"
+    b_gana = "Deva" if b_nak in deva else "Manushya" if b_nak in manushya else "Rakshasa"
+    
+    gana_match = (g_gana == b_gana) or (b_gana == "Deva") or (g_gana == "Deva" and b_gana == "Manushya")
+    if gana_match: score += 1
+    results.append({
+        "name": "Gana (Temperament)" if lang=="English" else "கணப் பொருத்தம் (குணம்)",
+        "match": gana_match,
+        "desc": f"Partner A: {g_gana} | Partner B: {b_gana}. Dictates psychological compatibility and ego clashes.",
+        "harness" if gana_match else "mitigate": "Temperaments align beautifully." if gana_match else "Potential for ego clashes. Communication must be structured and objective."
+    })
+
+    # 3. Mahendra (Wealth & Expansion)
+    mahendra_match = count in [4, 7, 10, 13, 16, 19, 22, 25]
+    if mahendra_match: score += 1
+    results.append({
+        "name": "Mahendra (Wealth & Progeny)" if lang=="English" else "மகேந்திரப் பொருத்தம் (செல்வம்)",
+        "match": mahendra_match,
+        "desc": "Governs the generation of shared wealth, assets, and expansion." if lang=="English" else "கூட்டுச் செல்வம் மற்றும் குடும்ப வளர்ச்சியைக் குறிக்கிறது.",
+        "harness" if mahendra_match else "mitigate": "Highly favorable for starting joint ventures or building assets." if mahendra_match else "Financial growth relies on individual effort rather than combined synergy."
+    })
+
+    # 4. Rajju Porutham (The Fatal Flaw / Longevity)
+    # Head=0, Neck=1, Stomach=2, Thigh=3, Foot=4
+    rajju_map = {
+        4:0, 13:0, 22:0, # Head
+        3:1, 5:1, 12:1, 14:1, 21:1, 23:1, # Neck
+        2:2, 6:2, 11:2, 15:2, 20:2, 24:2, # Stomach
+        1:3, 7:3, 10:3, 16:3, 19:3, 25:3, # Thigh
+        0:4, 8:4, 9:4, 17:4, 18:4, 26:4  # Foot
+    }
+    g_rajju = rajju_map[g_nak]
+    b_rajju = rajju_map[b_nak]
+    rajju_match = g_rajju != b_rajju
+    if rajju_match: score += 1
+    
+    results.append({
+        "name": "Rajju (Core Longevity)" if lang=="English" else "ரஜ்ஜுப் பொருத்தம் (ஆயுள்)",
+        "match": rajju_match,
+        "desc": "The most critical metric. Determines long-term survival of the partnership without catastrophic breaks.",
+        "harness" if rajju_match else "mitigate": "No fatal astrological conflicts. The foundation is highly secure." if rajju_match else "SEVERE RISK: Same Rajju detected. Traditional astrology advises against this union."
+    })
+
+    # 5. Rasi Porutham (Lineage & Harmony)
+    rasi_count = ((b_rasi - g_rasi + 12) % 12) + 1
+    rasi_match = rasi_count not in [2, 6, 8, 12] # Avoiding 6/8 and 2/12 axes
+    if rasi_match: score += 1
+    
+    results.append({
+        "name": "Rasi (Core Alignment)" if lang=="English" else "ராசிப் பொருத்தம் (வம்சம்)",
+        "match": rasi_match,
+        "desc": "Reflects the foundational harmony between both individuals' core operating systems.",
+        "harness" if rasi_match else "mitigate": "Worldviews and life trajectories are naturally parallel." if rasi_match else "Conflicting worldviews (Sashtashtagam). Will require constant compromise and diplomacy."
+    })
+
+    # Scaled to 10 for UI presentation (Assuming each of the 5 key ones is worth 2 for the MVP)
+    final_score = score * 2
+
+    return {
+        "g_star": g_star,
+        "b_star": b_star,
+        "score": final_score,
+        "metrics": results
+    }
