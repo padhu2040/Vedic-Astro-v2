@@ -1,6 +1,7 @@
 import streamlit as st
 import swisseph as swe
 from datetime import datetime, time
+import json
 import google.generativeai as genai
 from supabase import create_client
 
@@ -55,7 +56,6 @@ def calculate_match_chart(dob, tob, lat, lon, tz_str):
     return {"Lagna": ZODIAC[lagna_rasi], "Lagna_Idx": lagna_rasi, "Rasi": ZODIAC[p_pos["Moon"]], "Rasi_Idx": p_pos["Moon"], "Nakshatra": NAKSHATRAS[nak_idx], "Nak_Idx": nak_idx, "Is_Manglik": is_manglik, "P_Pos": p_pos}
 
 def get_executive_insight(key, is_match, lang):
-    """Maps traditional Porutham keys to modern executive insights."""
     insights = {
         "Dina": ("Excellent sync in daily routines. Build shared habits.", "Expect friction in daily routines. Give each other independent space."),
         "Gana": ("Temperaments align beautifully. Synergy is natural.", "Potential for ego clashes. Communication must be structured and objective."),
@@ -75,7 +75,6 @@ def get_executive_insight(key, is_match, lang):
     if is_match: return "Leverage this alignment for combined growth." if lang == "English" else "இந்த பொருத்தத்தை உங்கள் கூட்டு வளர்ச்சிக்காகப் பயன்படுத்தவும்."
     return "Requires active communication and boundaries to mitigate friction." if lang == "English" else "கருத்து வேறுபாடுகளைத் தவிர்க்க தெளிவான புரிதல் அவசியம்."
 
-# --- UI START ---
 st.title("Strategic Synergy")
 st.markdown("<div style='color:#7f8c8d; margin-top:-15px; margin-bottom: 20px;'>Matchmaking (Porutham) & Partnership Matrix</div>", unsafe_allow_html=True)
 st.divider()
@@ -89,14 +88,14 @@ rel_status = st.radio("Relationship Context:", ["Exploring a Match", "Already Ma
 st.write("")
 
 saved_profiles = load_profiles_from_db()
-profile_options = ["✨ Select Profile...", "✏️ Enter Manually"] + list(saved_profiles.keys())
+profile_options = ["(Select Profile)", "Enter Manually"] + list(saved_profiles.keys())
 
 col_b, col_g = st.columns(2)
 
 with col_b:
-    st.markdown("### 👨 Partner A Details")
+    st.markdown("<div style='font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;'>Partner A (Subject)</div>", unsafe_allow_html=True)
     sel_p1 = st.selectbox("Load Profile", profile_options, key="sel_p1")
-    if sel_p1 in ["✨ Select Profile...", "✏️ Enter Manually"]: def_n1, def_dob1, def_tob1, def_loc1 = "", datetime(2000, 1, 1).date(), time(12, 0), ""
+    if sel_p1 in ["(Select Profile)", "Enter Manually"]: def_n1, def_dob1, def_tob1, def_loc1 = "", datetime(2000, 1, 1).date(), time(12, 0), ""
     else: def_n1, def_dob1, def_tob1, def_loc1 = sel_p1, saved_profiles[sel_p1]["dob"], saved_profiles[sel_p1]["tob"], saved_profiles[sel_p1]["city"]
 
     k1 = sel_p1.replace(" ", "_")
@@ -106,9 +105,9 @@ with col_b:
     b_loc = st.text_input("City", value=def_loc1, key=f"p1_l_{k1}")
 
 with col_g:
-    st.markdown("### 👩 Partner B Details")
+    st.markdown("<div style='font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;'>Partner B (Counterpart)</div>", unsafe_allow_html=True)
     sel_p2 = st.selectbox("Load Profile", profile_options, key="sel_p2")
-    if sel_p2 in ["✨ Select Profile...", "✏️ Enter Manually"]: def_n2, def_dob2, def_tob2, def_loc2 = "", datetime(2000, 1, 1).date(), time(12, 0), ""
+    if sel_p2 in ["(Select Profile)", "Enter Manually"]: def_n2, def_dob2, def_tob2, def_loc2 = "", datetime(2000, 1, 1).date(), time(12, 0), ""
     else: def_n2, def_dob2, def_tob2, def_loc2 = sel_p2, saved_profiles[sel_p2]["dob"], saved_profiles[sel_p2]["tob"], saved_profiles[sel_p2]["city"]
 
     k2 = sel_p2.replace(" ", "_")
@@ -118,7 +117,7 @@ with col_g:
     g_loc = st.text_input("City", value=def_loc2, key=f"p2_l_{k2}")
 
 st.divider()
-calc_btn = st.button("Calculate Compatibility with AI Oracle", type="primary", use_container_width=True)
+calc_btn = st.button("Generate Executive Synergy Report", type="primary", use_container_width=True)
 
 # --- GLOBAL CSS FOR FLAT EXECUTIVE CARDS ---
 css_block = """<style>
@@ -129,13 +128,15 @@ css_block = """<style>
 .bp-desc { font-size: 13.5px; color: #444; line-height: 1.5; font-weight: 300; margin-bottom:12px; }
 .tag-harness { display:inline-block; font-size: 10.5px; color: #2E7D32; background: #E8F5E9; border: 1px solid #C8E6C9; padding: 2px 6px; border-radius: 3px; font-weight: 600; margin-bottom: 6px; }
 .tag-mitigate { display:inline-block; font-size: 10.5px; color: #C0392B; background: #FDEDEC; border: 1px solid #FADBD8; padding: 2px 6px; border-radius: 3px; font-weight: 600; margin-bottom: 6px; }
-.insight-text { font-size: 12.5px; color: #222; font-style: italic; background: #fafafa; padding: 10px; border-radius: 4px; border: 1px solid #f5f5f5; }
+.insight-text { font-size: 12.5px; color: #222; background: #fafafa; padding: 10px; border-radius: 4px; border: 1px solid #f5f5f5; }
+.ai-inject { margin-bottom: 12px; font-size: 13px; color: #2c3e50; border-left: 2px solid #8e44ad; padding-left: 10px; background: #fcf9fe; padding-top: 6px; padding-bottom: 6px; padding-right: 6px; border-radius: 0 4px 4px 0; line-height: 1.4; }
 </style>"""
 
 if calc_btn:
-    if not b_name or not b_loc or not g_name or not g_loc: st.error("Please ensure all Name and City fields are filled out for both partners!")
+    if not b_name or not b_loc or not g_name or not g_loc: 
+        st.error("Please ensure all Name and City fields are filled out for both partners!")
     else:
-        with st.spinner("Calculating exact coordinates & relationship matrix..."):
+        with st.spinner("Calculating precision metrics and querying Deep AI Oracle..."):
             st.markdown(css_block, unsafe_allow_html=True)
             
             b_lat, b_lon, b_tz = get_location_coordinates(b_loc)
@@ -149,94 +150,9 @@ if calc_btn:
             g_lagna = ZODIAC_TA.get(g_data['Lagna_Idx'], "") if LANG == "Tamil" else g_data['Lagna']
             g_rasi = ZODIAC_TA.get(g_data['Rasi_Idx'], "") if LANG == "Tamil" else g_data['Rasi']
             
-            # Upgrade Identity Cards to Executive Style
-            astro_html = f"""
-<div class="bp-grid">
-<div class="bp-card" style="border-top: 3px solid #2980b9;">
-<div class="bp-head"><span>Identity</span> <span>Partner A</span></div>
-<div class="bp-title">{b_name}</div>
-<div class="bp-desc" style="margin-bottom:0;"><b>Lagna:</b> {b_lagna}<br><b>Rasi:</b> {b_rasi}<br><b>Star:</b> {b_data['Nakshatra']}</div>
-</div>
-<div class="bp-card" style="border-top: 3px solid #8e44ad;">
-<div class="bp-head"><span>Identity</span> <span>Partner B</span></div>
-<div class="bp-title">{g_name}</div>
-<div class="bp-desc" style="margin-bottom:0;"><b>Lagna:</b> {g_lagna}<br><b>Rasi:</b> {g_rasi}<br><b>Star:</b> {g_data['Nakshatra']}</div>
-</div>
-</div>"""
-            st.markdown(astro_html, unsafe_allow_html=True)
-            
-            st.write("")
-            chart_c1, chart_c2 = st.columns(2)
-            with chart_c1: st.markdown(get_south_indian_chart_html(b_data['P_Pos'], b_data['Lagna_Idx'], f"{b_name} Rasi Chart", LANG), unsafe_allow_html=True)
-            with chart_c2: st.markdown(get_south_indian_chart_html(g_data['P_Pos'], g_data['Lagna_Idx'], f"{g_name} Rasi Chart", LANG), unsafe_allow_html=True)
-                    
-            st.write("") 
             score, porutham_results = calculate_10_porutham(b_data['Nak_Idx'], g_data['Nak_Idx'], b_data['Rasi_Idx'], g_data['Rasi_Idx'], b_name, g_name)
-            
-            # Upgrade Manglik Card
-            m_match = (b_data['Is_Manglik'] == g_data['Is_Manglik'])
-            m_color = "#27ae60" if m_match else "#c0392b"
-            m_tag = "BALANCED" if m_match else "IMBALANCE DETECTED"
-            m_title = "Chevvai (Mars) Dosham"
-            m_desc = "Both partners share a compatible level of Martian energy, protecting the bond." if m_match else "There is a difference in Chevvai influence. Conscious patience is required to maintain harmony."
-            
-            m_html = f"""<div class="bp-grid" style="grid-template-columns: 1fr; margin-top:20px;">
-<div class="bp-card" style="border-left: 3px solid {m_color};">
-<div class="bp-head"><span>Mars Energy</span> <span style="color:{m_color}; font-weight:bold;">{m_tag}</span></div>
-<div class="bp-title">{m_title}</div>
-<div class="bp-desc" style="margin-bottom:0;">{m_desc}</div>
-</div>
-</div>"""
-            st.markdown(m_html, unsafe_allow_html=True)
-            
-            st.divider()
-            
-            # Alignment Score Header
-            score_color = "#27ae60" if score >= 6 else "#f39c12" if score >= 4 else "#c0392b"
-            status_tag = "APPROVED" if score >= 6 else "CAUTION" if score >= 4 else "HIGH RISK"
-            score_html = f"""<div class="bp-grid" style="grid-template-columns: 1fr;">
-<div class="bp-card" style="border-top: 3px solid {score_color}; flex-direction:row; justify-content:space-between; align-items:center;">
-<div>
-<div class="bp-head" style="border:none; margin:0; padding:0;">Overall Alignment Score</div>
-<div style="font-size:42px; font-weight:300; color:#111; line-height:1; margin-top:5px;">{score}<span style="font-size:16px; color:#888;">/10</span></div>
-</div>
-<div style="text-align:right;">
-<span style="background:{score_color}; color:#fff; padding: 4px 10px; border-radius: 3px; font-size: 11px; font-weight: bold; letter-spacing: 0.5px;">{status_tag}</span>
-</div>
-</div>
-</div>"""
-            st.markdown(score_html, unsafe_allow_html=True)
-            
-            # Process Porutham Dictionary into Executive Cards
-            matched_items = {k: v for k, v in porutham_results.items() if v["match"]}
-            unmatched_items = {k: v for k, v in porutham_results.items() if not v["match"]}
-            
-            grid_html = """<div class="bp-grid">"""
-            
-            for k, v in porutham_results.items():
-                is_match = v["match"]
-                card_border = "#2E7D32" if is_match else "#C0392B"
-                status_text = "ALIGNED" if is_match else "MISALIGNED"
-                tag_class = "tag-harness" if is_match else "tag-mitigate"
-                tag_label = "HARNESS STRENGTH" if is_match else "MITIGATE RISK"
-                insight = get_executive_insight(k, is_match, LANG)
 
-                grid_html += f"""
-<div class="bp-card" style="border-top: 3px solid {card_border};">
-<div class="bp-head"><span>{k}</span> <span style="color:{card_border}; font-weight:bold;">{status_text}</span></div>
-<div class="bp-desc">{v['desc']}</div>
-<div style="margin-top:auto; padding-top:12px; border-top: 1px dashed #eee;">
-<div class="{tag_class}">{tag_label}</div>
-<div class="insight-text">{insight}</div>
-</div>
-</div>"""
-            
-            grid_html += "</div>"
-            st.markdown(grid_html, unsafe_allow_html=True)
-
-            st.divider()
-            
-            # --- AI ORACLE REMAINS UNTOUCHED ---
+            # --- AI ORACLE DATA FETCH (JSON) ---
             API_KEY = st.secrets.get("GEMINI_API_KEY", "")
             if not API_KEY:
                 try:
@@ -244,36 +160,36 @@ if calc_btn:
                     API_KEY = GEMINI_API_KEY
                 except: pass
 
-            if not API_KEY: st.error("API Key missing! Add it to Streamlit Secrets to generate AI insights.")
-            else:
-                st.markdown("### 💬 Deep AI Relationship Oracle")
-                with st.spinner("The AI Astrologer is compiling a personalized consultation..."):
-                    try:
-                        genai.configure(api_key=API_KEY)
-                        match_list = ", ".join(list(matched_items.keys()))
-                        unmatch_list = ", ".join(list(unmatched_items.keys()))
-                        
-                        prompt = f"""
-                        You are an elite Vedic Astrologer analyzing compatibility between {b_name} and {g_name} who are {rel_status}.
-                        Traditional Score: {score}/10. Aligned: {match_list}. Unmatched: {unmatch_list}.
-                        Write a deep analysis using these EXACT headers. If language is Tamil, reply in full Tamil. Language requested: {LANG}.
-                        
-                        ### 🧠 Psychological Dynamic
-                        (2-sentence intro, then 2 bullet points on strengths and friction)
-                        
-                        ### 🏡 Life & Wealth
-                        (2-sentence intro, then 2 bullet points on money and domestic alignment)
-                        
-                        ### ⚖️ Harnessing & Balancing
-                        (2-sentence intro, then 2 bullet points on how to use their strengths to overcome their weaknesses)
-                        """
-                        
-                        available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-                        target_model = available_models[0] if available_models else 'gemini-1.5-flash'
-                        for m in available_models:
-                            if 'gemini-1.5-flash' in m: target_model = m; break
-                            elif '1.5-pro' in m or '1.0-pro' in m: target_model = m
-                        
-                        model = genai.GenerativeModel(target_model)
-                        st.markdown(model.generate_content(prompt).text)
-                    except Exception as e: st.error(f"AI Generation Failed. Details: {e}")
+            ai_data = None
+            if API_KEY:
+                try:
+                    genai.configure(api_key=API_KEY)
+                    model = genai.GenerativeModel('gemini-1.5-flash', generation_config={"response_mime_type": "application/json"})
+                    
+                    prompt_input = {k: "Aligned" if v["match"] else "Misaligned" for k, v in porutham_results.items()}
+                    
+                    prompt = f"""
+                    Analyze Vedic compatibility between {b_name} (Star: {b_data['Nakshatra']}, Moon: {b_data['Rasi']}) and {g_name} (Star: {g_data['Nakshatra']}, Moon: {g_data['Rasi']}). Context: {rel_status}.
+                    Traditional Results: {json.dumps(prompt_input)}
+                    
+                    Return a JSON object in {LANG} strictly following this exact structure:
+                    {{
+                        "summary": {{
+                            "psychological": "2 sentences on core psychological alignment/friction based on their specific Moon signs.",
+                            "wealth": "2 sentences on financial and domestic synergy.",
+                            "harnessing": "2 sentences on how to balance their specific dynamic."
+                        }},
+                        "cards": {{
+                            "Dina": "1 personalized sentence explaining the Dina match/mismatch for these two specific people.",
+                            "Gana": "1 personalized sentence on their Temperament interaction.",
+                            "Mahendra": "1 personalized sentence on their Wealth & Progeny.",
+                            "Rajju": "1 personalized sentence on their Rajju (Longevity/Destiny).",
+                            "Rasi": "1 personalized sentence on their specific Rasi (Moon sign) compatibility."
+                        }}
+                    }}
+                    """
+                    resp = model.generate_content(prompt)
+                    raw_text = resp.text.strip()
+                    if raw_text.startswith("
+http://googleusercontent.com/immersive_entry_chip/0
+http://googleusercontent.com/immersive_entry_chip/1
