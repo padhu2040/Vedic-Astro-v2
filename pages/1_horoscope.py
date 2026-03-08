@@ -26,7 +26,8 @@ if not API_KEY:
     try:
         from api_config import GEMINI_API_KEY
         API_KEY = GEMINI_API_KEY
-    except: pass
+    except Exception: 
+        pass
 
 st.set_page_config(page_title="Vedic Astro AI Engine", layout="wide")
 
@@ -36,7 +37,7 @@ if 'messages' not in st.session_state: st.session_state.messages = []
 @st.cache_resource
 def init_connection():
     try: return create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
-    except: return None
+    except Exception: return None
 
 supabase = init_connection()
 
@@ -52,8 +53,8 @@ def load_profiles_from_db():
                     try: parsed_tob = datetime.strptime(tob_str, "%H:%M:%S").time()
                     except ValueError: parsed_tob = datetime.strptime(tob_str, "%H:%M").time()
                     profiles[name] = {"dob": parsed_dob, "tob": parsed_tob, "city": city}
-                except: pass
-        except: pass
+                except Exception: pass
+        except Exception: pass
     return profiles
 
 # --- UNIQUE HOUSE STRENGTH ANALYSIS ENGINE ---
@@ -219,13 +220,13 @@ def get_enneagram_data(p_lon_absolute):
     growth_coaching = f"Your ultimate path to growth requires you to move toward the highest expression of <b>{g_p_name}</b>. This means actively cultivating {growth_traits.get(growth_planet, 'its highest energy')}. True authority will follow when you stop relying on your baseline instincts and embrace this advanced operating state."
     stress_coaching = f"Under severe executive stress, you disintegrate into the shadow of <b>{s_p_name}</b>. You lose your natural decisive edge and begin operating from fear, adopting toxic traits like {stress_traits.get(stress_planet, 'reactive behavior')}. You must recognize these triggers immediately."
     
-    ak_coaching = f"Your fundamental core drive is powered by <b>{ak_name}</b>. At your deepest subconscious level, you are fundamentally driven by the need for {enneagram_map.get(ak)[1]}. Every major executive decision you make is ultimately an attempt to satisfy this core urge. When you align your career directly with this specific energy, you become unstoppable."
+    ak_coaching = f"Your fundamental core drive is powered by <b>{ak_name}</b>. At your deepest subconscious level, you are fundamentally driven by the need for {enneagram_map.get(ak, ('','core values'))[1]}. Every major executive decision you make is ultimately an attempt to satisfy this core urge. When you align your career directly with this specific energy, you become unstoppable."
     amk_coaching = f"While your Core dictates <i>what</i> you want, your Execution Wing, <b>{amk_name}</b>, dictates <i>how</i> you get it. You naturally rely on {amk_traits.get(amk, 'strategic focus')} to navigate complex professional landscapes. This is your tactical superpower—lean heavily on it to execute your grand vision."
 
     return {
         "ak_eng": ak, "amk_eng": amk,
-        "ak_planet": ak_name, "ak_type": enneagram_map.get(ak)[0], "ak_desire": enneagram_map.get(ak)[1], "ak_coaching": ak_coaching,
-        "amk_planet": amk_name, "amk_type": enneagram_map.get(amk)[0], "amk_coaching": amk_coaching,
+        "ak_planet": ak_name, "ak_type": enneagram_map.get(ak, ("Type 1", ""))[0], "ak_desire": enneagram_map.get(ak, ("","growth"))[1], "ak_coaching": ak_coaching,
+        "amk_planet": amk_name, "amk_type": enneagram_map.get(amk, ("Type 2", ""))[0], "amk_coaching": amk_coaching,
         "growth_planet": g_p_name, "growth_coaching": growth_coaching,
         "stress_planet": s_p_name, "stress_coaching": stress_coaching
     }
@@ -289,22 +290,22 @@ def get_d10_traits(d10_lord):
 
 
 # --- UI HEADER ---
-st.title(":material/account_circle: Deep Horoscope Engine")
-st.markdown("Generate a complete, personalized Vedic astrological profile.")
+st.title("Deep Horoscope Engine")
+st.markdown("<div style='color:#7f8c8d; margin-top:-15px; margin-bottom: 20px;'>Generate a complete, personalized Vedic astrological profile.</div>", unsafe_allow_html=True)
 st.divider()
 
-# --- SIDEBAR ---
+# --- SIDEBAR (Upgraded with Dynamic Keys) ---
 with st.sidebar:
-    st.markdown("### ⚙️ Engine Settings")
-    LANG = st.radio("Language / மொழி", ["English", "Tamil"], horizontal=True)
+    st.markdown("<div style='font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;'>Engine Settings</div>", unsafe_allow_html=True)
+    LANG = st.radio("Language / மொழி", ["English", "Tamil"], horizontal=True, label_visibility="collapsed")
     st.divider()
     
-    st.markdown("### 👤 Birth Details")
+    st.markdown("<div style='font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;'>Birth Details</div>", unsafe_allow_html=True)
     saved_profiles = load_profiles_from_db()
-    profile_options = ["✨ Select Profile...", "✏️ Enter Manually"] + list(saved_profiles.keys())
-    selected_profile = st.selectbox("Load Saved Profile", profile_options)
+    profile_options = ["(Select Profile)", "Enter Manually"] + list(saved_profiles.keys())
+    selected_profile = st.selectbox("Load Saved Profile", profile_options, label_visibility="collapsed")
     
-    if selected_profile in ["✨ Select Profile...", "✏️ Enter Manually"]:
+    if selected_profile in ["(Select Profile)", "Enter Manually"]:
         def_n, def_dob, def_tob, def_loc = "", datetime(2000, 1, 1).date(), time(12, 0), ""
     else:
         def_n = selected_profile
@@ -312,21 +313,32 @@ with st.sidebar:
         def_tob = saved_profiles[selected_profile]["tob"]
         def_loc = saved_profiles[selected_profile]["city"]
 
-    k = selected_profile.replace(" ", "_")
+    # FIX: Dynamic keys force Streamlit to refresh inputs instantly when a profile is selected
+    k = selected_profile.replace(" ", "_") if selected_profile else "manual"
     name_in = st.text_input("Name", value=def_n, key=f"h_name_{k}")
-    dob_in = st.date_input("Date of Birth", value=def_dob, min_value=datetime(1950, 1, 1).date(), key=f"h_dob_{k}")
+    dob_in = st.date_input("Date of Birth", value=def_dob, min_value=datetime(1950, 1, 1).date(), max_value=datetime.today().date(), key=f"h_dob_{k}")
     tob_in = st.time_input("Time of Birth", value=def_tob, step=60, key=f"h_tob_{k}")
     city = st.text_input("City", value=def_loc, key=f"h_loc_{k}")
-    f_year = st.number_input("Forecast Year", min_value=datetime.now().year, max_value=2050, value=2026)
+    
+    st.divider()
+    f_year = st.number_input("Forecast Year", min_value=datetime.now().year, max_value=2050, value=datetime.now().year)
     
     lat_val, lon_val, tz_val = 13.0827, 80.2707, "Asia/Kolkata" 
     if city:
         lat_val, lon_val, tz_val = get_location_coordinates(city)
     
-    calc_btn = st.button("Generate Report", type="primary", use_container_width=True)
+    calc_btn = st.button("Generate Deep Horoscope", type="primary", use_container_width=True)
     if calc_btn:
         if not name_in or not city: st.error("Please enter a Name and City!")
         else: st.session_state.report_generated = True
+
+# --- GLOBAL CSS ---
+css_block = """<style>
+.bp-card { background: #ffffff; border: 1px solid #eaeaea; border-radius: 4px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 2px rgba(0,0,0,0.01); }
+.stTabs [data-baseweb="tab-list"] { gap: 8px; }
+.stTabs [data-baseweb="tab"] { padding-top: 10px; padding-bottom: 10px; }
+</style>"""
+st.markdown(css_block, unsafe_allow_html=True)
 
 # --- MAIN EXECUTION ---
 if st.session_state.report_generated:
@@ -366,7 +378,7 @@ if st.session_state.report_generated:
             status = "VARGOTTAMA" if r1 == p_d9[p] else "ROYAL" if dig == "Exalted" else "WEAK" if dig == "Neecha" else "Avg"
             master_table.append({"Planet": t_p.get(p, p) if LANG == "Tamil" else t_p_eng.get(p, p), "Rasi": ZODIAC_TA.get(r1, "") if LANG=="Tamil" else ZODIAC[r1], "House": h, "Bhava": bhava_h, "Dignity": dig, "Status": status})
 
-        # PRECOMPUTE RAHU/KETU HOUSES (Moved to fix the PDF NameError!)
+        # PRECOMPUTE RAHU/KETU HOUSES
         ketu_lon = (p_lon_absolute["Rahu"] + 180) % 360
         p_lon_absolute["Ketu"] = ketu_lon
         p_pos["Ketu"] = int(ketu_lon/30) + 1
@@ -450,10 +462,10 @@ if st.session_state.report_generated:
             st.markdown("This table displays the exact dignity and status of your planetary placements. 'Exalted' planets act as your superpowers, while 'Neecha' (debilitated) planets show areas requiring conscious development.")
             
             headers = ["கிரகம்", "ராசி", "பாவம்", "பலம்", "நிலை"] if LANG == "Tamil" else ["Planet", "Rasi", "House", "Dignity", "Status"]
-            table_md = f"<table style='width: 100%; margin: 20px auto; border-collapse: collapse; font-family: sans-serif; font-size: 15px; text-align: center;'><tr style='background-color: #f8f9fa; border-bottom: 2px solid #ccc;'><th style='padding: 12px 8px;'>{headers[0]}</th><th style='padding: 12px 8px;'>{headers[1]}</th><th style='padding: 12px 8px;'>{headers[2]}</th><th style='padding: 12px 8px;'>{headers[3]}</th><th style='padding: 12px 8px;'>{headers[4]}</th></tr>"
+            table_md = f"<div class='bp-card'><table style='width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 15px; text-align: left;'><tr style='background-color: #f8f9fa; border-bottom: 2px solid #ccc;'><th style='padding: 12px 15px;'>{headers[0]}</th><th style='padding: 12px 15px;'>{headers[1]}</th><th style='padding: 12px 15px;'>{headers[2]}</th><th style='padding: 12px 15px;'>{headers[3]}</th><th style='padding: 12px 15px;'>{headers[4]}</th></tr>"
             for row in master_table:
-                table_md += f"<tr style='border-bottom: 1px solid #eee;'><td style='padding: 12px 8px;'><b>{row['Planet']}</b></td><td style='padding: 12px 8px;'>{row['Rasi']}</td><td style='padding: 12px 8px;'>{row['House']}</td><td style='padding: 12px 8px;'>{row['Dignity']}</td><td style='padding: 12px 8px;'>{row['Status']}</td></tr>"
-            table_md += "</table>"
+                table_md += f"<tr style='border-bottom: 1px solid #eee;'><td style='padding: 12px 15px;'><b>{row['Planet']}</b></td><td style='padding: 12px 15px;'>{row['Rasi']}</td><td style='padding: 12px 15px;'>{row['House']}</td><td style='padding: 12px 15px;'>{row['Dignity']}</td><td style='padding: 12px 15px;'>{row['Status']}</td></tr>"
+            table_md += "</table></div>"
             st.markdown(table_md, unsafe_allow_html=True)
 
         # --- TAB 2: DESTINY RADAR ---
@@ -465,16 +477,21 @@ if st.session_state.report_generated:
             fig_bar = go.Figure(data=[go.Bar(x=vals, y=cats_labels, orientation='h', marker_color='#bdc3c7', text=[f"<b>{v}</b>" for v in vals], textposition='outside', textfont=dict(color=text_colors, size=14))])
             fig_bar.add_vline(x=28, line_width=2, line_dash="dash", line_color="#7f8c8d", annotation_text="Average (28)" if LANG=="English" else "சராசரி (28)", annotation_position="top right")
             fig_bar.update_layout(yaxis=dict(autorange="reversed"), margin=dict(l=20, r=20, t=40, b=20), height=400)
+            
+            st.markdown("<div class='bp-card'>", unsafe_allow_html=True)
             st.plotly_chart(fig_bar, use_container_width=True)
+            st.markdown("</div>", unsafe_allow_html=True)
             
             c1, c2 = st.columns(2)
             sorted_houses = sorted([(sav_scores[(lagna_rasi-1+i)%12], i+1) for i in range(12)], key=lambda x: x[0], reverse=True)
             with c1:
-                st.markdown(f"<h4 style='color: #27ae60; margin-bottom: 10px;'>{'Top power zones' if LANG=='English' else 'அதிக பலம் பெற்ற பாவங்கள்'}</h4>", unsafe_allow_html=True)
+                st.markdown(f"<div class='bp-card'><h4 style='color: #27ae60; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 8px;'>{'Top power zones' if LANG=='English' else 'அதிக பலம் பெற்ற பாவங்கள்'}</h4>", unsafe_allow_html=True)
                 for s, h in sorted_houses[:3]: st.markdown(get_local_house_analysis(h, s, LANG), unsafe_allow_html=True)
+                st.markdown("</div>", unsafe_allow_html=True)
             with c2:
-                st.markdown(f"<h4 style='color: #e74c3c; margin-bottom: 10px;'>{'Top challenge zones' if LANG=='English' else 'கவனம் தேவைப்படும் பாவங்கள்'}</h4>", unsafe_allow_html=True)
+                st.markdown(f"<div class='bp-card'><h4 style='color: #e74c3c; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 8px;'>{'Top challenge zones' if LANG=='English' else 'கவனம் தேவைப்படும் பாவங்கள்'}</h4>", unsafe_allow_html=True)
                 for s, h in sorted_houses[-3:]: st.markdown(get_local_house_analysis(h, s, LANG), unsafe_allow_html=True)
+                st.markdown("</div>", unsafe_allow_html=True)
 
         # --- TAB 3: THE EXECUTIVE PLAYBOOK ---
         with t3:
@@ -529,82 +546,34 @@ if st.session_state.report_generated:
                 pct_right = 100 - pct_left
                 active_left = "#2c3e50" if pct_left >= 50 else "#dcdcdc"
                 active_right = "#2c3e50" if pct_right > 50 else "#dcdcdc"
-                return f"""
-<div style="margin-bottom: 25px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
-<div style="text-align: center; margin-bottom: 8px;">
-<div style="font-size: 16px; font-weight: bold; color: #111;">{title}</div>
-<div style="font-size: 13px; color: #555; font-style: italic; margin-top: 4px;">{energy_txt}</div>
-</div>
-<div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; color: #555; margin-bottom: 6px;">
-<span style="color: {active_left};">{pct_left}% {left_lbl}</span>
-<span style="color: {active_right};">{right_lbl} {pct_right}%</span>
-</div>
-<div style="width: 100%; height: 10px; display: flex; overflow: hidden; gap: 4px;">
-<div style="width: {pct_left}%; background-color: {active_left}; border-radius: 5px 0 0 5px;"></div>
-<div style="width: {pct_right}%; background-color: {active_right}; border-radius: 0 5px 5px 0;"></div>
-</div>
-</div>
-"""
+                return f'<div style="margin-bottom: 25px; font-family: \'Helvetica Neue\', Helvetica, Arial, sans-serif;"><div style="text-align: center; margin-bottom: 8px;"><div style="font-size: 16px; font-weight: bold; color: #111;">{title}</div><div style="font-size: 13px; color: #555; font-style: italic; margin-top: 4px;">{energy_txt}</div></div><div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; color: #555; margin-bottom: 6px;"><span style="color: {active_left};">{pct_left}% {left_lbl}</span><span style="color: {active_right};">{right_lbl} {pct_right}%</span></div><div style="width: 100%; height: 10px; display: flex; overflow: hidden; gap: 4px;"><div style="width: {pct_left}%; background-color: {active_left}; border-radius: 5px 0 0 5px;"></div><div style="width: {pct_right}%; background-color: {active_right}; border-radius: 0 5px 5px 0;"></div></div></div>'
             
-            playbook_html = f"""
-<div style="padding: 10px 0; color: #333; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+            # FIXED HTML STRING to prevent Streamlit from interpreting it as a raw code block
+            playbook_html = f"""<div style="padding: 10px 0; color: #333; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
 <h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 1: The core drive</h2>
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
-<div style="background: #fff; border: 1px solid #eaeaea; border-top: 4px solid {core_color}; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
-<div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Atmakaraka:</b> Core Driver</div>
-<div style="font-size: 18px; font-weight: bold; color: {core_color}; margin-bottom: 10px;">{ennea_data['ak_planet']} ({ennea_data['ak_type']})</div>
-<div style="font-size: 14px; color: #444; line-height: 1.5;">{ennea_data['ak_coaching']}</div>
-</div>
-<div style="background: #fff; border: 1px solid #eaeaea; border-top: 4px solid {wing_color}; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
-<div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Amatyakaraka:</b> Execution Wing</div>
-<div style="font-size: 18px; font-weight: bold; color: {wing_color}; margin-bottom: 10px;">{ennea_data['amk_planet']}</div>
-<div style="font-size: 14px; color: #444; line-height: 1.5;">{ennea_data['amk_coaching']}</div>
-</div>
-<div style="background: #f9fbf9; border: 1px solid #eaeaea; border-left: 4px solid #27ae60; padding: 20px; border-radius: 8px;">
-<div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Ucha:</b> Growth Path</div>
-<div style="font-size: 16px; font-weight: bold; color: #27ae60; margin-bottom: 10px;">{ennea_data['growth_planet']}</div>
-<div style="font-size: 14px; color: #444; line-height: 1.5;">{ennea_data['growth_coaching']}</div>
-</div>
-<div style="background: #fdfaf9; border: 1px solid #eaeaea; border-left: 4px solid #e74c3c; padding: 20px; border-radius: 8px;">
-<div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Neecha:</b> Stress Path</div>
-<div style="font-size: 16px; font-weight: bold; color: #c0392b; margin-bottom: 10px;">{ennea_data['stress_planet']}</div>
-<div style="font-size: 14px; color: #444; line-height: 1.5;">{ennea_data['stress_coaching']}</div>
-</div>
+<div style="background: #fff; border: 1px solid #eaeaea; border-top: 4px solid {core_color}; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);"><div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Atmakaraka:</b> Core Driver</div><div style="font-size: 18px; font-weight: bold; color: {core_color}; margin-bottom: 10px;">{ennea_data['ak_planet']} ({ennea_data['ak_type']})</div><div style="font-size: 14px; color: #444; line-height: 1.5;">{ennea_data['ak_coaching']}</div></div>
+<div style="background: #fff; border: 1px solid #eaeaea; border-top: 4px solid {wing_color}; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);"><div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Amatyakaraka:</b> Execution Wing</div><div style="font-size: 18px; font-weight: bold; color: {wing_color}; margin-bottom: 10px;">{ennea_data['amk_planet']}</div><div style="font-size: 14px; color: #444; line-height: 1.5;">{ennea_data['amk_coaching']}</div></div>
+<div style="background: #f9fbf9; border: 1px solid #eaeaea; border-left: 4px solid #27ae60; padding: 20px; border-radius: 8px;"><div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Ucha:</b> Growth Path</div><div style="font-size: 16px; font-weight: bold; color: #27ae60; margin-bottom: 10px;">{ennea_data['growth_planet']}</div><div style="font-size: 14px; color: #444; line-height: 1.5;">{ennea_data['growth_coaching']}</div></div>
+<div style="background: #fdfaf9; border: 1px solid #eaeaea; border-left: 4px solid #e74c3c; padding: 20px; border-radius: 8px;"><div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;"><b>Neecha:</b> Stress Path</div><div style="font-size: 16px; font-weight: bold; color: #c0392b; margin-bottom: 10px;">{ennea_data['stress_planet']}</div><div style="font-size: 14px; color: #444; line-height: 1.5;">{ennea_data['stress_coaching']}</div></div>
 </div>
 <h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 2: The zone of genius</h2>
-<div style="margin-bottom: 30px;">
-{format_md(edu_txt)}
-{format_md(career_txt)}
-</div>
+<div style="margin-bottom: 30px;">{format_md(edu_txt)}{format_md(career_txt)}</div>
 <h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 3: The karmic directive</h2>
 <div style="display: flex; gap: 20px; margin-bottom: 30px;">
-<div style="flex: 1; background-color: #fafafa; border: 1px solid #eee; padding: 20px; border-radius: 6px;">
-<h4 style="color: #34495e; margin-top: 0; margin-bottom: 10px; font-size: 16px;">Zone of Ambition (Rahu in H{rahu_h})</h4>
-<p style="font-size: 14px; color: #444; margin: 0; line-height: 1.5;">This is where you must actively disrupt your comfort zone. Specifically, this points to <b>{rahu_domain}</b>. Growth here feels unnatural but yields massive executive returns. Lean heavily into this sector to scale your success.</p>
-</div>
-<div style="flex: 1; background-color: #fafafa; border: 1px solid #eee; padding: 20px; border-radius: 6px;">
-<h4 style="color: #7f8c8d; margin-top: 0; margin-bottom: 10px; font-size: 16px;">Zone of Detachment (Ketu in H{ketu_h})</h4>
-<p style="font-size: 14px; color: #444; margin: 0; line-height: 1.5;">This is your area of innate mastery. Specifically, this points to <b>{ketu_domain}</b>. You are already naturally gifted here, but obsessing over it will stall your career. Delegate these tasks and use them only as a foundational strength.</p>
-</div>
+<div style="flex: 1; background-color: #fafafa; border: 1px solid #eee; padding: 20px; border-radius: 6px;"><h4 style="color: #34495e; margin-top: 0; margin-bottom: 10px; font-size: 16px;">Zone of Ambition (Rahu in H{rahu_h})</h4><p style="font-size: 14px; color: #444; margin: 0; line-height: 1.5;">This is where you must actively disrupt your comfort zone. Specifically, this points to <b>{rahu_domain}</b>. Growth here feels unnatural but yields massive executive returns. Lean heavily into this sector to scale your success.</p></div>
+<div style="flex: 1; background-color: #fafafa; border: 1px solid #eee; padding: 20px; border-radius: 6px;"><h4 style="color: #7f8c8d; margin-top: 0; margin-bottom: 10px; font-size: 16px;">Zone of Detachment (Ketu in H{ketu_h})</h4><p style="font-size: 14px; color: #444; margin: 0; line-height: 1.5;">This is your area of innate mastery. Specifically, this points to <b>{ketu_domain}</b>. You are already naturally gifted here, but obsessing over it will stall your career. Delegate these tasks and use them only as a foundational strength.</p></div>
 </div>
 <h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 4: The 3 rules for success</h2>
 <div style="background-color: #e8f6f3; border: 1px solid #d1f2eb; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
 <ol style="margin: 0; padding-left: 20px; font-size: 15px; color: #111; line-height: 1.6;">
-<li style="margin-bottom: 12px;"><b>Protect Your Energy:</b> {coaching_rules[0]}</li>
-<li style="margin-bottom: 12px;"><b>Current Focus:</b> {coaching_rules[1]}</li>
-<li><b>The Ultimate Metric:</b> {coaching_rules[2]}</li>
+<li style="margin-bottom: 12px;"><b>Protect Your Energy:</b> {coaching_rules[0]}</li><li style="margin-bottom: 12px;"><b>Current Focus:</b> {coaching_rules[1]}</li><li><b>The Ultimate Metric:</b> {coaching_rules[2]}</li>
 </ol>
 </div>
 <h2 style="color: #2c3e50; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 8px;">Phase 5: The cognitive mechanics</h2>
 <p style="font-size: 14px; color: #666; margin-bottom: 25px;">While Core Drive (Phase 1) explains the WHY you act, your Cognitive mechanics (<b>{mbti_data['code']}</b>) explains HOW your brain naturally processes data to get there.</p>
-<div style="max-width: 650px; margin: 0 auto; padding: 10px 0;">
-{draw_mbti_bar_html("Energy Orientation", e_txt, "EXTRAVERTED", "INTROVERTED", mbti_data['extro_pct'])}
-{draw_mbti_bar_html("Information Processing", s_txt, "SENSING", "INTUITIVE", 100 - mbti_data['int_pct'])}
-{draw_mbti_bar_html("Decision Making", t_txt, "THINKING", "FEELING", mbti_data['think_pct'])}
-{draw_mbti_bar_html("World Structure", j_txt, "JUDGING", "PERCEIVING", mbti_data['judging_pct'])}
-</div>
-</div>
-"""
+<div style="max-width: 650px; margin: 0 auto; padding: 10px 0;">{draw_mbti_bar_html("Energy Orientation", e_txt, "EXTRAVERTED", "INTROVERTED", mbti_data['extro_pct'])}{draw_mbti_bar_html("Information Processing", s_txt, "SENSING", "INTUITIVE", 100 - mbti_data['int_pct'])}{draw_mbti_bar_html("Decision Making", t_txt, "THINKING", "FEELING", mbti_data['think_pct'])}{draw_mbti_bar_html("World Structure", j_txt, "JUDGING", "PERCEIVING", mbti_data['judging_pct'])}</div>
+</div>"""
             st.markdown(playbook_html, unsafe_allow_html=True)
 
         # --- TAB 4: LOVE & HEALTH ---
@@ -614,19 +583,29 @@ if st.session_state.report_generated:
             st.markdown(f"<h3 style='text-align: center; margin-top:20px;'>{'நவாம்ச சக்கரம் (Navamsa)' if LANG=='Tamil' else 'Destiny Chart (Navamsa)'}</h3>", unsafe_allow_html=True)
             st.markdown(get_south_indian_chart_html(p_d9, d9_lagna, "நவாம்சம்" if LANG=="Tamil" else "Navamsa", LANG), unsafe_allow_html=True)
             st.divider()
+            st.markdown("<div class='bp-card'>", unsafe_allow_html=True)
             for line in love_txt: st.markdown(line)
+            st.markdown("</div>", unsafe_allow_html=True)
             st.divider()
+            st.markdown("<div class='bp-card'>", unsafe_allow_html=True)
             for line in health_txt: st.markdown(line)
+            st.markdown("</div>", unsafe_allow_html=True)
 
         # --- TAB 5: YOGAS & FORECAST ---
         with t5:
+            st.markdown("<div class='bp-card'>", unsafe_allow_html=True)
             for y in yogas:
                 st.markdown(f"#### {y['Name']}\n> **Type:** {y['Type']}\n\n{y['Description']}")
+            st.markdown("</div>", unsafe_allow_html=True)
             st.divider()
+            st.markdown("<div class='bp-card'>", unsafe_allow_html=True)
             for cat, data in fc.items():
                 st.markdown(f"#### {cat}\n{data[0]}\n> **Remedy:** {data[1]}")
+            st.markdown("</div>", unsafe_allow_html=True)
             st.divider()
+            st.markdown("<div class='bp-card'>", unsafe_allow_html=True)
             for txt in transit_texts: st.markdown(txt)
+            st.markdown("</div>", unsafe_allow_html=True)
 
         # --- TAB 6: ROADMAP (Strategic Timeline) ---
         with t6:
@@ -667,49 +646,59 @@ if st.session_state.report_generated:
                 marker=dict(color=[planet_colors.get(d, '#333') for d in dasha_names])
             ))
             fig_timeline.update_layout(barmode='stack', height=150, margin=dict(l=0, r=0, t=10, b=20), xaxis=dict(range=[start_years[0], start_years[0]+120], tickformat="d"), yaxis=dict(showticklabels=False), showlegend=False)
+            
+            st.markdown("<div class='bp-card'>", unsafe_allow_html=True)
             st.plotly_chart(fig_timeline, use_container_width=True)
-
-            md_table_html = f"<table style='width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 14px; margin-top: 20px;'><tr style='border-bottom: 2px solid #ddd; background-color: #fdfdfd;'><th style='padding: 12px 8px; text-align: left; width: 10%; white-space: nowrap;'>Age</th><th style='padding: 12px 8px; text-align: left; width: 12%; white-space: nowrap;'>Years</th><th style='padding: 12px 8px; text-align: left; width: 15%;'>Dasha</th><th style='padding: 12px 8px; text-align: left; width: 63%;'>Context & Prediction</th></tr>"
+            
+            md_table_html = f"<table style='width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 14px; margin-top: 20px;'><tr style='border-bottom: 2px solid #ddd; background-color: #fdfdfd;'><th style='padding: 12px 15px; text-align: left; width: 10%; white-space: nowrap;'>Age</th><th style='padding: 12px 15px; text-align: left; width: 12%; white-space: nowrap;'>Years</th><th style='padding: 12px 15px; text-align: left; width: 15%;'>Dasha</th><th style='padding: 12px 15px; text-align: left; width: 63%;'>Context & Prediction</th></tr>"
             for row in mahadasha_data:
                 years_one_line = row['Years'].replace(' - ', ' &ndash; ')
                 rich_context = dasha_expanded_context.get(row['Mahadasha'], row['Prediction'])
-                md_table_html += f"<tr style='border-bottom: 1px solid #eee;'><td style='padding: 12px 8px; vertical-align: top; white-space: nowrap;'>{row['Age (From-To)']}</td><td style='padding: 12px 8px; vertical-align: top; white-space: nowrap;'>{years_one_line}</td><td style='padding: 12px 8px; vertical-align: top; color: {planet_colors.get(row['Mahadasha'], '#333')}; font-weight: bold;'>{row['Mahadasha']}</td><td style='padding: 12px 8px; vertical-align: top; line-height: 1.5;'>{rich_context}</td></tr>"
-            md_table_html += "</table>"
+                md_table_html += f"<tr style='border-bottom: 1px solid #eee;'><td style='padding: 12px 15px; vertical-align: top; white-space: nowrap;'>{row['Age (From-To)']}</td><td style='padding: 12px 15px; vertical-align: top; white-space: nowrap;'>{years_one_line}</td><td style='padding: 12px 15px; vertical-align: top; color: {planet_colors.get(row['Mahadasha'], '#333')}; font-weight: bold;'>{row['Mahadasha']}</td><td style='padding: 12px 15px; vertical-align: top; line-height: 1.5;'>{rich_context}</td></tr>"
+            md_table_html += "</table></div>"
             st.markdown(md_table_html, unsafe_allow_html=True)
 
-        # --- TAB 7: ORACLE ---
+        # --- TAB 7: ORACLE (UPGRADED AI PERSONA) ---
         with t7:
-            st.subheader("✦ Ask the AI Astrologer" if LANG == "English" else "✦ AI ஜோதிடரிடம் கேளுங்கள்")
+            st.subheader("✦ The AI Executive Astrologer" if LANG == "English" else "✦ AI ஜோதிடரிடம் கேளுங்கள்")
+            st.markdown("Ask specific questions about your chart. The AI knows your Lagna, Moon, and current Dasha.")
             
             chat_container = st.container()
             with chat_container:
                 for msg in st.session_state.messages:
                     with st.chat_message(msg["role"]): st.markdown(msg["content"])
 
-            if prompt_input := st.chat_input("Ask a question..."):
+            if prompt_input := st.chat_input("Ask a question about your career, timing, or relationships..."):
                 st.session_state.messages.append({"role": "user", "content": prompt_input})
                 with chat_container:
                     with st.chat_message("user"): st.markdown(prompt_input)
                     with st.chat_message("assistant"):
                         try:
                             genai.configure(api_key=API_KEY)
-                            valid_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-                            target_model = 'gemini-1.5-flash-latest'
-                            for m in valid_models:
-                                if 'gemini-2.0-flash' in m:
-                                    target_model = m
-                                    break
-                                elif 'gemini-1.5-flash-latest' in m:
-                                    target_model = m
-                                    break
-
-                            model = genai.GenerativeModel(target_model)
-                            response = model.generate_content(f"Data: Lagna {ZODIAC[lagna_rasi]}, Moon {ZODIAC[moon_rasi]}. User says: {prompt_input}")
+                            
+                            # Injecting deep context so the AI gives brilliant, personalized answers
+                            ai_context = f"You are an Elite Vedic Astrologer and Executive Coach. User Context: Name is {name_in}. Lagna (Ascendant) is {ZODIAC[lagna_rasi]}. Moon Sign is {ZODIAC[moon_rasi]}. They are currently running the {current_md} Mahadasha. Their strongest astrological house is House {sorted_houses[0][1]}. Answer their question specifically using this data to give premium, actionable advice."
+                            
+                            # Using the bulletproof 2.5 model
+                            model = genai.GenerativeModel(
+                                'gemini-2.5-flash',
+                                system_instruction=ai_context
+                            )
+                            
+                            response = model.generate_content(prompt_input)
                             st.markdown(response.text)
                             st.session_state.messages.append({"role": "assistant", "content": response.text})
                         except Exception as e:
                             if "429" in str(e):
                                 st.error("⚠️ **Error 429: AI Quota Exceeded.** You have hit your free-tier limit for the Gemini API today. Please check your Google AI Studio billing limits.")
                             else:
-                                st.error(f"⚠️ AI Generation Failed. Details: {e}")
+                                # Fallback if system_instruction is not supported by the current SDK
+                                try:
+                                    model = genai.GenerativeModel('gemini-2.5-flash')
+                                    fallback_prompt = f"Context: {ai_context}\n\nUser Question: {prompt_input}"
+                                    response = model.generate_content(fallback_prompt)
+                                    st.markdown(response.text)
+                                    st.session_state.messages.append({"role": "assistant", "content": response.text})
+                                except Exception as inner_e:
+                                    st.error(f"⚠️ AI Generation Failed. Details: {inner_e}")
                 st.rerun()
