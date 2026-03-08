@@ -141,16 +141,22 @@ with col_g:
 st.divider()
 calc_btn = st.button("Generate Executive Synergy Report", type="primary", use_container_width=True)
 
-# --- GLOBAL CSS FOR FLAT EXECUTIVE CARDS ---
+# --- GLOBAL CSS FOR FLAT EXECUTIVE CARDS & NEW SUMMARY GRID ---
 css_block = """<style>
 .bp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
 .bp-card { background: #ffffff; border: 1px solid #eaeaea; border-radius: 4px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 1px 2px rgba(0,0,0,0.01); }
 .bp-head { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #888; font-weight: 500; margin-bottom: 12px; border-bottom: 1px solid #f9f9f9; padding-bottom: 6px; display: flex; justify-content: space-between; }
-.bp-title { font-size: 17px; font-weight: 500; color: #2c3e50; margin-bottom: 6px; }
-.bp-desc { font-size: 13.5px; color: #444; line-height: 1.5; font-weight: 300; margin-bottom:12px; }
+.bp-desc { font-size: 13.5px; color: #444; line-height: 1.6; font-weight: 400; margin-bottom:12px; }
 .bp-def { font-size: 11px; color: #95a5a6; font-style: italic; border-top: 1px dashed #eee; padding-top: 8px; margin-top: auto; }
 .tag-harness { display:inline-block; font-size: 10.5px; color: #2E7D32; background: #E8F5E9; border: 1px solid #C8E6C9; padding: 2px 6px; border-radius: 3px; font-weight: 600; margin-bottom: 6px; letter-spacing: 0.5px;}
 .tag-mitigate { display:inline-block; font-size: 10.5px; color: #C0392B; background: #FDEDEC; border: 1px solid #FADBD8; padding: 2px 6px; border-radius: 3px; font-weight: 600; margin-bottom: 6px; letter-spacing: 0.5px;}
+
+/* NEW CSS: Perfectly aligned grid for the bottom summary section */
+.summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 15px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+.summary-card { background: #ffffff; border: 1px solid #eaeaea; border-top: 3px solid #3498db; border-radius: 4px; padding: 20px; height: 100%; display: flex; flex-direction: column; box-shadow: 0 1px 2px rgba(0,0,0,0.01); }
+.summary-card.timeline { border-top-color: #2ecc71; }
+.summary-card.remedy { border-top-color: #f1c40f; }
+.summary-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #888; font-weight: 600; margin-bottom: 12px; border-bottom: 1px solid #f9f9f9; padding-bottom: 6px;}
 </style>"""
 
 if calc_btn:
@@ -169,11 +175,11 @@ if calc_btn:
             
             score, porutham_results = calculate_10_porutham(b_data['Nak_Idx'], g_data['Nak_Idx'], b_data['Rasi_Idx'], g_data['Rasi_Idx'], b_name, g_name)
 
-            # Build explicit instructions so the AI respects the exact math
+            # Build empathetic instructions based on the math
             ai_math_directives = ""
             for key, res in porutham_results.items():
-                status = "FAVORABLE MATCH" if res.get('match') else "CHALLENGING MISMATCH (Needs Mitigation)"
-                ai_math_directives += f"- {key}: The mathematical result is a {status}. Explain why based on their stars.\n"
+                status = "Harmonious" if res.get('match') else "Requires conscious navigation and compromise"
+                ai_math_directives += f"- {key}: Mathematically, this is {status}. Explain this dynamic compassionately.\n"
 
             # 2. Advanced AI Fetching
             API_KEY = st.secrets.get("GEMINI_API_KEY", "")
@@ -187,34 +193,35 @@ if calc_btn:
                     json_schema = """
                     {
                         "summary": {
-                            "time_forecast": "2 sentences utilizing their current Dasha periods to forecast their relationship timeline over the next 5 years.",
-                            "psychological": "2 sentences analyzing their emotional alignment.",
-                            "remedy": "1 highly specific traditional Vedic Upaya (e.g., specific mantra, donation, or gemstone) and 1 psychological adjustment to mitigate their weakest point."
+                            "time_forecast": "1 cohesive paragraph utilizing their current Dasha periods to forecast their relationship timeline and its impact over the next 5 years.",
+                            "psychological": "1 cohesive paragraph analyzing their emotional alignment and psychological friction points.",
+                            "remedy": "1 cohesive paragraph providing a specific traditional Vedic Upaya (mantra/donation) AND a modern scientific/psychological strategy (e.g., specific communication frameworks) to mitigate their weakest point."
                         },
                         "porutham_insights": {
-                            "Dina": "1 personalized sentence explaining the mathematical result.",
-                            "Gana": "1 personalized sentence explaining the mathematical result.",
-                            "Mahendra": "1 personalized sentence explaining the mathematical result.",
-                            "Rajju": "1 personalized sentence explaining the mathematical result.",
-                            "Rasi": "1 personalized sentence explaining the mathematical result.",
-                            "Rasyadhipati": "1 personalized sentence explaining the mathematical result.",
-                            "Yoni": "1 personalized sentence explaining the mathematical result.",
-                            "Vasya": "1 personalized sentence explaining the mathematical result.",
-                            "Stree": "1 personalized sentence explaining the mathematical result.",
-                            "Vedha": "1 personalized sentence explaining the mathematical result."
+                            "Dina": "1-2 empathetic sentences explaining the mathematical result.",
+                            "Gana": "1-2 empathetic sentences explaining the mathematical result.",
+                            "Mahendra": "1-2 empathetic sentences explaining the mathematical result.",
+                            "Rajju": "1-2 empathetic sentences explaining the mathematical result.",
+                            "Rasi": "1-2 empathetic sentences explaining the mathematical result.",
+                            "Rasyadhipati": "1-2 empathetic sentences explaining the mathematical result.",
+                            "Yoni": "1-2 empathetic sentences explaining the mathematical result.",
+                            "Vasya": "1-2 empathetic sentences explaining the mathematical result.",
+                            "Stree": "1-2 empathetic sentences explaining the mathematical result.",
+                            "Vedha": "1-2 empathetic sentences explaining the mathematical result."
                         }
                     }
                     """
                     
-                    # NOTE: Shifted to objective 3rd-person instructions
                     prompt = f"""
-                    Act as an elite Vedic Astrologer. Analyze {b_name} (Star: {b_data['Nakshatra']}, Moon: {b_data['Rasi']}) and {g_name} (Star: {g_data['Nakshatra']}, Moon: {g_data['Rasi']}).
+                    Act as an elite Vedic Astrologer and Modern Relationship Counselor. Analyze {b_name} (Star: {b_data['Nakshatra']}, Moon: {b_data['Rasi']}) and {g_name} (Star: {g_data['Nakshatra']}, Moon: {g_data['Rasi']}).
                     Current Time Data: {b_name} is in {b_data['Dasha']} Mahadasha. {g_name} is in {g_data['Dasha']} Mahadasha.
                     Relationship Context: {rel_status}.
                     
                     CRITICAL INSTRUCTIONS: 
-                    1. You MUST align your insights with the exact mathematical results below. Do not praise a Porutham if it is a mismatch. Justify the engine's ruling.
-                    2. Write exclusively in an empathetic, objective THIRD-PERSON perspective (e.g., '{b_name} and {g_name} will find...', 'His intense nature...', 'Her grounded approach...'). Do NOT use 'you' or 'your'.
+                    1. EMPATHY & TONE: Write in an objective, deeply empathetic THIRD-PERSON perspective. Do NOT use harsh, robotic language. Reframe mismatches as "opportunities for growth" or areas requiring "conscious nurturing."
+                    2. MATH ALIGNMENT: You MUST base your insights on the exact mathematical results below.
+                    3. REMEDIES: The remedy section MUST include both an ancient Vedic text/mantra solution and a modern psychological tool.
+                    4. FORMATTING: Return plain text within the JSON values. Do NOT use bullet points or markdown formatting.
                     
                     Mathematical Results:
                     {ai_math_directives}
@@ -227,7 +234,7 @@ if calc_btn:
                     clean_resp = resp.text.replace('```json', '').replace('```', '').strip()
                     ai_data = json.loads(clean_resp)
                 except Exception as e:
-                    st.warning(f"AI Oracle offline or parsing failed. Using standard insights.")
+                    st.warning(f"AI Oracle offline or parsing failed. ({e})")
 
             # 3. Output Rendering
             st.subheader(f"Compatibility Score: {score}/10")
@@ -239,42 +246,46 @@ if calc_btn:
                 tag_text = "FAVORABLE" if is_match else "MITIGATE"
                 
                 insight_text = "Analysis unavailable."
-                
-                # FIXED MATCHING LOGIC: Uses exact base word to prevent overlap (e.g. Rasi vs Rasyadhipati)
                 base_key = key.split(' ')[0].strip()
+                
                 if ai_data and 'porutham_insights' in ai_data:
                     for ai_key, ai_val in ai_data['porutham_insights'].items():
                         if ai_key.lower() == base_key.lower():
                             insight_text = ai_val
                             break
                             
-                # Grab the definition for the bottom of the card
                 def_text = ""
                 for p_key, p_val in PORUTHAM_DEFS.items():
                     if p_key.lower() == base_key.lower():
                         def_text = p_val
                         break
                 
-                # Single line string building to protect the HTML parser
                 html_grid += f'<div class="bp-card"><div class="bp-head"><span>{key}</span><span class="{tag_class}">{tag_text}</span></div><div class="bp-desc">{insight_text}</div><div class="bp-def">{def_text}</div></div>'
                 
             html_grid += '</div>'
             st.markdown(html_grid, unsafe_allow_html=True)
             
-            # 4. FIXED: Strategic AI Summary Rendering (Smaller Font Sizes)
+            # 4. NEW: Custom CSS Grid for Strategic Summary (Equal heights & identical fonts)
             if ai_data and 'summary' in ai_data:
                 st.divider()
                 st.markdown("### Strategic Alignment & Timeline Forecast")
-                col1, col2, col3 = st.columns(3)
                 
-                with col1:
-                    st.markdown("<div style='font-size: 13px; font-weight: 600; color: #7f8c8d; text-transform: uppercase; margin-bottom: 8px;'>Psychological Alignment</div>", unsafe_allow_html=True)
-                    st.info(ai_data['summary'].get('psychological', ''))
+                summary_grid_html = f"""
+                <div class="summary-grid">
+                    <div class="summary-card">
+                        <div class="summary-title">Psychological Alignment</div>
+                        <div class="bp-desc">{ai_data['summary'].get('psychological', '')}</div>
+                    </div>
                     
-                with col2:
-                    st.markdown(f"<div style='font-size: 13px; font-weight: 600; color: #7f8c8d; text-transform: uppercase; margin-bottom: 8px;'>Timeline Forecast ({b_data['Dasha']} / {g_data['Dasha']})</div>", unsafe_allow_html=True)
-                    st.success(ai_data['summary'].get('time_forecast', ''))
+                    <div class="summary-card timeline">
+                        <div class="summary-title">Timeline Forecast ({b_data['Dasha']} / {g_data['Dasha']})</div>
+                        <div class="bp-desc">{ai_data['summary'].get('time_forecast', '')}</div>
+                    </div>
                     
-                with col3:
-                    st.markdown("<div style='font-size: 13px; font-weight: 600; color: #7f8c8d; text-transform: uppercase; margin-bottom: 8px;'>Remedial Action (Upaya)</div>", unsafe_allow_html=True)
-                    st.warning(ai_data['summary'].get('remedy', ''))
+                    <div class="summary-card remedy">
+                        <div class="summary-title">Integrated Remedial Action</div>
+                        <div class="bp-desc">{ai_data['summary'].get('remedy', '')}</div>
+                    </div>
+                </div>
+                """
+                st.markdown(summary_grid_html, unsafe_allow_html=True)
