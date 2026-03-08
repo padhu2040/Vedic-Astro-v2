@@ -270,22 +270,13 @@ if calc_btn:
                 st.divider()
                 st.markdown("### Strategic Alignment & Timeline Forecast")
                 
-                summary_grid_html = f"""
-                <div class="summary-grid">
-                    <div class="summary-card">
-                        <div class="summary-title">Psychological Alignment</div>
-                        <div class="bp-desc">{ai_data['summary'].get('psychological', '')}</div>
-                    </div>
-                    
-                    <div class="summary-card timeline">
-                        <div class="summary-title">Timeline Forecast ({b_data['Dasha']} / {g_data['Dasha']})</div>
-                        <div class="bp-desc">{ai_data['summary'].get('time_forecast', '')}</div>
-                    </div>
-                    
-                    <div class="summary-card remedy">
-                        <div class="summary-title">Integrated Remedial Action</div>
-                        <div class="bp-desc">{ai_data['summary'].get('remedy', '')}</div>
-                    </div>
-                </div>
-                """
+                psy_text = ai_data['summary'].get('psychological', '')
+                time_text = ai_data['summary'].get('time_forecast', '')
+                rem_text = ai_data['summary'].get('remedy', '')
+                dasha_b = b_data['Dasha']
+                dasha_g = g_data['Dasha']
+                
+                # Kept strictly on one line to prevent Streamlit from rendering it as a raw code block
+                summary_grid_html = f'<div class="summary-grid"><div class="summary-card"><div class="summary-title">Psychological Alignment</div><div class="bp-desc">{psy_text}</div></div><div class="summary-card timeline"><div class="summary-title">Timeline Forecast ({dasha_b} / {dasha_g})</div><div class="bp-desc">{time_text}</div></div><div class="summary-card remedy"><div class="summary-title">Integrated Remedial Action</div><div class="bp-desc">{rem_text}</div></div></div>'
+                
                 st.markdown(summary_grid_html, unsafe_allow_html=True)
