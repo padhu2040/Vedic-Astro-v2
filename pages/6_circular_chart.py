@@ -33,29 +33,77 @@ def load_profiles_from_db():
         except: pass
     return profiles
 
+# --- DYNAMIC EXECUTIVE INSIGHT GENERATOR ---
+def get_aspect_insight(p1, p2, aspect_type):
+    """Generates corporate astrological insights for planetary pairs."""
+    pair = {p1, p2}
+    
+    # Define nature of the aspect
+    if aspect_type == "Opposition (7th House)":
+        dyn = "Direct Confrontation / Reflection"
+        action = "MITIGATE RISK"
+        act_class = "tag-mitigate"
+    elif aspect_type == "Trine (5th / 9th House)":
+        dyn = "Frictionless Synergy / Dharma"
+        action = "HARNESS STRENGTH"
+        act_class = "tag-harness"
+    else:
+        dyn = "Structural Tension / Karma"
+        action = "MITIGATE RISK"
+        act_class = "tag-mitigate"
+        
+    # Specific Pair Logic
+    if {"Sun", "Moon"} == pair:
+        desc = "The core identity (Sun) and emotional operating system (Moon) are directly interacting."
+        rem = "Balance executive logic with intuition. Do not let ego override team morale."
+    elif {"Mars", "Venus"} == pair:
+        desc = "High-octane creative and aggressive energy. Passion meets execution."
+        rem = "Channel this intense energy into product development. Avoid impulsive financial/relationship decisions."
+    elif {"Jupiter", "Rahu"} == pair or {"Jupiter", "Ketu"} == pair:
+        desc = "Unconventional expansion (Guru-Chandal energy). Rapid scaling but with hidden risks."
+        rem = "Ensure legal and ethical compliance during aggressive business scaling."
+    elif {"Saturn", "Mars"} == pair:
+        desc = "The ultimate friction: Unstoppable force meets immovable object."
+        rem = "Extreme patience required. Delays will happen; force will break the system. Methodical execution wins."
+    elif {"Mercury", "Jupiter"} == pair:
+        desc = "High-level strategic thinking. Data (Mercury) aligns with wisdom (Jupiter)."
+        rem = "Perfect window for negotiations, contract drafting, and long-term planning."
+    elif "Asc" in pair:
+        planet = list(pair - {"Asc"})[0]
+        desc = f"The physical self/brand (Lagna) is heavily influenced by the energy of {planet}."
+        rem = "Project this planetary energy in your personal branding and leadership style today."
+    else:
+        desc = f"Complex energy exchange between {p1}'s agenda and {p2}'s agenda."
+        rem = f"Acknowledge both forces. Use the {dyn} to find a middle ground in operations."
+
+    return dyn, action, act_class, desc, rem
+
+# --- UI HEADER ---
 st.title("Data Visualization: Circos Zodiac")
-st.markdown("<div style='color:#7f8c8d; margin-top:-15px; margin-bottom: 20px;'>Live mathematical plotting with dynamic Lagna 12 o'clock alignment.</div>", unsafe_allow_html=True)
+st.markdown("<div style='color:#7f8c8d; margin-top:-15px; margin-bottom: 20px;'>Live planetary trigonometry with dynamic aspect ribbons.</div>", unsafe_allow_html=True)
 st.divider()
 
 # --- ASTRONOMICAL DATA SETS ---
 RASIS_EN = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"]
 RASIS_TA = ["மேஷம்", "ரிஷபம்", "மிதுனம்", "கடகம்", "சிம்மம்", "கன்னி", "துலாம்", "விருச்சிகம்", "தனுசு", "மகரம்", "கும்பம்", "மீனம்"]
-
 NAKSHATRAS_EN = ["Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra", "Punarvasu", "Pushya", "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", "Hasta", "Chitra", "Swati", "Vishakha", "Anuradha", "Jyeshtha", "Mula", "Purva Ashadha", "Uttara Ashadha", "Shravana", "Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"]
 NAKSHATRAS_TA = ["அஸ்வினி", "பரணி", "கிருத்திகை", "ரோகிணி", "மிருகசீரிடம்", "திருவாதிரை", "புனர்பூசம்", "பூசம்", "ஆயில்யம்", "மகம்", "பூரம்", "உத்திரம்", "அஸ்தம்", "சித்திரை", "சுவாதி", "விசாகம்", "அனுஷம்", "கேட்டை", "மூலம்", "பூராடம்", "உத்திராடம்", "திருவோணம்", "அவிட்டம்", "சதயம்", "பூரட்டாதி", "உத்திரட்டாதி", "ரேவதி"]
 
 with st.sidebar:
-    st.markdown("### Chart Controls")
-    
+    st.markdown("<div style='font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;'>Profile Coordinates</div>", unsafe_allow_html=True)
     saved_profiles = load_profiles_from_db()
     profile_options = ["(Current Transit)"] + list(saved_profiles.keys())
-    selected_profile = st.selectbox("Load Coordinates", profile_options)
+    selected_profile = st.selectbox("Load Coordinates", profile_options, label_visibility="collapsed")
     
     st.divider()
     lang = st.radio("Language", ["English", "Tamil"])
     theme = st.radio("Background Theme", ["Executive Minimal", "Elemental Context"])
 
-# --- 1. CALCULATE LIVE PLANETARY LONGITUDES ---
+# --- ASPECT FILTER (RADIO BUTTONS) ---
+st.markdown("<div style='font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;'>Planetary Connections</div>", unsafe_allow_html=True)
+view_filter = st.radio("Aspect Filter", ["Oppositions (7th House)", "Trines (5th / 9th House)", "Squares (4th / 10th House)"], horizontal=True, label_visibility="collapsed")
+
+# --- CALCULATE LIVE PLANETARY LONGITUDES ---
 swe.set_sid_mode(swe.SIDM_LAHIRI)
 if selected_profile != "(Current Transit)":
     dt_obj = datetime.combine(saved_profiles[selected_profile]["dob"], saved_profiles[selected_profile]["tob"])
@@ -70,97 +118,105 @@ except: lat_val, lon_val, tz_val = 13.0827, 80.2707, "Asia/Kolkata"
 offset = get_utc_offset(tz_val, dt_obj)
 jd_ut = swe.julday(dt_obj.year, dt_obj.month, dt_obj.day, (dt_obj.hour + (dt_obj.minute/60.0)) - offset)
 
-# Core calculations
-moon_lon = swe.calc_ut(jd_ut, swe.MOON, swe.FLG_SIDEREAL)[0][0]
 lagna_lon = swe.houses_ex(jd_ut, lat_val, lon_val, b'P', swe.FLG_SIDEREAL)[1][0]
-
-moon_rasi_idx = int(moon_lon / 30)
-moon_nak_idx = int(moon_lon / (360/27))
 lagna_rasi_idx = int(lagna_lon / 30)
 
-# Other Planets
-planet_ids = {"Sun": swe.SUN, "Mars": swe.MARS, "Mercury": swe.MERCURY, "Jupiter": swe.JUPITER, "Venus": swe.VENUS, "Saturn": swe.SATURN, "Rahu": swe.MEAN_NODE}
+planet_ids = {"Sun": swe.SUN, "Moon": swe.MOON, "Mars": swe.MARS, "Mercury": swe.MERCURY, "Jupiter": swe.JUPITER, "Venus": swe.VENUS, "Saturn": swe.SATURN, "Rahu": swe.MEAN_NODE}
 planet_icons = {"Sun":"☀️", "Moon":"🌙", "Mars":"🔴", "Mercury":"🟢", "Jupiter":"🟡", "Venus":"💎", "Saturn":"⚫", "Rahu":"🐉", "Ketu":"🐍", "Asc":"🎯"}
 
-positions = [{"name": "Moon", "lon": moon_lon, "icon": planet_icons["Moon"]}, {"name": "Asc", "lon": lagna_lon, "icon": planet_icons["Asc"]}]
+positions = [{"name": "Asc", "lon": lagna_lon, "icon": planet_icons["Asc"], "rasi": lagna_rasi_idx}]
 for p_name, p_id in planet_ids.items():
-    positions.append({"name": p_name, "lon": swe.calc_ut(jd_ut, p_id, swe.FLG_SIDEREAL)[0][0], "icon": planet_icons[p_name]})
+    lon = swe.calc_ut(jd_ut, p_id, swe.FLG_SIDEREAL)[0][0]
+    positions.append({"name": p_name, "lon": lon, "icon": planet_icons[p_name], "rasi": int(lon / 30)})
 
 rahu_lon = next(p['lon'] for p in positions if p['name'] == 'Rahu')
-positions.append({"name": "Ketu", "lon": (rahu_lon + 180) % 360, "icon": planet_icons["Ketu"]})
+positions.append({"name": "Ketu", "lon": (rahu_lon + 180) % 360, "icon": planet_icons["Ketu"], "rasi": int(((rahu_lon + 180) % 360) / 30)})
 
-# --- 2. DYNAMIC CHART ROTATION (LOCK LAGNA TO 12 O'CLOCK) ---
-# To make the Lagna start exactly at 12 o'clock, we calculate the required counter-clockwise offset.
+# --- DYNAMIC CHART ROTATION ---
 pie_rotation = (360 - (lagna_rasi_idx * 30)) % 360
 
-# --- 3. DYNAMIC HOUSE LABELS & HIGHLIGHTING ---
+# --- STATIC RINGS SETUP ---
 base_rasi_labels = RASIS_EN if lang == "English" else RASIS_TA
 nak_labels = NAKSHATRAS_EN if lang == "English" else NAKSHATRAS_TA
+custom_rasi_labels = [f"<b>H{(i - lagna_rasi_idx + 12) % 12 + 1}</b><br>{base_rasi_labels[i]}" for i in range(12)]
 
-custom_rasi_labels = []
-for i in range(12):
-    # Calculate House number (H1, H2...) relative to the Lagna
-    house_num = (i - lagna_rasi_idx + 12) % 12 + 1
-    custom_rasi_labels.append(f"<b>H{house_num}</b><br>{base_rasi_labels[i]}")
+rasi_colors = ['#f8f9fa', '#f1f3f5'] * 6 if theme == "Executive Minimal" else ['#FDEDEC', '#E8F5E9', '#EBF5FB', '#F5EEF8'] * 3 
+nak_colors = ['#e9ecef', '#dee2e6', '#ced4da'] * 9 if theme == "Executive Minimal" else ['#FADBD8', '#C8E6C9', '#D6EAF8'] * 9
 
-rasi_values = [30] * 12
-nak_values = [360/27] * 27
-
-if theme == "Executive Minimal":
-    rasi_colors = ['#f8f9fa', '#f1f3f5'] * 6
-    nak_colors = ['#e9ecef', '#dee2e6', '#ced4da'] * 9
-    line_color = '#adb5bd'
-else:
-    rasi_colors = ['#FDEDEC', '#E8F5E9', '#EBF5FB', '#F5EEF8'] * 3 
-    nak_colors = ['#FADBD8', '#C8E6C9', '#D6EAF8'] * 9
-    line_color = '#ffffff'
-
-COLOR_LAGNA = "#27ae60" # Green
-COLOR_MOON = "#2980b9"  # Blue
-COLOR_STAR = "#85c1e9"  # Light Blue
-
-rasi_colors[lagna_rasi_idx] = COLOR_LAGNA
-rasi_colors[moon_rasi_idx] = COLOR_MOON
-if lagna_rasi_idx == moon_rasi_idx:
-    rasi_colors[lagna_rasi_idx] = "#8e44ad"
-nak_colors[moon_nak_idx] = COLOR_STAR
-
-# --- 4. BUILD THE STATIC RINGS ---
+# --- BUILD THE PLOTLY FIGURE ---
 fig = go.Figure()
 
-# Inner Ring: Rasis (Dynamic Rotation Applied)
+# Rasi Ring
 fig.add_trace(go.Pie(
-    labels=custom_rasi_labels, values=rasi_values, hole=0.55, direction='clockwise',
+    labels=custom_rasi_labels, values=[30]*12, hole=0.55, direction='clockwise',
     sort=False, rotation=pie_rotation, textinfo='label', textposition='inside', insidetextorientation='radial',
     domain={'x': [0.15, 0.85], 'y': [0.15, 0.85]}, 
-    marker=dict(colors=rasi_colors, line=dict(color=line_color, width=1.5)), hoverinfo="none", name="Rasi"
+    marker=dict(colors=rasi_colors, line=dict(color='#adb5bd', width=1.5)), hoverinfo="none", name="Rasi"
 ))
 
-# Outer Ring: Nakshatras (Matches Rasi Rotation)
+# Nakshatra Ring
 fig.add_trace(go.Pie(
-    labels=nak_labels, values=nak_values, hole=0.82, direction='clockwise',
+    labels=nak_labels, values=[360/27]*27, hole=0.82, direction='clockwise',
     sort=False, rotation=pie_rotation, textinfo='label', textposition='inside', insidetextorientation='radial',
     domain={'x': [0, 1], 'y': [0, 1]}, 
-    marker=dict(colors=nak_colors, line=dict(color=line_color, width=1)), hoverinfo="label", name="Nakshatra"
+    marker=dict(colors=nak_colors, line=dict(color='#adb5bd', width=1)), hoverinfo="label", name="Nakshatra"
 ))
 
-# --- 5. TRIGONOMETRY MAPPING FOR PLANETS ---
+# --- TRIGONOMETRY FOR ICONS AND RIBBONS ---
 annotations = []
 center_x, center_y, radius = 0.5, 0.5, 0.22 
 
+# 1. Calculate and store X, Y coordinates for all planets
 for p in positions:
-    # Math: We subtract the pie_rotation and the planet's longitude from 90° (12 o'clock Cartesian)
-    # This guarantees the planets perfectly follow the rotated visual slices!
     theta_deg = 90 - pie_rotation - p['lon'] 
     theta_rad = math.radians(theta_deg)
-    pos_x = center_x + radius * math.cos(theta_rad)
-    pos_y = center_y + radius * math.sin(theta_rad)
+    p['x'] = center_x + radius * math.cos(theta_rad)
+    p['y'] = center_y + radius * math.sin(theta_rad)
     
     annotations.append(dict(
-        x=pos_x, y=pos_y, text=p['icon'], font_size=24, showarrow=False,
-        xanchor='center', yanchor='middle', # pixel-perfect centering
+        x=p['x'], y=p['y'], text=p['icon'], font_size=24, showarrow=False,
+        xanchor='center', yanchor='middle',
         hovertext=f"{p['name']}: {p['lon']:.1f}°", hoverlabel=dict(bgcolor="white")
     ))
+
+# 2. ASPECT LOGIC (Draw Connecting Ribbons)
+aspect_pairs = []
+drawn_pairs = set()
+
+# Map the radio button to mathematical house distances
+target_distances = []
+ribbon_color = "rgba(189, 195, 199, 0.5)" # Default Gray
+if "7th" in view_filter:
+    target_distances = [6]
+    ribbon_color = "rgba(192, 57, 43, 0.6)" # Deep Red
+elif "5th" in view_filter:
+    target_distances = [4, 8]
+    ribbon_color = "rgba(39, 174, 96, 0.6)" # Green
+elif "4th" in view_filter:
+    target_distances = [3, 9]
+    ribbon_color = "rgba(41, 128, 185, 0.6)" # Blue
+
+for p1 in positions:
+    for p2 in positions:
+        if p1['name'] == p2['name']: continue
+        
+        # Check if we already drew this line (e.g., Sun->Moon is the same as Moon->Sun)
+        pair_key = tuple(sorted([p1['name'], p2['name']]))
+        if pair_key in drawn_pairs: continue
+
+        # Calculate distance in Houses
+        dist = (p2['rasi'] - p1['rasi'] + 12) % 12
+        
+        if dist in target_distances:
+            drawn_pairs.add(pair_key)
+            aspect_pairs.append((p1['name'], p2['name']))
+            
+            # Draw the Line Trace across the circle
+            fig.add_trace(go.Scatter(
+                x=[p1['x'], p2['x']], y=[p1['y'], p2['y']],
+                mode='lines', line=dict(color=ribbon_color, width=2.5, dash='dash'),
+                hoverinfo='text', text=f"{p1['name']} ↔ {p2['name']} ({view_filter})", showlegend=False
+            ))
 
 # Central Profile Text
 annotations.append(dict(
@@ -169,52 +225,55 @@ annotations.append(dict(
 ))
 
 fig.update_layout(
-    margin=dict(t=20, b=20, l=20, r=20), showlegend=False,
-    width=800, height=800, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+    margin=dict(t=10, b=10, l=10, r=10), showlegend=False,
+    width=700, height=700, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
     annotations=annotations
 )
 
-# --- 6. RENDER UI ---
-col_chart, col_legend = st.columns([2.5, 1])
-
-with col_chart:
+# --- RENDER CHART (CENTERED) ---
+col_space1, col_center, col_space2 = st.columns([1, 2.5, 1])
+with col_center:
     st.plotly_chart(fig, use_container_width=True)
 
-with col_legend:
-    lbl_lagna = "Ascendant (H1) 🎯" if lang == "English" else "லக்னம் (H1) 🎯"
-    lbl_moon = "Moon Sign (Rasi) 🌙" if lang == "English" else "ராசி (Moon Sign) 🌙"
-    lbl_star = "Moon Star (Nakshatra) ✨" if lang == "English" else "நட்சத்திரம் (Star) ✨"
+st.divider()
+
+# --- RENDER DYNAMIC INSIGHT CARDS (EXECUTIVE UI) ---
+st.markdown(f"<h3 style='margin-bottom:20px;'>{view_filter} Insights</h3>", unsafe_allow_html=True)
+
+if not aspect_pairs:
+    st.info(f"No {view_filter} detected in this specific chart configuration.")
+else:
+    # CSS for the flat cards
+    css_block = """<style>
+    .bp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+    .bp-card { background: #ffffff; border: 1px solid #eaeaea; border-radius: 4px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 1px 2px rgba(0,0,0,0.01); }
+    .bp-head { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #888; font-weight: 500; margin-bottom: 12px; border-bottom: 1px solid #f9f9f9; padding-bottom: 6px; display: flex; justify-content: space-between; }
+    .bp-title { font-size: 17px; font-weight: 500; color: #2c3e50; margin-bottom: 6px; }
+    .bp-desc { font-size: 13.5px; color: #444; line-height: 1.5; font-weight: 300; margin-bottom:12px; }
+    .tag-harness { display:inline-block; font-size: 10.5px; color: #2E7D32; background: #E8F5E9; border: 1px solid #C8E6C9; padding: 2px 6px; border-radius: 3px; font-weight: 600; margin-bottom: 6px; letter-spacing: 0.5px;}
+    .tag-mitigate { display:inline-block; font-size: 10.5px; color: #C0392B; background: #FDEDEC; border: 1px solid #FADBD8; padding: 2px 6px; border-radius: 3px; font-weight: 600; margin-bottom: 6px; letter-spacing: 0.5px;}
+    .insight-text { font-size: 13.5px; color: #222; font-style: italic; background: #fafafa; padding: 10px; border-radius: 4px; border: 1px solid #f5f5f5; }
+    </style>"""
+    st.markdown(css_block, unsafe_allow_html=True)
+
+    grid_html = """<div class="bp-grid">"""
     
-    st.markdown("<br><br><br>", unsafe_allow_html=True)
-    st.markdown("### Highlight Legend")
-    st.markdown(f"""
-    <div style="background:#fff; border:1px solid #eee; padding:15px; border-radius:6px; margin-bottom:10px;">
-        <div style="font-size:11px; color:#888; text-transform:uppercase; font-weight:bold; letter-spacing:1px; margin-bottom:5px;">{lbl_lagna}</div>
-        <div style="display:flex; align-items:center;">
-            <div style="width:14px; height:14px; background:{COLOR_LAGNA}; border-radius:3px; margin-right:8px;"></div>
-            <div style="font-size:16px; font-weight:500; color:#2c3e50;">{base_rasi_labels[lagna_rasi_idx]}</div>
-        </div>
-        <div style="font-size:12px; color:#666; margin-top:4px;">Locks to the 12 o'clock position (House 1). Dictates the physical self.</div>
-    </div>
+    # Border color matching the ribbon
+    card_border = "#e74c3c" if "7th" in view_filter else "#27ae60" if "5th" in view_filter else "#2980b9"
     
-    <div style="background:#fff; border:1px solid #eee; padding:15px; border-radius:6px; margin-bottom:10px;">
-        <div style="font-size:11px; color:#888; text-transform:uppercase; font-weight:bold; letter-spacing:1px; margin-bottom:5px;">{lbl_moon}</div>
-        <div style="display:flex; align-items:center;">
-            <div style="width:14px; height:14px; background:{COLOR_MOON}; border-radius:3px; margin-right:8px;"></div>
-            <div style="font-size:16px; font-weight:500; color:#2c3e50;">{base_rasi_labels[moon_rasi_idx]}</div>
-        </div>
-        <div style="font-size:12px; color:#666; margin-top:4px;">Dictates the psychological operating system and emotional baseline.</div>
-    </div>
-    
-    <div style="background:#fff; border:1px solid #eee; padding:15px; border-radius:6px; margin-bottom:10px;">
-        <div style="font-size:11px; color:#888; text-transform:uppercase; font-weight:bold; letter-spacing:1px; margin-bottom:5px;">{lbl_star}</div>
-        <div style="display:flex; align-items:center;">
-            <div style="width:14px; height:14px; background:{COLOR_STAR}; border-radius:3px; margin-right:8px;"></div>
-            <div style="font-size:16px; font-weight:500; color:#2c3e50;">{nak_labels[moon_nak_idx]}</div>
-        </div>
-        <div style="font-size:12px; color:#666; margin-top:4px;">The 13.33° micro-constellation governing mental processing and Dasha timelines.</div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    if lagna_rasi_idx == moon_rasi_idx:
-        st.markdown(f"<div style='background:#fcf3ff; border:1px solid #e8daef; padding:10px; border-radius:6px; font-size:12px; color:#8e44ad; font-weight:500;'>🪐 <b>Alignment Detected:</b> Lagna and Moon occupy the same Rasi, highlighted in deep purple on the chart.</div>", unsafe_allow_html=True)
+    for p1, p2 in aspect_pairs:
+        dyn, action, act_class, desc, rem = get_aspect_insight(p1, p2, view_filter)
+        
+        grid_html += f"""
+        <div class="bp-card" style="border-top: 3px solid {card_border};">
+            <div class="bp-head"><span>Planetary Connection</span> <span style="color:{card_border}; font-weight:bold;">{dyn}</span></div>
+            <div class="bp-title">{planet_icons[p1]} {p1} ↔ {planet_icons[p2]} {p2}</div>
+            <div class="bp-desc">{desc}</div>
+            <div style="margin-top:auto; padding-top:12px; border-top: 1px dashed #eee;">
+                <div class="{act_class}">{action}</div>
+                <div class="insight-text">{rem}</div>
+            </div>
+        </div>"""
+        
+    grid_html += "</div>"
+    st.markdown(grid_html, unsafe_allow_html=True)
