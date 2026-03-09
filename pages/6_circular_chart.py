@@ -34,7 +34,7 @@ def load_profiles_from_db():
     return profiles
 
 st.title("Data Visualization: Circos Zodiac")
-st.markdown("<div style='color:#7f8c8d; margin-top:-15px; margin-bottom: 20px;'>Live mathematical plotting & profile highlighting.</div>", unsafe_allow_html=True)
+st.markdown("<div style='color:#7f8c8d; margin-top:-15px; margin-bottom: 20px;'>Live mathematical plotting with dynamic Lagna 12 o'clock alignment.</div>", unsafe_allow_html=True)
 st.divider()
 
 # --- ASTRONOMICAL DATA SETS ---
@@ -70,7 +70,7 @@ except: lat_val, lon_val, tz_val = 13.0827, 80.2707, "Asia/Kolkata"
 offset = get_utc_offset(tz_val, dt_obj)
 jd_ut = swe.julday(dt_obj.year, dt_obj.month, dt_obj.day, (dt_obj.hour + (dt_obj.minute/60.0)) - offset)
 
-# Core calculations for Moon (Rasi/Nakshatra) and Lagna (Ascendant)
+# Core calculations
 moon_lon = swe.calc_ut(jd_ut, swe.MOON, swe.FLG_SIDEREAL)[0][0]
 lagna_lon = swe.houses_ex(jd_ut, lat_val, lon_val, b'P', swe.FLG_SIDEREAL)[1][0]
 
@@ -89,14 +89,23 @@ for p_name, p_id in planet_ids.items():
 rahu_lon = next(p['lon'] for p in positions if p['name'] == 'Rahu')
 positions.append({"name": "Ketu", "lon": (rahu_lon + 180) % 360, "icon": planet_icons["Ketu"]})
 
-# --- 2. DYNAMIC COLOR HIGHLIGHTING & LANGUAGE SETTINGS ---
-rasi_labels = RASIS_EN if lang == "English" else RASIS_TA
+# --- 2. DYNAMIC CHART ROTATION (LOCK LAGNA TO 12 O'CLOCK) ---
+# To make the Lagna start exactly at 12 o'clock, we calculate the required counter-clockwise offset.
+pie_rotation = (360 - (lagna_rasi_idx * 30)) % 360
+
+# --- 3. DYNAMIC HOUSE LABELS & HIGHLIGHTING ---
+base_rasi_labels = RASIS_EN if lang == "English" else RASIS_TA
 nak_labels = NAKSHATRAS_EN if lang == "English" else NAKSHATRAS_TA
 
-rasi_values = [30] * 12
-nak_values = [13.333333] * 27
+custom_rasi_labels = []
+for i in range(12):
+    # Calculate House number (H1, H2...) relative to the Lagna
+    house_num = (i - lagna_rasi_idx + 12) % 12 + 1
+    custom_rasi_labels.append(f"<b>H{house_num}</b><br>{base_rasi_labels[i]}")
 
-# Setup Base Colors (Muted)
+rasi_values = [30] * 12
+nak_values = [360/27] * 27
+
 if theme == "Executive Minimal":
     rasi_colors = ['#f8f9fa', '#f1f3f5'] * 6
     nak_colors = ['#e9ecef', '#dee2e6', '#ced4da'] * 9
@@ -106,55 +115,50 @@ else:
     nak_colors = ['#FADBD8', '#C8E6C9', '#D6EAF8'] * 9
     line_color = '#ffffff'
 
-# INJECT HIGHLIGHTS
-COLOR_LAGNA = "#27ae60" # Green for Ascendant
-COLOR_MOON = "#2980b9"  # Blue for Moon Rasi
-COLOR_STAR = "#85c1e9"  # Lighter Blue for Nakshatra
+COLOR_LAGNA = "#27ae60" # Green
+COLOR_MOON = "#2980b9"  # Blue
+COLOR_STAR = "#85c1e9"  # Light Blue
 
 rasi_colors[lagna_rasi_idx] = COLOR_LAGNA
 rasi_colors[moon_rasi_idx] = COLOR_MOON
-
-# If Lagna and Moon are in the exact same Rasi, blend the color to Purple!
 if lagna_rasi_idx == moon_rasi_idx:
     rasi_colors[lagna_rasi_idx] = "#8e44ad"
-
 nak_colors[moon_nak_idx] = COLOR_STAR
 
-# --- 3. BUILD THE STATIC RINGS ---
+# --- 4. BUILD THE STATIC RINGS ---
 fig = go.Figure()
 
-# Inner Ring: Rasis
-# rotation=90 starts 0 degrees (Aries) at the 12 o'clock position.
-# direction='clockwise' maps houses 1, 2, 3 clockwise from there.
+# Inner Ring: Rasis (Dynamic Rotation Applied)
 fig.add_trace(go.Pie(
-    labels=rasi_labels, values=rasi_values, hole=0.55, direction='clockwise',
-    sort=False, rotation=90, textinfo='label', textposition='inside', insidetextorientation='radial',
+    labels=custom_rasi_labels, values=rasi_values, hole=0.55, direction='clockwise',
+    sort=False, rotation=pie_rotation, textinfo='label', textposition='inside', insidetextorientation='radial',
     domain={'x': [0.15, 0.85], 'y': [0.15, 0.85]}, 
     marker=dict(colors=rasi_colors, line=dict(color=line_color, width=1.5)), hoverinfo="none", name="Rasi"
 ))
 
-# Outer Ring: Nakshatras
+# Outer Ring: Nakshatras (Matches Rasi Rotation)
 fig.add_trace(go.Pie(
     labels=nak_labels, values=nak_values, hole=0.82, direction='clockwise',
-    sort=False, rotation=90, textinfo='label', textposition='inside', insidetextorientation='radial',
+    sort=False, rotation=pie_rotation, textinfo='label', textposition='inside', insidetextorientation='radial',
     domain={'x': [0, 1], 'y': [0, 1]}, 
     marker=dict(colors=nak_colors, line=dict(color=line_color, width=1)), hoverinfo="label", name="Nakshatra"
 ))
 
-# --- 4. TRIGONOMETRY MAPPING FOR PLANETS ---
+# --- 5. TRIGONOMETRY MAPPING FOR PLANETS ---
 annotations = []
-center_x, center_y, radius = 0.5, 0.5, 0.23 
+center_x, center_y, radius = 0.5, 0.5, 0.22 
 
 for p in positions:
-    # Math: (90 - lon) converts astronomical 0° (which sits at 12 o'clock) 
-    # to standard Cartesian coordinates where 12 o'clock is 90°.
-    theta_deg = 90 - p['lon'] 
+    # Math: We subtract the pie_rotation and the planet's longitude from 90° (12 o'clock Cartesian)
+    # This guarantees the planets perfectly follow the rotated visual slices!
+    theta_deg = 90 - pie_rotation - p['lon'] 
     theta_rad = math.radians(theta_deg)
     pos_x = center_x + radius * math.cos(theta_rad)
     pos_y = center_y + radius * math.sin(theta_rad)
     
     annotations.append(dict(
-        x=pos_x, y=pos_y, text=p['icon'], font_size=20, showarrow=False,
+        x=pos_x, y=pos_y, text=p['icon'], font_size=24, showarrow=False,
+        xanchor='center', yanchor='middle', # pixel-perfect centering
         hovertext=f"{p['name']}: {p['lon']:.1f}°", hoverlabel=dict(bgcolor="white")
     ))
 
@@ -170,15 +174,14 @@ fig.update_layout(
     annotations=annotations
 )
 
-# --- 5. RENDER UI ---
+# --- 6. RENDER UI ---
 col_chart, col_legend = st.columns([2.5, 1])
 
 with col_chart:
     st.plotly_chart(fig, use_container_width=True)
 
 with col_legend:
-    
-    lbl_lagna = "Ascendant (Lagna) 🎯" if lang == "English" else "லக்னம் (Ascendant) 🎯"
+    lbl_lagna = "Ascendant (H1) 🎯" if lang == "English" else "லக்னம் (H1) 🎯"
     lbl_moon = "Moon Sign (Rasi) 🌙" if lang == "English" else "ராசி (Moon Sign) 🌙"
     lbl_star = "Moon Star (Nakshatra) ✨" if lang == "English" else "நட்சத்திரம் (Star) ✨"
     
@@ -189,16 +192,16 @@ with col_legend:
         <div style="font-size:11px; color:#888; text-transform:uppercase; font-weight:bold; letter-spacing:1px; margin-bottom:5px;">{lbl_lagna}</div>
         <div style="display:flex; align-items:center;">
             <div style="width:14px; height:14px; background:{COLOR_LAGNA}; border-radius:3px; margin-right:8px;"></div>
-            <div style="font-size:16px; font-weight:500; color:#2c3e50;">{rasi_labels[lagna_rasi_idx]}</div>
+            <div style="font-size:16px; font-weight:500; color:#2c3e50;">{base_rasi_labels[lagna_rasi_idx]}</div>
         </div>
-        <div style="font-size:12px; color:#666; margin-top:4px;">Marks the eastern horizon at birth. Dictates the physical self and life framework.</div>
+        <div style="font-size:12px; color:#666; margin-top:4px;">Locks to the 12 o'clock position (House 1). Dictates the physical self.</div>
     </div>
     
     <div style="background:#fff; border:1px solid #eee; padding:15px; border-radius:6px; margin-bottom:10px;">
         <div style="font-size:11px; color:#888; text-transform:uppercase; font-weight:bold; letter-spacing:1px; margin-bottom:5px;">{lbl_moon}</div>
         <div style="display:flex; align-items:center;">
             <div style="width:14px; height:14px; background:{COLOR_MOON}; border-radius:3px; margin-right:8px;"></div>
-            <div style="font-size:16px; font-weight:500; color:#2c3e50;">{rasi_labels[moon_rasi_idx]}</div>
+            <div style="font-size:16px; font-weight:500; color:#2c3e50;">{base_rasi_labels[moon_rasi_idx]}</div>
         </div>
         <div style="font-size:12px; color:#666; margin-top:4px;">Dictates the psychological operating system and emotional baseline.</div>
     </div>
