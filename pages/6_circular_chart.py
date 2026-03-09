@@ -40,7 +40,9 @@ st.divider()
 # --- ASTRONOMICAL DATA SETS ---
 RASIS_EN = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"]
 RASIS_TA = ["மேஷம்", "ரிஷபம்", "மிதுனம்", "கடகம்", "சிம்மம்", "கன்னி", "துலாம்", "விருச்சிகம்", "தனுசு", "மகரம்", "கும்பம்", "மீனம்"]
-NAKSHATRAS = ["Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra", "Punarvasu", "Pushya", "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", "Hasta", "Chitra", "Swati", "Vishakha", "Anuradha", "Jyeshtha", "Mula", "Purva Ashadha", "Uttara Ashadha", "Shravana", "Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"]
+
+NAKSHATRAS_EN = ["Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra", "Punarvasu", "Pushya", "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", "Hasta", "Chitra", "Swati", "Vishakha", "Anuradha", "Jyeshtha", "Mula", "Purva Ashadha", "Uttara Ashadha", "Shravana", "Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"]
+NAKSHATRAS_TA = ["அஸ்வினி", "பரணி", "கிருத்திகை", "ரோகிணி", "மிருகசீரிடம்", "திருவாதிரை", "புனர்பூசம்", "பூசம்", "ஆயில்யம்", "மகம்", "பூரம்", "உத்திரம்", "அஸ்தம்", "சித்திரை", "சுவாதி", "விசாகம்", "அனுஷம்", "கேட்டை", "மூலம்", "பூராடம்", "உத்திராடம்", "திருவோணம்", "அவிட்டம்", "சதயம்", "பூரட்டாதி", "உத்திரட்டாதி", "ரேவதி"]
 
 with st.sidebar:
     st.markdown("### Chart Controls")
@@ -87,8 +89,10 @@ for p_name, p_id in planet_ids.items():
 rahu_lon = next(p['lon'] for p in positions if p['name'] == 'Rahu')
 positions.append({"name": "Ketu", "lon": (rahu_lon + 180) % 360, "icon": planet_icons["Ketu"]})
 
-# --- 2. DYNAMIC COLOR HIGHLIGHTING ---
+# --- 2. DYNAMIC COLOR HIGHLIGHTING & LANGUAGE SETTINGS ---
 rasi_labels = RASIS_EN if lang == "English" else RASIS_TA
+nak_labels = NAKSHATRAS_EN if lang == "English" else NAKSHATRAS_TA
+
 rasi_values = [30] * 12
 nak_values = [13.333333] * 27
 
@@ -120,6 +124,8 @@ nak_colors[moon_nak_idx] = COLOR_STAR
 fig = go.Figure()
 
 # Inner Ring: Rasis
+# rotation=90 starts 0 degrees (Aries) at the 12 o'clock position.
+# direction='clockwise' maps houses 1, 2, 3 clockwise from there.
 fig.add_trace(go.Pie(
     labels=rasi_labels, values=rasi_values, hole=0.55, direction='clockwise',
     sort=False, rotation=90, textinfo='label', textposition='inside', insidetextorientation='radial',
@@ -129,7 +135,7 @@ fig.add_trace(go.Pie(
 
 # Outer Ring: Nakshatras
 fig.add_trace(go.Pie(
-    labels=NAKSHATRAS, values=nak_values, hole=0.82, direction='clockwise',
+    labels=nak_labels, values=nak_values, hole=0.82, direction='clockwise',
     sort=False, rotation=90, textinfo='label', textposition='inside', insidetextorientation='radial',
     domain={'x': [0, 1], 'y': [0, 1]}, 
     marker=dict(colors=nak_colors, line=dict(color=line_color, width=1)), hoverinfo="label", name="Nakshatra"
@@ -140,6 +146,8 @@ annotations = []
 center_x, center_y, radius = 0.5, 0.5, 0.23 
 
 for p in positions:
+    # Math: (90 - lon) converts astronomical 0° (which sits at 12 o'clock) 
+    # to standard Cartesian coordinates where 12 o'clock is 90°.
     theta_deg = 90 - p['lon'] 
     theta_rad = math.radians(theta_deg)
     pos_x = center_x + radius * math.cos(theta_rad)
@@ -169,11 +177,16 @@ with col_chart:
     st.plotly_chart(fig, use_container_width=True)
 
 with col_legend:
+    
+    lbl_lagna = "Ascendant (Lagna) 🎯" if lang == "English" else "லக்னம் (Ascendant) 🎯"
+    lbl_moon = "Moon Sign (Rasi) 🌙" if lang == "English" else "ராசி (Moon Sign) 🌙"
+    lbl_star = "Moon Star (Nakshatra) ✨" if lang == "English" else "நட்சத்திரம் (Star) ✨"
+    
     st.markdown("<br><br><br>", unsafe_allow_html=True)
     st.markdown("### Highlight Legend")
     st.markdown(f"""
     <div style="background:#fff; border:1px solid #eee; padding:15px; border-radius:6px; margin-bottom:10px;">
-        <div style="font-size:11px; color:#888; text-transform:uppercase; font-weight:bold; letter-spacing:1px; margin-bottom:5px;">Ascendant (Lagna) 🎯</div>
+        <div style="font-size:11px; color:#888; text-transform:uppercase; font-weight:bold; letter-spacing:1px; margin-bottom:5px;">{lbl_lagna}</div>
         <div style="display:flex; align-items:center;">
             <div style="width:14px; height:14px; background:{COLOR_LAGNA}; border-radius:3px; margin-right:8px;"></div>
             <div style="font-size:16px; font-weight:500; color:#2c3e50;">{rasi_labels[lagna_rasi_idx]}</div>
@@ -182,7 +195,7 @@ with col_legend:
     </div>
     
     <div style="background:#fff; border:1px solid #eee; padding:15px; border-radius:6px; margin-bottom:10px;">
-        <div style="font-size:11px; color:#888; text-transform:uppercase; font-weight:bold; letter-spacing:1px; margin-bottom:5px;">Moon Sign (Rasi) 🌙</div>
+        <div style="font-size:11px; color:#888; text-transform:uppercase; font-weight:bold; letter-spacing:1px; margin-bottom:5px;">{lbl_moon}</div>
         <div style="display:flex; align-items:center;">
             <div style="width:14px; height:14px; background:{COLOR_MOON}; border-radius:3px; margin-right:8px;"></div>
             <div style="font-size:16px; font-weight:500; color:#2c3e50;">{rasi_labels[moon_rasi_idx]}</div>
@@ -191,10 +204,10 @@ with col_legend:
     </div>
     
     <div style="background:#fff; border:1px solid #eee; padding:15px; border-radius:6px; margin-bottom:10px;">
-        <div style="font-size:11px; color:#888; text-transform:uppercase; font-weight:bold; letter-spacing:1px; margin-bottom:5px;">Moon Star (Nakshatra) ✨</div>
+        <div style="font-size:11px; color:#888; text-transform:uppercase; font-weight:bold; letter-spacing:1px; margin-bottom:5px;">{lbl_star}</div>
         <div style="display:flex; align-items:center;">
             <div style="width:14px; height:14px; background:{COLOR_STAR}; border-radius:3px; margin-right:8px;"></div>
-            <div style="font-size:16px; font-weight:500; color:#2c3e50;">{NAKSHATRAS[moon_nak_idx]}</div>
+            <div style="font-size:16px; font-weight:500; color:#2c3e50;">{nak_labels[moon_nak_idx]}</div>
         </div>
         <div style="font-size:12px; color:#666; margin-top:4px;">The 13.33° micro-constellation governing mental processing and Dasha timelines.</div>
     </div>
