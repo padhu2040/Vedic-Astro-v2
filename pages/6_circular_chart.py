@@ -41,8 +41,10 @@ def get_aspect_insight(p1, p2, aspect_type):
         dyn, action, act_class = "Direct Confrontation / Reflection", "MITIGATE RISK", "tag-mitigate"
     elif "5th" in aspect_type:
         dyn, action, act_class = "Frictionless Synergy / Dharma", "HARNESS STRENGTH", "tag-harness"
-    else:
+    elif "4th" in aspect_type:
         dyn, action, act_class = "Structural Tension / Karma", "MITIGATE RISK", "tag-mitigate"
+    else:
+        dyn, action, act_class = "Amplification / Fusion", "HARNESS STRENGTH", "tag-harness"
         
     if {"Sun", "Moon"} == pair:
         desc = "The core identity (Sun) and emotional operating system (Moon) are directly interacting."
@@ -71,10 +73,10 @@ def get_aspect_insight(p1, p2, aspect_type):
 
 # --- UI HEADER & TOP CONTROLS ---
 st.title("Data Visualization: Circos Zodiac")
-st.markdown("<div style='color:#7f8c8d; margin-top:-15px; margin-bottom: 20px;'>Multi-chord planetary trigonometry with 108 Nakshatra Padas.</div>", unsafe_allow_html=True)
+st.markdown("<div style='color:#7f8c8d; margin-top:-15px; margin-bottom: 20px;'>Multi-chord planetary trigonometry representing real-time astrological energy flow.</div>", unsafe_allow_html=True)
 
 # TOP FILTER: The Aspect Control
-st.markdown("<div style='font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;'>Active Planetary Aspects</div>", unsafe_allow_html=True)
+st.markdown("<div style='font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;'>Visualize Energy Flow (Aspects)</div>", unsafe_allow_html=True)
 view_filter = st.radio("Aspect Filter", ["Oppositions (7th House)", "Trines (5th / 9th House)", "Squares (4th / 10th House)", "Conjunctions (Same House)"], horizontal=True, label_visibility="collapsed")
 st.divider()
 
@@ -83,8 +85,6 @@ RASIS_EN = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Sco
 RASIS_TA = ["மேஷம்", "ரிஷபம்", "மிதுனம்", "கடகம்", "சிம்மம்", "கன்னி", "துலாம்", "விருச்சிகம்", "தனுசு", "மகரம்", "கும்பம்", "மீனம்"]
 NAKSHATRAS_EN = ["Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra", "Punarvasu", "Pushya", "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", "Hasta", "Chitra", "Swati", "Vishakha", "Anuradha", "Jyeshtha", "Mula", "Purva Ashadha", "Uttara Ashadha", "Shravana", "Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"]
 NAKSHATRAS_TA = ["அஸ்வினி", "பரணி", "கிருத்திகை", "ரோகிணி", "மிருகசீரிடம்", "திருவாதிரை", "புனர்பூசம்", "பூசம்", "ஆயில்யம்", "மகம்", "பூரம்", "உத்திரம்", "அஸ்தம்", "சித்திரை", "சுவாதி", "விசாகம்", "அனுஷம்", "கேட்டை", "மூலம்", "பூராடம்", "உத்திராடம்", "திருவோணம்", "அவிட்டம்", "சதயம்", "பூரட்டாதி", "உத்திரட்டாதி", "ரேவதி"]
-
-# 108 Padas (1, 2, 3, 4 repeating)
 PADAS = ["1", "2", "3", "4"] * 27
 
 with st.sidebar:
@@ -126,12 +126,13 @@ for p_name, p_id in planet_ids.items():
 rahu_lon = next(p['lon'] for p in positions if p['name'] == 'Rahu')
 positions.append({"name": "Ketu", "lon": (rahu_lon + 180) % 360, "icon": planet_icons["Ketu"], "rasi": int(((rahu_lon + 180) % 360) / 30)})
 
-# --- DYNAMIC CHART ROTATION ---
-pie_rotation = (360 - (lagna_rasi_idx * 30)) % 360
+pie_rotation = (90 + (lagna_rasi_idx * 30)) % 360
 
 # --- 3-TIER STATIC RINGS SETUP ---
 base_rasi_labels = RASIS_EN if lang == "English" else RASIS_TA
 nak_labels = NAKSHATRAS_EN if lang == "English" else NAKSHATRAS_TA
+
+# Realign Labels so H1 is always top
 custom_rasi_labels = [f"<b>H{(i - lagna_rasi_idx + 12) % 12 + 1}</b><br>{base_rasi_labels[i]}" for i in range(12)]
 
 if theme == "Executive Minimal":
@@ -148,106 +149,122 @@ else:
 # --- BUILD THE PLOTLY FIGURE ---
 fig = go.Figure()
 
-# Tier 1: Inner Ring (Rasis)
+# To perfectly sync Pie and Cartesian, we use tightly nested domains
+# Tier 3: Outer Ring (108 Padas). Radius: 0.94 -> 1.0
 fig.add_trace(go.Pie(
-    labels=custom_rasi_labels, values=[30]*12, hole=0.55, direction='clockwise',
+    labels=PADAS, values=[360/108]*108, hole=0.94, direction='clockwise',
     sort=False, rotation=pie_rotation, textinfo='label', textposition='inside', insidetextorientation='radial',
-    domain={'x': [0.22, 0.78], 'y': [0.22, 0.78]}, 
-    marker=dict(colors=rasi_colors, line=dict(color=line_color, width=1.5)), hoverinfo="none", name="Rasi"
+    textfont=dict(size=8, color="#666"), domain={'x': [0, 1], 'y': [0, 1]}, 
+    marker=dict(colors=pada_colors, line=dict(color='#eaeaea', width=0.5)), hoverinfo="none", name="Pada"
 ))
 
-# Tier 2: Middle Ring (Nakshatras)
+# Tier 2: Middle Ring (Nakshatras). Radius: 0.80 -> 0.94
 fig.add_trace(go.Pie(
-    labels=nak_labels, values=[360/27]*27, hole=0.82, direction='clockwise',
+    labels=nak_labels, values=[360/27]*27, hole=0.851, direction='clockwise',
     sort=False, rotation=pie_rotation, textinfo='label', textposition='inside', insidetextorientation='radial',
-    domain={'x': [0.08, 0.92], 'y': [0.08, 0.92]}, 
+    domain={'x': [0.03, 0.97], 'y': [0.03, 0.97]}, 
     marker=dict(colors=nak_colors, line=dict(color=line_color, width=1)), hoverinfo="label", name="Nakshatra"
 ))
 
-# Tier 3: Outer Ring (108 Padas)
+# Tier 1: Inner Ring (Rasis). Radius: 0.55 -> 0.80
 fig.add_trace(go.Pie(
-    labels=PADAS, values=[360/108]*108, hole=0.93, direction='clockwise',
+    labels=custom_rasi_labels, values=[30]*12, hole=0.6875, direction='clockwise',
     sort=False, rotation=pie_rotation, textinfo='label', textposition='inside', insidetextorientation='radial',
-    textfont=dict(size=9, color="#666"),
-    domain={'x': [0, 1], 'y': [0, 1]}, 
-    marker=dict(colors=pada_colors, line=dict(color='#eaeaea', width=0.5)), hoverinfo="label", name="Pada"
+    domain={'x': [0.10, 0.90], 'y': [0.10, 0.90]}, 
+    marker=dict(colors=rasi_colors, line=dict(color=line_color, width=1.5)), hoverinfo="none", name="Rasi"
 ))
 
-# --- TRIGONOMETRY FOR ICONS AND RIBBONS ---
+# --- TRIGONOMETRY FOR ICONS AND TRUE CHORD RIBBONS ---
 annotations = []
-center_x, center_y, radius = 0.5, 0.5, 0.20 
 
-# Planet Coordinates
+# Inner radius of the Rasi wheel in Cartesian units
+cartesian_inner_r = 0.55 
+planet_r = 0.46 # Icons float slightly inside the Rasi wall
+chord_r = 0.41 # Chords connect slightly below the icons
+
 for p in positions:
-    theta_deg = 90 - pie_rotation - p['lon'] 
+    # Sync planetary longitudes perfectly with Pie rotation
+    theta_deg = pie_rotation - p['lon'] 
     theta_rad = math.radians(theta_deg)
-    p['x'] = center_x + radius * math.cos(theta_rad)
-    p['y'] = center_y + radius * math.sin(theta_rad)
+    p['theta_rad'] = theta_rad
+    
+    p['x'] = planet_r * math.cos(theta_rad)
+    p['y'] = planet_r * math.sin(theta_rad)
     
     annotations.append(dict(
-        x=p['x'], y=p['y'], text=p['icon'], font_size=22, showarrow=False,
+        x=p['x'], y=p['y'], text=p['icon'], font_size=20, showarrow=False,
         xanchor='center', yanchor='middle',
         hovertext=f"{p['name']}: {p['lon']:.1f}°", hoverlabel=dict(bgcolor="white")
     ))
 
-# --- DYNAMIC CHORD / ASPECT RIBBONS ---
 aspect_pairs = []
 drawn_pairs = set()
+shapes = []
 
-target_distances = []
-ribbon_color = "rgba(189, 195, 199, 0.5)" 
-if "7th" in view_filter:
-    target_distances = [6]
-    ribbon_color = "rgba(192, 57, 43, 0.6)" # Deep Red
-elif "5th" in view_filter:
-    target_distances = [4, 8]
-    ribbon_color = "rgba(39, 174, 96, 0.6)" # Green
-elif "4th" in view_filter:
-    target_distances = [3, 9]
-    ribbon_color = "rgba(41, 128, 185, 0.6)" # Blue
-elif "Conjunction" in view_filter:
-    target_distances = [0]
-    ribbon_color = "rgba(142, 68, 173, 0.6)" # Purple
+if "7th" in view_filter: target_dist, chord_color = [6], "rgba(192, 57, 43, 0.4)" 
+elif "5th" in view_filter: target_dist, chord_color = [4, 8], "rgba(39, 174, 96, 0.4)" 
+elif "4th" in view_filter: target_dist, chord_color = [3, 9], "rgba(41, 128, 185, 0.4)" 
+elif "Conjunction" in view_filter: target_dist, chord_color = [0], "rgba(142, 68, 173, 0.4)" 
 
 for p1 in positions:
     for p2 in positions:
         if p1['name'] == p2['name']: continue
-        
         pair_key = tuple(sorted([p1['name'], p2['name']]))
         if pair_key in drawn_pairs: continue
 
         dist = (p2['rasi'] - p1['rasi'] + 12) % 12
-        
-        if dist in target_distances:
+        if dist in target_dist:
             drawn_pairs.add(pair_key)
             aspect_pairs.append((p1['name'], p2['name']))
             
+            # Draw authentic geometric SVG Chords (Bezier Paths)
+            t1, t2 = p1['theta_rad'], p2['theta_rad']
+            delta = 0.04 # Ribbon thickness at the base
+            
+            # Calculate 4 points for the thick ribbon
+            x1a, y1a = chord_r * math.cos(t1 - delta), chord_r * math.sin(t1 - delta)
+            x1b, y1b = chord_r * math.cos(t1 + delta), chord_r * math.sin(t1 + delta)
+            x2a, y2a = chord_r * math.cos(t2 + delta), chord_r * math.sin(t2 + delta)
+            x2b, y2b = chord_r * math.cos(t2 - delta), chord_r * math.sin(t2 - delta)
+            
             if dist == 0:
-                # Conjunction: Short curved line outside the center
-                fig.add_trace(go.Scatter(
-                    x=[p1['x'], center_x + (p1['x']-center_x)*0.5, p2['x']], 
-                    y=[p1['y'], center_y + (p1['y']-center_y)*0.5, p2['y']],
-                    mode='lines', line=dict(color=ribbon_color, width=3, shape='spline'),
-                    hoverinfo='text', text=f"{p1['name']} + {p2['name']} (Conjunction)", showlegend=False
-                ))
+                # Bow outwards for conjunctions
+                ctrl_r = 0.2
+                cx, cy = ctrl_r * math.cos(t1), ctrl_r * math.sin(t1)
             else:
-                # Aspect: Draw a smooth curved chord through the center
-                fig.add_trace(go.Scatter(
-                    x=[p1['x'], center_x, p2['x']], y=[p1['y'], center_y, p2['y']],
-                    mode='lines', line=dict(color=ribbon_color, width=2.5, shape='spline'),
-                    hoverinfo='text', text=f"{p1['name']} ↔ {p2['name']} ({view_filter})", showlegend=False
-                ))
+                # Bow perfectly through the center (0,0) for aspects
+                cx, cy = 0, 0
+                
+            # SVG Path defining the elegant chord ribbon
+            path_str = f"M {x1a},{y1a} Q {cx},{cy} {x2b},{y2b} L {x2a},{y2a} Q {cx},{cy} {x1b},{y1b} Z"
+            
+            shapes.append(dict(
+                type="path", path=path_str, fillcolor=chord_color, 
+                line=dict(color=chord_color, width=1), layer="below"
+            ))
+            
+            # Invisible scatter for hover interaction over the chords
+            fig.add_trace(go.Scatter(
+                x=[p1['x'], 0, p2['x']], y=[p1['y'], 0, p2['y']],
+                mode='lines', line=dict(color='rgba(0,0,0,0)', width=10),
+                hoverinfo='text', text=f"Flow: {p1['name']} ↔ {p2['name']}", showlegend=False
+            ))
 
 # Central Profile Text
 annotations.append(dict(
-    text=f"<b>{selected_profile}</b><br><span style='font-size:11px;color:#888;'>Dynamic Aspect Engine</span>",
-    x=0.5, y=0.5, font_size=16, font_family="Helvetica Neue", showarrow=False
+    text=f"<b>{selected_profile}</b><br><span style='font-size:11px;color:#888;'>Zodiac Flow Engine</span>",
+    x=0, y=0, font_size=16, font_family="Helvetica Neue", showarrow=False, xanchor='center', yanchor='middle'
 ))
 
+# CRITICAL FIX: Hide the Cartesian axes completely but force range [-1, 1] 
+# so the geometry overlays perfectly onto the Pie chart
+fig.update_xaxes(visible=False, range=[-1, 1], showgrid=False, zeroline=False)
+fig.update_yaxes(visible=False, range=[-1, 1], showgrid=False, zeroline=False, scaleanchor="x", scaleratio=1)
+
 fig.update_layout(
-    margin=dict(t=0, b=0, l=0, r=0), showlegend=False,
-    width=750, height=750, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
-    annotations=annotations
+    margin=dict(t=10, b=10, l=10, r=10), showlegend=False,
+    width=800, height=800, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+    annotations=annotations, shapes=shapes
 )
 
 # --- RENDER CHART (CENTERED) ---
