@@ -126,7 +126,8 @@ for p_name, p_id in planet_ids.items():
 rahu_lon = next(p['lon'] for p in positions if p['name'] == 'Rahu')
 positions.append({"name": "Ketu", "lon": (rahu_lon + 180) % 360, "icon": planet_icons["Ketu"], "rasi": int(((rahu_lon + 180) % 360) / 30)})
 
-pie_rotation = (90 + (lagna_rasi_idx * 30)) % 360
+# Mathematical alignment to force the Lagna to ALWAYS start at exactly 12 o'clock
+pie_rotation = (360 - (lagna_rasi_idx * 30)) % 360
 
 # --- 3-TIER STATIC RINGS SETUP ---
 base_rasi_labels = RASIS_EN if lang == "English" else RASIS_TA
@@ -149,8 +150,7 @@ else:
 # --- BUILD THE PLOTLY FIGURE ---
 fig = go.Figure()
 
-# To perfectly sync Pie and Cartesian, we use tightly nested domains
-# Tier 3: Outer Ring (108 Padas). Radius: 0.94 -> 1.0
+# Tier 3: Outer Ring (108 Padas). Radius mapping: 0.94 -> 1.0
 fig.add_trace(go.Pie(
     labels=PADAS, values=[360/108]*108, hole=0.94, direction='clockwise',
     sort=False, rotation=pie_rotation, textinfo='label', textposition='inside', insidetextorientation='radial',
@@ -158,7 +158,7 @@ fig.add_trace(go.Pie(
     marker=dict(colors=pada_colors, line=dict(color='#eaeaea', width=0.5)), hoverinfo="none", name="Pada"
 ))
 
-# Tier 2: Middle Ring (Nakshatras). Radius: 0.80 -> 0.94
+# Tier 2: Middle Ring (Nakshatras). Radius mapping: 0.80 -> 0.94
 fig.add_trace(go.Pie(
     labels=nak_labels, values=[360/27]*27, hole=0.851, direction='clockwise',
     sort=False, rotation=pie_rotation, textinfo='label', textposition='inside', insidetextorientation='radial',
@@ -166,7 +166,7 @@ fig.add_trace(go.Pie(
     marker=dict(colors=nak_colors, line=dict(color=line_color, width=1)), hoverinfo="label", name="Nakshatra"
 ))
 
-# Tier 1: Inner Ring (Rasis). Radius: 0.55 -> 0.80
+# Tier 1: Inner Ring (Rasis). Radius mapping: 0.55 -> 0.80
 fig.add_trace(go.Pie(
     labels=custom_rasi_labels, values=[30]*12, hole=0.6875, direction='clockwise',
     sort=False, rotation=pie_rotation, textinfo='label', textposition='inside', insidetextorientation='radial',
@@ -177,14 +177,13 @@ fig.add_trace(go.Pie(
 # --- TRIGONOMETRY FOR ICONS AND TRUE CHORD RIBBONS ---
 annotations = []
 
-# Inner radius of the Rasi wheel in Cartesian units
-cartesian_inner_r = 0.55 
-planet_r = 0.46 # Icons float slightly inside the Rasi wall
-chord_r = 0.41 # Chords connect slightly below the icons
+# Using explicit Cartesian coordinates mapped to the clamped [-1, 1] axes
+planet_r = 0.46 # Icons float perfectly inside the 0.55 Rasi hole
+chord_r = 0.41 # Chords connect slightly beneath the icons
 
 for p in positions:
-    # Sync planetary longitudes perfectly with Pie rotation
-    theta_deg = pie_rotation - p['lon'] 
+    # Offset Cartesian angle by the Pie's rotation to perfectly sync the systems
+    theta_deg = 90 - pie_rotation - p['lon'] 
     theta_rad = math.radians(theta_deg)
     p['theta_rad'] = theta_rad
     
@@ -193,6 +192,7 @@ for p in positions:
     
     annotations.append(dict(
         x=p['x'], y=p['y'], text=p['icon'], font_size=20, showarrow=False,
+        xref='x', yref='y', # <-- Locks the icons mathematically to the axes
         xanchor='center', yanchor='middle',
         hovertext=f"{p['name']}: {p['lon']:.1f}°", hoverlabel=dict(bgcolor="white")
     ))
@@ -219,49 +219,46 @@ for p1 in positions:
             
             # Draw authentic geometric SVG Chords (Bezier Paths)
             t1, t2 = p1['theta_rad'], p2['theta_rad']
-            delta = 0.04 # Ribbon thickness at the base
+            delta = 0.04 # Ribbon thickness at the base (flare)
             
-            # Calculate 4 points for the thick ribbon
             x1a, y1a = chord_r * math.cos(t1 - delta), chord_r * math.sin(t1 - delta)
             x1b, y1b = chord_r * math.cos(t1 + delta), chord_r * math.sin(t1 + delta)
             x2a, y2a = chord_r * math.cos(t2 + delta), chord_r * math.sin(t2 + delta)
             x2b, y2b = chord_r * math.cos(t2 - delta), chord_r * math.sin(t2 - delta)
             
             if dist == 0:
-                # Bow outwards for conjunctions
                 ctrl_r = 0.2
                 cx, cy = ctrl_r * math.cos(t1), ctrl_r * math.sin(t1)
             else:
-                # Bow perfectly through the center (0,0) for aspects
-                cx, cy = 0, 0
+                cx, cy = 0, 0 # Curve bends through the absolute center
                 
-            # SVG Path defining the elegant chord ribbon
+            # SVG Path defines a fluid, thick chord ribbon flowing across the chart
             path_str = f"M {x1a},{y1a} Q {cx},{cy} {x2b},{y2b} L {x2a},{y2a} Q {cx},{cy} {x1b},{y1b} Z"
             
             shapes.append(dict(
                 type="path", path=path_str, fillcolor=chord_color, 
-                line=dict(color=chord_color, width=1), layer="below"
+                line=dict(color=chord_color, width=1), layer="below",
+                xref='x', yref='y' # <-- Locks the ribbons mathematically to the axes
             ))
             
-            # Invisible scatter for hover interaction over the chords
+            # Invisible scatter line purely for the hover-tooltip interactivity
             fig.add_trace(go.Scatter(
                 x=[p1['x'], 0, p2['x']], y=[p1['y'], 0, p2['y']],
                 mode='lines', line=dict(color='rgba(0,0,0,0)', width=10),
                 hoverinfo='text', text=f"Flow: {p1['name']} ↔ {p2['name']}", showlegend=False
             ))
 
-# Central Profile Text
+# Central Dashboard Title
 annotations.append(dict(
     text=f"<b>{selected_profile}</b><br><span style='font-size:11px;color:#888;'>Zodiac Flow Engine</span>",
-    x=0, y=0, font_size=16, font_family="Helvetica Neue", showarrow=False, xanchor='center', yanchor='middle'
+    x=0.5, y=0.5, xref='paper', yref='paper', # Fixed strictly to the center of the display
+    font_size=16, font_family="Helvetica Neue", showarrow=False, xanchor='center', yanchor='middle'
 ))
 
-# CRITICAL FIX: Hide the Cartesian axes completely but force range [-1, 1] 
-# so the geometry overlays perfectly onto the Pie chart
-fig.update_xaxes(visible=False, range=[-1, 1], showgrid=False, zeroline=False)
-fig.update_yaxes(visible=False, range=[-1, 1], showgrid=False, zeroline=False, scaleanchor="x", scaleratio=1)
-
+# CRITICAL FIX: Rigidly clamp the Cartesian axes to [-1, 1] to sync with the Pie domain logic
 fig.update_layout(
+    xaxis=dict(visible=False, range=[-1, 1], fixedrange=True),
+    yaxis=dict(visible=False, range=[-1, 1], fixedrange=True, scaleanchor="x", scaleratio=1),
     margin=dict(t=10, b=10, l=10, r=10), showlegend=False,
     width=800, height=800, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
     annotations=annotations, shapes=shapes
