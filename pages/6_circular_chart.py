@@ -35,7 +35,6 @@ def load_profiles_from_db():
 
 # --- DYNAMIC EXECUTIVE INSIGHT GENERATOR ---
 def get_aspect_insight(p1, p2, aspect_type):
-    """Generates corporate astrological insights for planetary pairs."""
     pair = {p1, p2}
     
     if "7th" in aspect_type:
@@ -72,7 +71,7 @@ def get_aspect_insight(p1, p2, aspect_type):
 
 # --- UI HEADER & TOP CONTROLS ---
 st.title("Data Visualization: Circos Zodiac")
-st.markdown("<div style='color:#7f8c8d; margin-top:-15px; margin-bottom: 20px;'>Live planetary trigonometry with 108 Padas and dynamic aspect ribbons.</div>", unsafe_allow_html=True)
+st.markdown("<div style='color:#7f8c8d; margin-top:-15px; margin-bottom: 20px;'>Multi-chord planetary trigonometry with 108 Nakshatra Padas.</div>", unsafe_allow_html=True)
 
 # TOP FILTER: The Aspect Control
 st.markdown("<div style='font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;'>Active Planetary Aspects</div>", unsafe_allow_html=True)
@@ -84,6 +83,9 @@ RASIS_EN = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Sco
 RASIS_TA = ["மேஷம்", "ரிஷபம்", "மிதுனம்", "கடகம்", "சிம்மம்", "கன்னி", "துலாம்", "விருச்சிகம்", "தனுசு", "மகரம்", "கும்பம்", "மீனம்"]
 NAKSHATRAS_EN = ["Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra", "Punarvasu", "Pushya", "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", "Hasta", "Chitra", "Swati", "Vishakha", "Anuradha", "Jyeshtha", "Mula", "Purva Ashadha", "Uttara Ashadha", "Shravana", "Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"]
 NAKSHATRAS_TA = ["அஸ்வினி", "பரணி", "கிருத்திகை", "ரோகிணி", "மிருகசீரிடம்", "திருவாதிரை", "புனர்பூசம்", "பூசம்", "ஆயில்யம்", "மகம்", "பூரம்", "உத்திரம்", "அஸ்தம்", "சித்திரை", "சுவாதி", "விசாகம்", "அனுஷம்", "கேட்டை", "மூலம்", "பூராடம்", "உத்திராடம்", "திருவோணம்", "அவிட்டம்", "சதயம்", "பூரட்டாதி", "உத்திரட்டாதி", "ரேவதி"]
+
+# 108 Padas (1, 2, 3, 4 repeating)
+PADAS = ["1", "2", "3", "4"] * 27
 
 with st.sidebar:
     st.markdown("<div style='font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;'>Profile Coordinates</div>", unsafe_allow_html=True)
@@ -132,9 +134,6 @@ base_rasi_labels = RASIS_EN if lang == "English" else RASIS_TA
 nak_labels = NAKSHATRAS_EN if lang == "English" else NAKSHATRAS_TA
 custom_rasi_labels = [f"<b>H{(i - lagna_rasi_idx + 12) % 12 + 1}</b><br>{base_rasi_labels[i]}" for i in range(12)]
 
-pada_labels = ["1", "2", "3", "4"] * 27
-
-# Dynamic Themes
 if theme == "Executive Minimal":
     rasi_colors = ['#f8f9fa', '#f1f3f5'] * 6
     nak_colors = ['#e9ecef', '#dee2e6', '#ced4da'] * 9
@@ -143,7 +142,7 @@ if theme == "Executive Minimal":
 else:
     rasi_colors = ['#FDEDEC', '#E8F5E9', '#EBF5FB', '#F5EEF8'] * 3 
     nak_colors = ['#FADBD8', '#C8E6C9', '#D6EAF8'] * 9
-    pada_colors = ['#ffffff', '#f4f6f7'] * 54
+    pada_colors = ['#ffffff', '#fcfcfc'] * 54
     line_color = '#ffffff'
 
 # --- BUILD THE PLOTLY FIGURE ---
@@ -151,15 +150,15 @@ fig = go.Figure()
 
 # Tier 1: Inner Ring (Rasis)
 fig.add_trace(go.Pie(
-    labels=custom_rasi_labels, values=[30]*12, hole=0.60, direction='clockwise',
+    labels=custom_rasi_labels, values=[30]*12, hole=0.55, direction='clockwise',
     sort=False, rotation=pie_rotation, textinfo='label', textposition='inside', insidetextorientation='radial',
-    domain={'x': [0.2, 0.8], 'y': [0.2, 0.8]}, 
+    domain={'x': [0.22, 0.78], 'y': [0.22, 0.78]}, 
     marker=dict(colors=rasi_colors, line=dict(color=line_color, width=1.5)), hoverinfo="none", name="Rasi"
 ))
 
 # Tier 2: Middle Ring (Nakshatras)
 fig.add_trace(go.Pie(
-    labels=nak_labels, values=[360/27]*27, hole=0.80, direction='clockwise',
+    labels=nak_labels, values=[360/27]*27, hole=0.82, direction='clockwise',
     sort=False, rotation=pie_rotation, textinfo='label', textposition='inside', insidetextorientation='radial',
     domain={'x': [0.08, 0.92], 'y': [0.08, 0.92]}, 
     marker=dict(colors=nak_colors, line=dict(color=line_color, width=1)), hoverinfo="label", name="Nakshatra"
@@ -167,18 +166,18 @@ fig.add_trace(go.Pie(
 
 # Tier 3: Outer Ring (108 Padas)
 fig.add_trace(go.Pie(
-    labels=pada_labels, values=[360/108]*108, hole=0.92, direction='clockwise',
+    labels=PADAS, values=[360/108]*108, hole=0.93, direction='clockwise',
     sort=False, rotation=pie_rotation, textinfo='label', textposition='inside', insidetextorientation='radial',
-    textfont=dict(size=9, color="#888"),
+    textfont=dict(size=9, color="#666"),
     domain={'x': [0, 1], 'y': [0, 1]}, 
     marker=dict(colors=pada_colors, line=dict(color='#eaeaea', width=0.5)), hoverinfo="label", name="Pada"
 ))
 
 # --- TRIGONOMETRY FOR ICONS AND RIBBONS ---
 annotations = []
-center_x, center_y, radius = 0.5, 0.5, 0.19 
+center_x, center_y, radius = 0.5, 0.5, 0.20 
 
-# Calculate Planet Coordinates (Resting inside the Rasi Ring)
+# Planet Coordinates
 for p in positions:
     theta_deg = 90 - pie_rotation - p['lon'] 
     theta_rad = math.radians(theta_deg)
@@ -186,18 +185,17 @@ for p in positions:
     p['y'] = center_y + radius * math.sin(theta_rad)
     
     annotations.append(dict(
-        x=p['x'], y=p['y'], text=p['icon'], font_size=24, showarrow=False,
+        x=p['x'], y=p['y'], text=p['icon'], font_size=22, showarrow=False,
         xanchor='center', yanchor='middle',
         hovertext=f"{p['name']}: {p['lon']:.1f}°", hoverlabel=dict(bgcolor="white")
     ))
 
-# --- DYNAMIC ASPECT RIBBONS ---
+# --- DYNAMIC CHORD / ASPECT RIBBONS ---
 aspect_pairs = []
 drawn_pairs = set()
 
-# Target distances based on the selected Radio Button
 target_distances = []
-ribbon_color = "rgba(189, 195, 199, 0.5)" # Default Gray
+ribbon_color = "rgba(189, 195, 199, 0.5)" 
 if "7th" in view_filter:
     target_distances = [6]
     ribbon_color = "rgba(192, 57, 43, 0.6)" # Deep Red
@@ -218,25 +216,25 @@ for p1 in positions:
         pair_key = tuple(sorted([p1['name'], p2['name']]))
         if pair_key in drawn_pairs: continue
 
-        # Calculate geometric house distance
         dist = (p2['rasi'] - p1['rasi'] + 12) % 12
         
         if dist in target_distances:
             drawn_pairs.add(pair_key)
             aspect_pairs.append((p1['name'], p2['name']))
             
-            # If it's a conjunction, draw a short, curved line around the same house instead of across the center
             if dist == 0:
+                # Conjunction: Short curved line outside the center
                 fig.add_trace(go.Scatter(
-                    x=[p1['x'], center_x, p2['x']], y=[p1['y'], center_y, p2['y']],
-                    mode='lines', line=dict(color=ribbon_color, width=2, shape='spline'),
+                    x=[p1['x'], center_x + (p1['x']-center_x)*0.5, p2['x']], 
+                    y=[p1['y'], center_y + (p1['y']-center_y)*0.5, p2['y']],
+                    mode='lines', line=dict(color=ribbon_color, width=3, shape='spline'),
                     hoverinfo='text', text=f"{p1['name']} + {p2['name']} (Conjunction)", showlegend=False
                 ))
             else:
-                # Draw straight ribbon across the chart
+                # Aspect: Draw a smooth curved chord through the center
                 fig.add_trace(go.Scatter(
-                    x=[p1['x'], p2['x']], y=[p1['y'], p2['y']],
-                    mode='lines', line=dict(color=ribbon_color, width=2.5, dash='dash'),
+                    x=[p1['x'], center_x, p2['x']], y=[p1['y'], center_y, p2['y']],
+                    mode='lines', line=dict(color=ribbon_color, width=2.5, shape='spline'),
                     hoverinfo='text', text=f"{p1['name']} ↔ {p2['name']} ({view_filter})", showlegend=False
                 ))
 
@@ -265,7 +263,6 @@ st.markdown(f"<h3 style='margin-bottom:20px; color:#2c3e50;'>{view_filter.split(
 if not aspect_pairs:
     st.info(f"No exact {view_filter} alignments detected in this specific chart configuration.")
 else:
-    # CSS for the flat cards
     css_block = """<style>
     .bp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
     .bp-card { background: #ffffff; border: 1px solid #eaeaea; border-radius: 4px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 1px 2px rgba(0,0,0,0.01); }
@@ -279,8 +276,6 @@ else:
     st.markdown(css_block, unsafe_allow_html=True)
 
     grid_html = """<div class="bp-grid">"""
-    
-    # Border color matching the ribbon
     card_border = "#e74c3c" if "7th" in view_filter else "#27ae60" if "5th" in view_filter else "#2980b9" if "4th" in view_filter else "#8e44ad"
     
     for p1, p2 in aspect_pairs:
