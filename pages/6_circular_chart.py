@@ -7,7 +7,7 @@ from supabase import create_client
 
 from astro_engine import get_location_coordinates, get_utc_offset
 
-st.set_page_config(page_title="Circos Sandbox", layout="wide")
+st.set_page_config(page_title="Dynamic Aspect Engine", layout="wide")
 
 # --- SUPABASE PROFILE LOADING ---
 @st.cache_resource
@@ -38,27 +38,19 @@ def get_aspect_insight(p1, p2, aspect_type):
     """Generates corporate astrological insights for planetary pairs."""
     pair = {p1, p2}
     
-    # Define nature of the aspect
-    if aspect_type == "Opposition (7th House)":
-        dyn = "Direct Confrontation / Reflection"
-        action = "MITIGATE RISK"
-        act_class = "tag-mitigate"
-    elif aspect_type == "Trine (5th / 9th House)":
-        dyn = "Frictionless Synergy / Dharma"
-        action = "HARNESS STRENGTH"
-        act_class = "tag-harness"
+    if "7th" in aspect_type:
+        dyn, action, act_class = "Direct Confrontation / Reflection", "MITIGATE RISK", "tag-mitigate"
+    elif "5th" in aspect_type:
+        dyn, action, act_class = "Frictionless Synergy / Dharma", "HARNESS STRENGTH", "tag-harness"
     else:
-        dyn = "Structural Tension / Karma"
-        action = "MITIGATE RISK"
-        act_class = "tag-mitigate"
+        dyn, action, act_class = "Structural Tension / Karma", "MITIGATE RISK", "tag-mitigate"
         
-    # Specific Pair Logic
     if {"Sun", "Moon"} == pair:
         desc = "The core identity (Sun) and emotional operating system (Moon) are directly interacting."
         rem = "Balance executive logic with intuition. Do not let ego override team morale."
     elif {"Mars", "Venus"} == pair:
         desc = "High-octane creative and aggressive energy. Passion meets execution."
-        rem = "Channel this intense energy into product development. Avoid impulsive financial/relationship decisions."
+        rem = "Channel this intense energy into product development. Avoid impulsive financial decisions."
     elif {"Jupiter", "Rahu"} == pair or {"Jupiter", "Ketu"} == pair:
         desc = "Unconventional expansion (Guru-Chandal energy). Rapid scaling but with hidden risks."
         rem = "Ensure legal and ethical compliance during aggressive business scaling."
@@ -70,17 +62,21 @@ def get_aspect_insight(p1, p2, aspect_type):
         rem = "Perfect window for negotiations, contract drafting, and long-term planning."
     elif "Asc" in pair:
         planet = list(pair - {"Asc"})[0]
-        desc = f"The physical self/brand (Lagna) is heavily influenced by the energy of {planet}."
-        rem = "Project this planetary energy in your personal branding and leadership style today."
+        desc = f"The physical brand/self (Lagna) is heavily influenced by the energy of {planet}."
+        rem = f"Project this {planet} energy explicitly in your personal branding and leadership style."
     else:
         desc = f"Complex energy exchange between {p1}'s agenda and {p2}'s agenda."
         rem = f"Acknowledge both forces. Use the {dyn} to find a middle ground in operations."
 
     return dyn, action, act_class, desc, rem
 
-# --- UI HEADER ---
+# --- UI HEADER & TOP CONTROLS ---
 st.title("Data Visualization: Circos Zodiac")
-st.markdown("<div style='color:#7f8c8d; margin-top:-15px; margin-bottom: 20px;'>Live planetary trigonometry with dynamic aspect ribbons.</div>", unsafe_allow_html=True)
+st.markdown("<div style='color:#7f8c8d; margin-top:-15px; margin-bottom: 20px;'>Live planetary trigonometry with 108 Padas and dynamic aspect ribbons.</div>", unsafe_allow_html=True)
+
+# TOP FILTER: The Aspect Control
+st.markdown("<div style='font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;'>Active Planetary Aspects</div>", unsafe_allow_html=True)
+view_filter = st.radio("Aspect Filter", ["Oppositions (7th House)", "Trines (5th / 9th House)", "Squares (4th / 10th House)", "Conjunctions (Same House)"], horizontal=True, label_visibility="collapsed")
 st.divider()
 
 # --- ASTRONOMICAL DATA SETS ---
@@ -98,10 +94,6 @@ with st.sidebar:
     st.divider()
     lang = st.radio("Language", ["English", "Tamil"])
     theme = st.radio("Background Theme", ["Executive Minimal", "Elemental Context"])
-
-# --- ASPECT FILTER (RADIO BUTTONS) ---
-st.markdown("<div style='font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;'>Planetary Connections</div>", unsafe_allow_html=True)
-view_filter = st.radio("Aspect Filter", ["Oppositions (7th House)", "Trines (5th / 9th House)", "Squares (4th / 10th House)"], horizontal=True, label_visibility="collapsed")
 
 # --- CALCULATE LIVE PLANETARY LONGITUDES ---
 swe.set_sid_mode(swe.SIDM_LAHIRI)
@@ -135,38 +127,58 @@ positions.append({"name": "Ketu", "lon": (rahu_lon + 180) % 360, "icon": planet_
 # --- DYNAMIC CHART ROTATION ---
 pie_rotation = (360 - (lagna_rasi_idx * 30)) % 360
 
-# --- STATIC RINGS SETUP ---
+# --- 3-TIER STATIC RINGS SETUP ---
 base_rasi_labels = RASIS_EN if lang == "English" else RASIS_TA
 nak_labels = NAKSHATRAS_EN if lang == "English" else NAKSHATRAS_TA
 custom_rasi_labels = [f"<b>H{(i - lagna_rasi_idx + 12) % 12 + 1}</b><br>{base_rasi_labels[i]}" for i in range(12)]
 
-rasi_colors = ['#f8f9fa', '#f1f3f5'] * 6 if theme == "Executive Minimal" else ['#FDEDEC', '#E8F5E9', '#EBF5FB', '#F5EEF8'] * 3 
-nak_colors = ['#e9ecef', '#dee2e6', '#ced4da'] * 9 if theme == "Executive Minimal" else ['#FADBD8', '#C8E6C9', '#D6EAF8'] * 9
+pada_labels = ["1", "2", "3", "4"] * 27
+
+# Dynamic Themes
+if theme == "Executive Minimal":
+    rasi_colors = ['#f8f9fa', '#f1f3f5'] * 6
+    nak_colors = ['#e9ecef', '#dee2e6', '#ced4da'] * 9
+    pada_colors = ['#fdfdfe', '#f8f9fa'] * 54
+    line_color = '#adb5bd'
+else:
+    rasi_colors = ['#FDEDEC', '#E8F5E9', '#EBF5FB', '#F5EEF8'] * 3 
+    nak_colors = ['#FADBD8', '#C8E6C9', '#D6EAF8'] * 9
+    pada_colors = ['#ffffff', '#f4f6f7'] * 54
+    line_color = '#ffffff'
 
 # --- BUILD THE PLOTLY FIGURE ---
 fig = go.Figure()
 
-# Rasi Ring
+# Tier 1: Inner Ring (Rasis)
 fig.add_trace(go.Pie(
-    labels=custom_rasi_labels, values=[30]*12, hole=0.55, direction='clockwise',
+    labels=custom_rasi_labels, values=[30]*12, hole=0.60, direction='clockwise',
     sort=False, rotation=pie_rotation, textinfo='label', textposition='inside', insidetextorientation='radial',
-    domain={'x': [0.15, 0.85], 'y': [0.15, 0.85]}, 
-    marker=dict(colors=rasi_colors, line=dict(color='#adb5bd', width=1.5)), hoverinfo="none", name="Rasi"
+    domain={'x': [0.2, 0.8], 'y': [0.2, 0.8]}, 
+    marker=dict(colors=rasi_colors, line=dict(color=line_color, width=1.5)), hoverinfo="none", name="Rasi"
 ))
 
-# Nakshatra Ring
+# Tier 2: Middle Ring (Nakshatras)
 fig.add_trace(go.Pie(
-    labels=nak_labels, values=[360/27]*27, hole=0.82, direction='clockwise',
+    labels=nak_labels, values=[360/27]*27, hole=0.80, direction='clockwise',
     sort=False, rotation=pie_rotation, textinfo='label', textposition='inside', insidetextorientation='radial',
+    domain={'x': [0.08, 0.92], 'y': [0.08, 0.92]}, 
+    marker=dict(colors=nak_colors, line=dict(color=line_color, width=1)), hoverinfo="label", name="Nakshatra"
+))
+
+# Tier 3: Outer Ring (108 Padas)
+fig.add_trace(go.Pie(
+    labels=pada_labels, values=[360/108]*108, hole=0.92, direction='clockwise',
+    sort=False, rotation=pie_rotation, textinfo='label', textposition='inside', insidetextorientation='radial',
+    textfont=dict(size=9, color="#888"),
     domain={'x': [0, 1], 'y': [0, 1]}, 
-    marker=dict(colors=nak_colors, line=dict(color='#adb5bd', width=1)), hoverinfo="label", name="Nakshatra"
+    marker=dict(colors=pada_colors, line=dict(color='#eaeaea', width=0.5)), hoverinfo="label", name="Pada"
 ))
 
 # --- TRIGONOMETRY FOR ICONS AND RIBBONS ---
 annotations = []
-center_x, center_y, radius = 0.5, 0.5, 0.22 
+center_x, center_y, radius = 0.5, 0.5, 0.19 
 
-# 1. Calculate and store X, Y coordinates for all planets
+# Calculate Planet Coordinates (Resting inside the Rasi Ring)
 for p in positions:
     theta_deg = 90 - pie_rotation - p['lon'] 
     theta_rad = math.radians(theta_deg)
@@ -179,11 +191,11 @@ for p in positions:
         hovertext=f"{p['name']}: {p['lon']:.1f}°", hoverlabel=dict(bgcolor="white")
     ))
 
-# 2. ASPECT LOGIC (Draw Connecting Ribbons)
+# --- DYNAMIC ASPECT RIBBONS ---
 aspect_pairs = []
 drawn_pairs = set()
 
-# Map the radio button to mathematical house distances
+# Target distances based on the selected Radio Button
 target_distances = []
 ribbon_color = "rgba(189, 195, 199, 0.5)" # Default Gray
 if "7th" in view_filter:
@@ -195,38 +207,48 @@ elif "5th" in view_filter:
 elif "4th" in view_filter:
     target_distances = [3, 9]
     ribbon_color = "rgba(41, 128, 185, 0.6)" # Blue
+elif "Conjunction" in view_filter:
+    target_distances = [0]
+    ribbon_color = "rgba(142, 68, 173, 0.6)" # Purple
 
 for p1 in positions:
     for p2 in positions:
         if p1['name'] == p2['name']: continue
         
-        # Check if we already drew this line (e.g., Sun->Moon is the same as Moon->Sun)
         pair_key = tuple(sorted([p1['name'], p2['name']]))
         if pair_key in drawn_pairs: continue
 
-        # Calculate distance in Houses
+        # Calculate geometric house distance
         dist = (p2['rasi'] - p1['rasi'] + 12) % 12
         
         if dist in target_distances:
             drawn_pairs.add(pair_key)
             aspect_pairs.append((p1['name'], p2['name']))
             
-            # Draw the Line Trace across the circle
-            fig.add_trace(go.Scatter(
-                x=[p1['x'], p2['x']], y=[p1['y'], p2['y']],
-                mode='lines', line=dict(color=ribbon_color, width=2.5, dash='dash'),
-                hoverinfo='text', text=f"{p1['name']} ↔ {p2['name']} ({view_filter})", showlegend=False
-            ))
+            # If it's a conjunction, draw a short, curved line around the same house instead of across the center
+            if dist == 0:
+                fig.add_trace(go.Scatter(
+                    x=[p1['x'], center_x, p2['x']], y=[p1['y'], center_y, p2['y']],
+                    mode='lines', line=dict(color=ribbon_color, width=2, shape='spline'),
+                    hoverinfo='text', text=f"{p1['name']} + {p2['name']} (Conjunction)", showlegend=False
+                ))
+            else:
+                # Draw straight ribbon across the chart
+                fig.add_trace(go.Scatter(
+                    x=[p1['x'], p2['x']], y=[p1['y'], p2['y']],
+                    mode='lines', line=dict(color=ribbon_color, width=2.5, dash='dash'),
+                    hoverinfo='text', text=f"{p1['name']} ↔ {p2['name']} ({view_filter})", showlegend=False
+                ))
 
 # Central Profile Text
 annotations.append(dict(
-    text=f"<b>{selected_profile}</b><br><span style='font-size:12px;color:#888;'>Zodiac Engine</span>",
+    text=f"<b>{selected_profile}</b><br><span style='font-size:11px;color:#888;'>Dynamic Aspect Engine</span>",
     x=0.5, y=0.5, font_size=16, font_family="Helvetica Neue", showarrow=False
 ))
 
 fig.update_layout(
-    margin=dict(t=10, b=10, l=10, r=10), showlegend=False,
-    width=700, height=700, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+    margin=dict(t=0, b=0, l=0, r=0), showlegend=False,
+    width=750, height=750, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
     annotations=annotations
 )
 
@@ -237,18 +259,18 @@ with col_center:
 
 st.divider()
 
-# --- RENDER DYNAMIC INSIGHT CARDS (EXECUTIVE UI) ---
-st.markdown(f"<h3 style='margin-bottom:20px;'>{view_filter} Insights</h3>", unsafe_allow_html=True)
+# --- RENDER DYNAMIC INSIGHT CARDS (EXECUTIVE UI) BELOW ---
+st.markdown(f"<h3 style='margin-bottom:20px; color:#2c3e50;'>{view_filter.split(' ')[0]} Forecasts</h3>", unsafe_allow_html=True)
 
 if not aspect_pairs:
-    st.info(f"No {view_filter} detected in this specific chart configuration.")
+    st.info(f"No exact {view_filter} alignments detected in this specific chart configuration.")
 else:
     # CSS for the flat cards
     css_block = """<style>
     .bp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
     .bp-card { background: #ffffff; border: 1px solid #eaeaea; border-radius: 4px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 1px 2px rgba(0,0,0,0.01); }
     .bp-head { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #888; font-weight: 500; margin-bottom: 12px; border-bottom: 1px solid #f9f9f9; padding-bottom: 6px; display: flex; justify-content: space-between; }
-    .bp-title { font-size: 17px; font-weight: 500; color: #2c3e50; margin-bottom: 6px; }
+    .bp-title { font-size: 18px; font-weight: 500; color: #2c3e50; margin-bottom: 6px; }
     .bp-desc { font-size: 13.5px; color: #444; line-height: 1.5; font-weight: 300; margin-bottom:12px; }
     .tag-harness { display:inline-block; font-size: 10.5px; color: #2E7D32; background: #E8F5E9; border: 1px solid #C8E6C9; padding: 2px 6px; border-radius: 3px; font-weight: 600; margin-bottom: 6px; letter-spacing: 0.5px;}
     .tag-mitigate { display:inline-block; font-size: 10.5px; color: #C0392B; background: #FDEDEC; border: 1px solid #FADBD8; padding: 2px 6px; border-radius: 3px; font-weight: 600; margin-bottom: 6px; letter-spacing: 0.5px;}
@@ -259,7 +281,7 @@ else:
     grid_html = """<div class="bp-grid">"""
     
     # Border color matching the ribbon
-    card_border = "#e74c3c" if "7th" in view_filter else "#27ae60" if "5th" in view_filter else "#2980b9"
+    card_border = "#e74c3c" if "7th" in view_filter else "#27ae60" if "5th" in view_filter else "#2980b9" if "4th" in view_filter else "#8e44ad"
     
     for p1, p2 in aspect_pairs:
         dyn, action, act_class, desc, rem = get_aspect_insight(p1, p2, view_filter)
@@ -267,7 +289,7 @@ else:
         grid_html += f"""
         <div class="bp-card" style="border-top: 3px solid {card_border};">
             <div class="bp-head"><span>Planetary Connection</span> <span style="color:{card_border}; font-weight:bold;">{dyn}</span></div>
-            <div class="bp-title">{planet_icons[p1]} {p1} ↔ {planet_icons[p2]} {p2}</div>
+            <div class="bp-title">{planet_icons.get(p1, '')} {p1} &nbsp;↔&nbsp; {planet_icons.get(p2, '')} {p2}</div>
             <div class="bp-desc">{desc}</div>
             <div style="margin-top:auto; padding-top:12px; border-top: 1px dashed #eee;">
                 <div class="{act_class}">{action}</div>
