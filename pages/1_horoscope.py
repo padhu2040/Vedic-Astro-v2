@@ -31,6 +31,13 @@ if not API_KEY:
 
 st.set_page_config(page_title="Vedic Astro AI Engine", layout="wide")
 
+# --- SECURITY GATEKEEPER ---
+if "user" not in st.session_state or st.session_state.user is None:
+    st.warning("🔒 Please log in to access the Horoscope Engine.")
+    st.stop()
+
+user_id = st.session_state.user.id
+
 if 'report_generated' not in st.session_state: st.session_state.report_generated = False
 if 'messages' not in st.session_state: st.session_state.messages = []
 
@@ -41,11 +48,13 @@ def init_connection():
 
 supabase = init_connection()
 
+# --- SECURE PROFILE LOADER ---
 def load_profiles_from_db():
     profiles = {}
     if supabase:
         try:
-            response = supabase.table("profiles").select("*").execute()
+            # ONLY fetch profiles belonging to this user
+            response = supabase.table("profiles").select("*").eq("user_id", user_id).execute()
             for row in response.data:
                 try:
                     name, dob_str, tob_str, city = row["name"], row["dob"], row["tob"], row["city"]
@@ -294,7 +303,7 @@ st.title("Deep Horoscope Engine")
 st.markdown("<div style='color:#7f8c8d; margin-top:-15px; margin-bottom: 20px;'>Generate a complete, personalized Vedic astrological profile.</div>", unsafe_allow_html=True)
 st.divider()
 
-# --- SIDEBAR (Upgraded with Dynamic Keys) ---
+# --- SIDEBAR ---
 with st.sidebar:
     st.markdown("<div style='font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;'>Engine Settings</div>", unsafe_allow_html=True)
     LANG = st.radio("Language / மொழி", ["English", "Tamil"], horizontal=True, label_visibility="collapsed")
