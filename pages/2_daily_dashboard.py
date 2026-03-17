@@ -13,6 +13,13 @@ from astro_engine import (
 
 st.set_page_config(page_title="Daily Cosmos", layout="centered")
 
+# --- SECURITY GATEKEEPER ---
+if "user" not in st.session_state or st.session_state.user is None:
+    st.warning("🔒 Please log in to access the Daily Cosmos Dashboard.")
+    st.stop()
+
+user_id = st.session_state.user.id
+
 # --- SECURE API SETUP ---
 API_KEY = st.secrets.get("GEMINI_API_KEY", "")
 if not API_KEY:
@@ -29,11 +36,13 @@ def init_connection():
 
 supabase = init_connection()
 
+# --- SECURE PROFILE LOADER ---
 def load_profiles_from_db():
     profiles = {}
     if supabase:
         try:
-            response = supabase.table("profiles").select("*").execute()
+            # ONLY fetch profiles belonging to this user
+            response = supabase.table("profiles").select("*").eq("user_id", user_id).execute()
             for row in response.data:
                 try:
                     name, dob_str, tob_str, city = row["name"], row["dob"], row["tob"], row["city"]
@@ -145,7 +154,7 @@ with tab2:
     else:
         focus, comm = daily_weather["focus"], daily_weather["communication"]
         
-        # --- NEW: AI MORNING BRIEFING ---
+        # --- AI MORNING BRIEFING ---
         st.markdown("### The Morning Briefing")
         ai_briefing = None
         if API_KEY:
