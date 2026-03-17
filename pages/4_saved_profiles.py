@@ -1,7 +1,14 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from supabase import create_client, Client
+from supabase import create_client
+
+# --- SECURITY GATEKEEPER ---
+if "user" not in st.session_state or st.session_state.user is None:
+    st.warning("🔒 Please log in to view and manage your private cloud vault.")
+    st.stop()
+
+user_id = st.session_state.user.id
 
 # --- SETUP SUPABASE CONNECTION ---
 @st.cache_resource
@@ -17,13 +24,13 @@ except Exception as e:
     st.stop()
 
 # --- UI CONFIG ---
-st.title(":material/cloud_done: Cloud Profile Vault")
-st.markdown("Your family profiles are now securely synced to the cloud. They will never be deleted when the app updates.")
+st.title(":material/cloud_done: Private Profile Vault")
+st.markdown("Your family and client profiles are securely encrypted and locked to your account.")
 st.divider()
 
 # --- ADD / UPDATE PROFILE ---
 with st.expander(":material/person_add: Add or Edit Profile", expanded=True):
-    st.info("💡 **How to Edit:** To update someone's details, just type their exact Name again and enter the new data. It will automatically overwrite their old record in the cloud!")
+    st.info("💡 **How to Edit:** To update someone's details, just type their exact Name again and enter the new data. It will safely overwrite your old record.")
     
     with st.form("add_profile_form"):
         col1, col2 = st.columns(2)
@@ -34,33 +41,44 @@ with st.expander(":material/person_add: Add or Edit Profile", expanded=True):
             p_tob = st.time_input("Time of Birth", step=60) 
             p_city = st.text_input("City of Birth")
             
-        submitted = st.form_submit_button("Save to Cloud Vault", type="primary", use_container_width=True)
+        submitted = st.form_submit_button("Save to Private Vault", type="primary", use_container_width=True)
         
         if submitted:
             if p_name.strip() == "":
                 st.error("Name cannot be empty!")
             else:
-                try:
-                    # Supabase 'upsert' acts as an Insert or Replace
-                    data = {
-                        "name": p_name.strip(),
-                        "dob": p_dob.strftime("%Y-%m-%d"),
-                        "tob": p_tob.strftime("%H:%M:%S"),
-                        "city": p_city.strip()
-                    }
-                    supabase.table("profiles").upsert(data).execute()
-                    
-                    st.success(f"Profile for **{p_name}** successfully secured in the cloud!")
-                    st.rerun() 
-                except Exception as e:
-                    st.error(f"Cloud Database Error: {e}")
+                with st.spinner("Securing data..."):
+                    try:
+                        clean_name = p_name.strip()
+                        data = {
+                            "user_id": user_id,  # ALWAYS ATTACH THE USER ID
+                            "name": clean_name,
+                            "dob": p_dob.strftime("%Y-%m-%d"),
+                            "tob": p_tob.strftime("%H:%M:%S"),
+                            "city": p_city.strip()
+                        }
+                        
+                        # 1. Check if THIS user already has a profile with this name
+                        existing = supabase.table("profiles").select("id").eq("user_id", user_id).eq("name", clean_name).execute()
+                        
+                        # 2. Update or Insert
+                        if existing.data:
+                            supabase.table("profiles").update(data).eq("user_id", user_id).eq("name", clean_name).execute()
+                            st.success(f"Profile for **{clean_name}** successfully updated!")
+                        else:
+                            supabase.table("profiles").insert(data).execute()
+                            st.success(f"Profile for **{clean_name}** securely added to your vault!")
+                            
+                        st.rerun() 
+                    except Exception as e:
+                        st.error(f"Cloud Database Error: {e}")
 
 # --- VIEW & MANAGE PROFILES ---
 st.markdown("### :material/badge: Saved Cloud Profiles")
 
 try:
-    # Fetch all records from Supabase
-    response = supabase.table("profiles").select("*").execute()
+    # Fetch ONLY records belonging to the logged-in user
+    response = supabase.table("profiles").select("*").eq("user_id", user_id).execute()
     records = response.data
     
     if records:
@@ -81,12 +99,13 @@ try:
         st.write("")
         with st.expander(":material/delete: Delete a Profile"):
             del_name = st.selectbox("Select Profile to Remove", df['Name'].tolist())
-            if st.button("Delete Permanently"):
-                supabase.table("profiles").delete().eq("name", del_name).execute()
-                st.success(f"Removed {del_name} from the cloud vault.")
+            if st.button("Delete Permanently", type="secondary"):
+                # Delete ONLY if the name AND user_id match
+                supabase.table("profiles").delete().eq("user_id", user_id).eq("name", del_name).execute()
+                st.success(f"Removed {del_name} from your secure vault.")
                 st.rerun() 
     else:
-        st.info("Your cloud vault is currently empty. Add yourself above to get started!")
+        st.info("Your secure vault is currently empty. Add yourself above to get started!")
 
 except Exception as e:
     st.error(f"Failed to fetch profiles from cloud: {e}")
