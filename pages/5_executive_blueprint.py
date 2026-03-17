@@ -7,6 +7,13 @@ from astro_engine import get_location_coordinates, get_utc_offset, get_executive
 
 st.set_page_config(page_title="Executive Blueprint", layout="wide")
 
+# --- SECURITY GATEKEEPER ---
+if "user" not in st.session_state or st.session_state.user is None:
+    st.warning("🔒 Please log in to access the Executive Blueprint.")
+    st.stop()
+
+user_id = st.session_state.user.id
+
 @st.cache_resource
 def init_connection():
     try: return create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
@@ -14,11 +21,13 @@ def init_connection():
 
 supabase = init_connection()
 
+# --- SECURE PROFILE LOADER ---
 def load_profiles_from_db():
     profiles = {}
     if supabase:
         try:
-            response = supabase.table("profiles").select("*").execute()
+            # ONLY fetch profiles belonging to this user
+            response = supabase.table("profiles").select("*").eq("user_id", user_id).execute()
             for row in response.data:
                 try:
                     name, dob_str, tob_str, city = row["name"], row["dob"], row["tob"], row["city"]
