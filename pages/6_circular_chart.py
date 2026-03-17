@@ -9,6 +9,13 @@ from astro_engine import get_location_coordinates, get_utc_offset
 
 st.set_page_config(page_title="Dynamic Aspect Engine", layout="wide")
 
+# --- SECURITY GATEKEEPER ---
+if "user" not in st.session_state or st.session_state.user is None:
+    st.warning("🔒 Please log in to access the Zodiac Flow Engine.")
+    st.stop()
+
+user_id = st.session_state.user.id
+
 # --- SUPABASE PROFILE LOADING ---
 @st.cache_resource
 def init_connection():
@@ -21,7 +28,8 @@ def load_profiles_from_db():
     profiles = {}
     if supabase:
         try:
-            response = supabase.table("profiles").select("*").execute()
+            # ONLY fetch profiles belonging to this user
+            response = supabase.table("profiles").select("*").eq("user_id", user_id).execute()
             for row in response.data:
                 try:
                     name, dob_str, tob_str, city = row["name"], row["dob"], row["tob"], row["city"]
@@ -120,7 +128,6 @@ positions.append({"name": "Ketu", "lon": (rahu_lon + 180) % 360, "icon": planet_
 pie_rotation = (90 + (lagna_rasi_idx * 30)) % 360
 
 # --- MASTER LAYOUT SPLIT (60% CHART / 40% INSIGHTS) ---
-# This instantly fixes the "too small" issue by dedicating massive width to the chart
 col_viz, col_data = st.columns([1.5, 1], gap="large")
 
 with col_viz:
@@ -212,7 +219,6 @@ with col_viz:
                 aspect_pairs.append((p1['name'], p2['name']))
                 
                 t1, t2 = p1['theta_rad'], p2['theta_rad']
-                # Increased Delta to make the ribbons flare out much thicker at the edges
                 delta = 0.06 
                 
                 x1a, y1a = chord_r * math.cos(t1 - delta), chord_r * math.sin(t1 - delta)
@@ -246,7 +252,6 @@ with col_viz:
         font_size=18, font_family="Helvetica Neue", showarrow=False, xanchor='center', yanchor='middle'
     ))
 
-    # MASSIVE VISUAL UPGRADE: Increased height to 900px so it renders beautifully in the large left column
     fig.update_layout(
         xaxis=dict(visible=False, range=[-1, 1], fixedrange=True),
         yaxis=dict(visible=False, range=[-1, 1], fixedrange=True, scaleanchor="x", scaleratio=1),
@@ -255,7 +260,6 @@ with col_viz:
         annotations=annotations, shapes=shapes
     )
 
-    # Render without constraints
     st.plotly_chart(fig, use_container_width=True)
 
 # --- RIGHT PANEL (THE INTERPRETATION ENGINE) ---
