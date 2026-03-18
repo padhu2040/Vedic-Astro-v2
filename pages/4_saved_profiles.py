@@ -80,7 +80,7 @@ with st.expander(":material/person_add: Add or Edit Profile", expanded=True):
                         }
                         
                         # 1. Check if THIS user already has a profile with this exact name
-                        existing = supabase.table("profiles").select("id").eq("user_id", user_id).eq("name", clean_name).execute()
+                        existing = supabase.table("profiles").select("name").eq("user_id", user_id).eq("name", clean_name).execute()
                         
                         if existing.data:
                             # It's an EDIT - Always allow this!
