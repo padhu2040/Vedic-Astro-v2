@@ -7,12 +7,15 @@ from astro_engine import get_location_coordinates, get_utc_offset, get_executive
 
 st.set_page_config(page_title="Executive Blueprint", layout="wide")
 
-# --- SECURITY GATEKEEPER ---
+# --- SECURITY GATEKEEPER & GLOBAL SYNC INIT ---
 if "user" not in st.session_state or st.session_state.user is None:
     st.warning("🔒 Please log in to access the Executive Blueprint.")
     st.stop()
 
 user_id = st.session_state.user.id
+
+if "global_active_profile" not in st.session_state:
+    st.session_state.global_active_profile = None
 
 @st.cache_resource
 def init_connection():
@@ -39,11 +42,33 @@ def load_profiles_from_db():
         except: pass
     return profiles
 
+# --- SIDEBAR WITH GLOBAL SYNC ---
 with st.sidebar:
     st.markdown("### Profile Selection")
     saved_profiles = load_profiles_from_db()
     profile_options = ["(No Profile Selected)"] + list(saved_profiles.keys())
-    selected_profile = st.selectbox("Load Saved Profile", profile_options)
+    
+    # GLOBAL SYNC 1: Find the Global Index
+    try:
+        default_idx = profile_options.index(st.session_state.global_active_profile)
+    except ValueError:
+        default_idx = 0
+
+    # GLOBAL SYNC 2: Update Global Memory on Change
+    def sync_profile_blueprint():
+        selection = st.session_state._blueprint_profile_selector
+        if selection != "(No Profile Selected)":
+            st.session_state.global_active_profile = selection
+        else:
+            st.session_state.global_active_profile = None
+
+    selected_profile = st.selectbox(
+        "Load Saved Profile", 
+        options=profile_options,
+        index=default_idx,
+        key="_blueprint_profile_selector",
+        on_change=sync_profile_blueprint
+    )
     
     if selected_profile != "(No Profile Selected)":
         def_n = selected_profile
@@ -53,6 +78,7 @@ with st.sidebar:
     else:
         def_n, def_dob, def_tob, def_loc = "", date(2000, 1, 1), time(12, 0), ""
 
+# --- MAIN CONTENT ---
 st.title("Executive Blueprint")
 st.markdown(f"<div style='color:#7f8c8d; margin-top:-15px; margin-bottom: 20px;'>Subject Identity: <b>{def_n if def_n else 'Pending Selection'}</b></div>", unsafe_allow_html=True)
 st.divider()
