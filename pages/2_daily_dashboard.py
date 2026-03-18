@@ -5,7 +5,6 @@ from supabase import create_client
 import google.generativeai as genai
 import json
 
-# Ensure these match your actual engine file
 from astro_engine import (
     get_location_coordinates, get_utc_offset, get_daily_executive_weather,
     get_daily_panchangam_metrics, get_advanced_personal_metrics, ZODIAC_TA, ZODIAC
@@ -13,12 +12,8 @@ from astro_engine import (
 
 st.set_page_config(page_title="Daily Cosmos", layout="centered")
 
-# --- SECURITY GATEKEEPER ---
-if "user" not in st.session_state or st.session_state.user is None:
-    st.warning("🔒 Please log in to access the Daily Cosmos Dashboard.")
-    st.stop()
-
-user_id = st.session_state.user.id
+# --- FREEMIUM CHECK: Get User ID if logged in, otherwise None ---
+user_id = st.session_state.user.id if st.session_state.user else None
 
 # --- SECURE API SETUP ---
 API_KEY = st.secrets.get("GEMINI_API_KEY", "")
@@ -36,12 +31,11 @@ def init_connection():
 
 supabase = init_connection()
 
-# --- SECURE PROFILE LOADER ---
+# --- SECURE PROFILE LOADER (Returns empty if Guest) ---
 def load_profiles_from_db():
     profiles = {}
-    if supabase:
+    if supabase and user_id:
         try:
-            # ONLY fetch profiles belonging to this user
             response = supabase.table("profiles").select("*").eq("user_id", user_id).execute()
             for row in response.data:
                 try:
@@ -54,12 +48,35 @@ def load_profiles_from_db():
         except Exception: pass
     return profiles
 
-# --- SIDEBAR (Consolidated UI) ---
+# --- SIDEBAR (With Global Sync Logic) ---
 with st.sidebar:
+    if not user_id:
+        st.info("💡 **Free Mode:** You are using the public engine. Log in to save profiles permanently.")
+    
     st.markdown("<div style='font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;'>Personal Strategy</div>", unsafe_allow_html=True)
+    
     saved_profiles = load_profiles_from_db()
     profile_options = ["(No Profile Selected)"] + list(saved_profiles.keys())
-    selected_profile = st.selectbox("Load Saved Profile", profile_options, label_visibility="collapsed")
+    
+    # GLOBAL SYNC 1: Find the index of the globally selected profile
+    try:
+        default_idx = profile_options.index(st.session_state.global_active_profile)
+    except ValueError:
+        default_idx = 0
+
+    # GLOBAL SYNC 2: Callback to update memory when dropdown changes
+    def sync_profile():
+        st.session_state.global_active_profile = st.session_state._dash_profile_selector
+
+    # The Dropdown
+    selected_profile = st.selectbox(
+        "Load Saved Profile", 
+        options=profile_options,
+        index=default_idx,
+        key="_dash_profile_selector",
+        on_change=sync_profile,
+        label_visibility="collapsed"
+    )
     
     if selected_profile != "(No Profile Selected)":
         def_n = selected_profile
@@ -146,21 +163,18 @@ with tab1:
 </div>"""
     st.markdown(grid_html, unsafe_allow_html=True)
 
-
 # --- TAB 2: STRATEGY (AI Upgraded) ---
 with tab2:
     if not def_n:
-        st.info("Select your profile from the sidebar to generate your deep personal analytics.")
+        st.info("Log in and save your profile to unlock Deep AI Executive Analytics.")
     else:
         focus, comm = daily_weather["focus"], daily_weather["communication"]
         
-        # --- AI MORNING BRIEFING ---
         st.markdown("### The Morning Briefing")
         ai_briefing = None
         if API_KEY:
             try:
                 genai.configure(api_key=API_KEY)
-                # Temperature 0.4 allows the AI to use slightly different phrasing day-to-day
                 model = genai.GenerativeModel('gemini-2.5-flash', generation_config={"temperature": 0.4}) 
                 
                 briefing_prompt = f"""
@@ -191,7 +205,6 @@ with tab2:
 <div class="t-card" style="border-left: 3px solid {focus['color']};"><div class="t-head"><span>Daily Execution</span> <span>Moon in {daily_weather['positions']['Moon']}</span></div><div class="t-title" style="color: {focus['color']};">{focus['title']}</div><div class="t-desc">{focus['desc']}</div><div class="t-rem">{focus['remedy']}</div></div>
 <div class="t-card" style="border-left: 3px solid #27ae60;"><div class="t-head"><span>Communication</span> <span>Mercury in {daily_weather['positions']['Mercury']}</span></div><div class="t-title" style="color: #2c3e50;">{comm['title']}</div><div class="t-desc">{comm['desc']}</div><div class="t-rem">{comm['remedy']}</div></div>"""
         st.markdown(weather_html, unsafe_allow_html=True)
-
 
 # --- TAB 3: HORAI ---
 with tab3:
