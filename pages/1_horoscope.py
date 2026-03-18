@@ -20,6 +20,21 @@ from report_generator import get_south_indian_chart_html, generate_pdf_report
 from database import identity_db, RASI_RULERS, lifestyle_guidance
 from tamil_lang import TAMIL_IDENTITY_DB, TAMIL_LIFESTYLE
 
+st.set_page_config(page_title="Vedic Astro AI Engine", layout="wide")
+
+# --- SECURITY GATEKEEPER & GLOBAL SYNC INIT ---
+if "user" not in st.session_state or st.session_state.user is None:
+    st.warning("🔒 Please log in to access the Horoscope Engine.")
+    st.stop()
+
+user_id = st.session_state.user.id
+
+if "global_active_profile" not in st.session_state:
+    st.session_state.global_active_profile = None
+
+if 'report_generated' not in st.session_state: st.session_state.report_generated = False
+if 'messages' not in st.session_state: st.session_state.messages = []
+
 # --- SECURE API SETUP ---
 API_KEY = st.secrets.get("GEMINI_API_KEY", "")
 if not API_KEY:
@@ -28,18 +43,6 @@ if not API_KEY:
         API_KEY = GEMINI_API_KEY
     except Exception: 
         pass
-
-st.set_page_config(page_title="Vedic Astro AI Engine", layout="wide")
-
-# --- SECURITY GATEKEEPER ---
-if "user" not in st.session_state or st.session_state.user is None:
-    st.warning("🔒 Please log in to access the Horoscope Engine.")
-    st.stop()
-
-user_id = st.session_state.user.id
-
-if 'report_generated' not in st.session_state: st.session_state.report_generated = False
-if 'messages' not in st.session_state: st.session_state.messages = []
 
 @st.cache_resource
 def init_connection():
@@ -53,7 +56,6 @@ def load_profiles_from_db():
     profiles = {}
     if supabase:
         try:
-            # ONLY fetch profiles belonging to this user
             response = supabase.table("profiles").select("*").eq("user_id", user_id).execute()
             for row in response.data:
                 try:
@@ -303,7 +305,7 @@ st.title("Deep Horoscope Engine")
 st.markdown("<div style='color:#7f8c8d; margin-top:-15px; margin-bottom: 20px;'>Generate a complete, personalized Vedic astrological profile.</div>", unsafe_allow_html=True)
 st.divider()
 
-# --- SIDEBAR ---
+# --- SIDEBAR (WITH GLOBAL SYNC) ---
 with st.sidebar:
     st.markdown("<div style='font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;'>Engine Settings</div>", unsafe_allow_html=True)
     LANG = st.radio("Language / மொழி", ["English", "Tamil"], horizontal=True, label_visibility="collapsed")
@@ -312,7 +314,28 @@ with st.sidebar:
     st.markdown("<div style='font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;'>Birth Details</div>", unsafe_allow_html=True)
     saved_profiles = load_profiles_from_db()
     profile_options = ["(Select Profile)", "Enter Manually"] + list(saved_profiles.keys())
-    selected_profile = st.selectbox("Load Saved Profile", profile_options, label_visibility="collapsed")
+    
+    # GLOBAL SYNC 1: Find the index
+    try:
+        default_idx = profile_options.index(st.session_state.global_active_profile)
+    except ValueError:
+        default_idx = 0
+
+    # GLOBAL SYNC 2: Callback
+    def sync_profile_horoscope():
+        # Do not sync "Enter Manually" or "(Select Profile)" globally
+        selection = st.session_state._horoscope_profile_selector
+        if selection not in ["(Select Profile)", "Enter Manually"]:
+            st.session_state.global_active_profile = selection
+
+    selected_profile = st.selectbox(
+        "Load Saved Profile", 
+        options=profile_options, 
+        index=default_idx,
+        key="_horoscope_profile_selector",
+        on_change=sync_profile_horoscope,
+        label_visibility="collapsed"
+    )
     
     if selected_profile in ["(Select Profile)", "Enter Manually"]:
         def_n, def_dob, def_tob, def_loc = "", datetime(2000, 1, 1).date(), time(12, 0), ""
@@ -333,7 +356,9 @@ with st.sidebar:
     
     lat_val, lon_val, tz_val = 13.0827, 80.2707, "Asia/Kolkata" 
     if city:
-        lat_val, lon_val, tz_val = get_location_coordinates(city)
+        try:
+            lat_val, lon_val, tz_val = get_location_coordinates(city)
+        except: pass
     
     calc_btn = st.button("Generate Deep Horoscope", type="primary", use_container_width=True)
     if calc_btn:
@@ -687,10 +712,8 @@ if st.session_state.report_generated:
                         try:
                             genai.configure(api_key=API_KEY)
                             
-                            # Injecting deep context so the AI gives brilliant, personalized answers
                             ai_context = f"You are an Elite Vedic Astrologer and Executive Coach. User Context: Name is {name_in}. Lagna (Ascendant) is {ZODIAC[lagna_rasi]}. Moon Sign is {ZODIAC[moon_rasi]}. They are currently running the {current_md} Mahadasha. Their strongest astrological house is House {sorted_houses[0][1]}. Answer their question specifically using this data to give premium, actionable advice."
                             
-                            # Using the bulletproof 2.5 model
                             model = genai.GenerativeModel(
                                 'gemini-2.5-flash',
                                 system_instruction=ai_context
@@ -703,7 +726,6 @@ if st.session_state.report_generated:
                             if "429" in str(e):
                                 st.error("⚠️ **Error 429: AI Quota Exceeded.** You have hit your free-tier limit for the Gemini API today. Please check your Google AI Studio billing limits.")
                             else:
-                                # Fallback if system_instruction is not supported by the current SDK
                                 try:
                                     model = genai.GenerativeModel('gemini-2.5-flash')
                                     fallback_prompt = f"Context: {ai_context}\n\nUser Question: {prompt_input}"
