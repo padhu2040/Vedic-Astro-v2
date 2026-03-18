@@ -17,6 +17,10 @@ if "user" not in st.session_state or st.session_state.user is None:
 
 user_id = st.session_state.user.id
 
+# --- GLOBAL SYNC INIT ---
+if "global_active_profile" not in st.session_state:
+    st.session_state.global_active_profile = None
+
 NAKSHATRAS = ["Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra", "Punarvasu", "Pushya", "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", "Hasta", "Chitra", "Swati", "Vishakha", "Anuradha", "Jyeshtha", "Mula", "Purva Ashadha", "Uttara Ashadha", "Shravana", "Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"]
 
 @st.cache_resource
@@ -120,9 +124,32 @@ saved_profiles = load_profiles_from_db()
 profile_options = ["(Select Profile)", "Enter Manually"] + list(saved_profiles.keys())
 
 col_b, col_g = st.columns(2)
+
+# --- PARTNER A (GLOBAL SYNC ENABLED) ---
 with col_b:
     st.markdown("##### Partner A (Subject)")
-    sel_p1 = st.selectbox("Load Profile (A)", profile_options, key="sel_p1", label_visibility="collapsed")
+    
+    # 1. Find the Global Index
+    try:
+        default_idx_a = profile_options.index(st.session_state.global_active_profile)
+    except ValueError:
+        default_idx_a = 0
+
+    # 2. Update Global Memory on Change
+    def sync_profile_porutham():
+        selection = st.session_state._porutham_p1_selector
+        if selection not in ["(Select Profile)", "Enter Manually"]:
+            st.session_state.global_active_profile = selection
+
+    sel_p1 = st.selectbox(
+        "Load Profile (A)", 
+        options=profile_options, 
+        index=default_idx_a,
+        key="_porutham_p1_selector",
+        on_change=sync_profile_porutham,
+        label_visibility="collapsed"
+    )
+    
     if sel_p1 in ["(Select Profile)", "Enter Manually"]: 
         def_n1, def_dob1, def_tob1, def_loc1 = "", datetime(2000, 1, 1).date(), time(12, 0), ""
     else: 
@@ -134,9 +161,11 @@ with col_b:
     b_tob = st.time_input("Time of Birth", value=def_tob1, key=f"p1_t_{k1}")
     b_loc = st.text_input("City", value=def_loc1, key=f"p1_l_{k1}")
 
+# --- PARTNER B (STANDARD SELECTION) ---
 with col_g:
     st.markdown("##### Partner B (Counterpart)")
     sel_p2 = st.selectbox("Load Profile (B)", profile_options, key="sel_p2", label_visibility="collapsed")
+    
     if sel_p2 in ["(Select Profile)", "Enter Manually"]: 
         def_n2, def_dob2, def_tob2, def_loc2 = "", datetime(2000, 1, 1).date(), time(12, 0), ""
     else: 
