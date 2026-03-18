@@ -16,6 +16,10 @@ if "user" not in st.session_state or st.session_state.user is None:
 
 user_id = st.session_state.user.id
 
+# --- GLOBAL SYNC INIT ---
+if "global_active_profile" not in st.session_state:
+    st.session_state.global_active_profile = None
+
 # --- SUPABASE PROFILE LOADING ---
 @st.cache_resource
 def init_connection():
@@ -90,7 +94,29 @@ with st.sidebar:
     st.markdown("<div style='font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;'>Profile Coordinates</div>", unsafe_allow_html=True)
     saved_profiles = load_profiles_from_db()
     profile_options = ["(Current Transit)"] + list(saved_profiles.keys())
-    selected_profile = st.selectbox("Load Coordinates", profile_options, label_visibility="collapsed")
+    
+    # GLOBAL SYNC 1: Find the Global Index
+    try:
+        default_idx = profile_options.index(st.session_state.global_active_profile)
+    except ValueError:
+        default_idx = 0
+
+    # GLOBAL SYNC 2: Update Global Memory on Change
+    def sync_profile_circos():
+        selection = st.session_state._circos_profile_selector
+        if selection != "(Current Transit)":
+            st.session_state.global_active_profile = selection
+        else:
+            st.session_state.global_active_profile = None
+
+    selected_profile = st.selectbox(
+        "Load Coordinates", 
+        options=profile_options,
+        index=default_idx,
+        key="_circos_profile_selector",
+        on_change=sync_profile_circos,
+        label_visibility="collapsed"
+    )
     
     st.divider()
     lang = st.radio("Language", ["English", "Tamil"])
@@ -276,22 +302,22 @@ with col_data:
     
     <div class="guide-box">
         <div class="guide-title">Tier 1: The Macro (Inner Ring)</div>
-        <div class="guide-text">The 12 <b>Rasis (Zodiac Signs)</b> spanning 30° each. The chart mathematically rotates to ensure House 1 (Your Ascendant/Lagna) always locks exactly to the 12 o'clock position.</div>
+        <div class="guide-text">The 12 <b>Rasis (Zodiac Signs)</b>. The chart mathematically rotates to ensure House 1 (Ascendant) locks to the 12 o'clock position.</div>
     </div>
     
     <div class="guide-box">
         <div class="guide-title">Tier 2: The Constellations (Middle Ring)</div>
-        <div class="guide-text">The 27 <b>Nakshatras (Lunar Mansions)</b> spanning 13°20' each. These represent the deep psychological wiring dictating planetary behavior.</div>
+        <div class="guide-text">The 27 <b>Nakshatras (Lunar Mansions)</b>. These represent the deep psychological wiring dictating planetary behavior.</div>
     </div>
     
     <div class="guide-box">
         <div class="guide-title">Tier 3: The Micro (Outer Ring)</div>
-        <div class="guide-text">The 108 <b>Padas (Quarters)</b>. Each Nakshatra is divided into 4 segments of 3°20', allowing for razor-sharp predictive accuracy in the D9 chart.</div>
+        <div class="guide-text">The 108 <b>Padas (Quarters)</b>. Each Nakshatra is divided into 4 segments of 3°20', allowing for razor-sharp predictive accuracy.</div>
     </div>
     
     <div class="guide-box" style="border-left: 3px solid #8e44ad;">
         <div class="guide-title">The Energy Ribbons (Chords)</div>
-        <div class="guide-text">The colored Bezier curves simulate the transfer of energy (Aspects) between planetary nodes. Use the toggle above to isolate different types of tension or synergy.</div>
+        <div class="guide-text">The colored Bezier curves simulate the transfer of energy (Aspects) between planetary nodes.</div>
     </div>
     """, unsafe_allow_html=True)
     
@@ -313,7 +339,7 @@ with col_data:
         .insight-text { font-size: 13px; color: #222; font-style: italic; background: #fafafa; padding: 10px; border-radius: 4px; border: 1px solid #f5f5f5; }
         </style>"""
         st.markdown(css_block, unsafe_allow_html=True)
-
+        
         grid_html = """<div class="bp-grid-col">"""
         card_border = "#e74c3c" if "7th" in view_filter else "#27ae60" if "5th" in view_filter else "#2980b9" if "4th" in view_filter else "#8e44ad"
         
